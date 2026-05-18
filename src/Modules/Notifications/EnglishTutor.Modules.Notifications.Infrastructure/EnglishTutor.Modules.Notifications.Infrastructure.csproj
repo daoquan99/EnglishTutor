@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Modules.Notifications.Application\EnglishTutor.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Modules.Notifications.Domain\EnglishTutor.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Outbox\EnglishTutor.BuildingBlocks.Outbox.csproj" />
+  </ItemGroup>
+</Project>

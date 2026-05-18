@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Modules.Vocabulary.Application\EnglishTutor.Modules.Vocabulary.Application.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Modules.Vocabulary.Contracts\EnglishTutor.Modules.Vocabulary.Contracts.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Modules.Vocabulary.Domain\EnglishTutor.Modules.Vocabulary.Domain.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Outbox\EnglishTutor.BuildingBlocks.Outbox.csproj" />
+  </ItemGroup>
+</Project>

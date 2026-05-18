@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Quartz" />
+    <PackageReference Include="Quartz.Extensions.Hosting" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Outbox\EnglishTutor.BuildingBlocks.Outbox.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.EventBus\EnglishTutor.BuildingBlocks.EventBus.csproj" />
+    <ProjectReference Include="..\..\Modules\Auth\EnglishTutor.Modules.Auth.Infrastructure\EnglishTutor.Modules.Auth.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Users\EnglishTutor.Modules.Users.Infrastructure\EnglishTutor.Modules.Users.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\AI\EnglishTutor.Modules.AI.Infrastructure\EnglishTutor.Modules.AI.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Vocabulary\EnglishTutor.Modules.Vocabulary.Infrastructure\EnglishTutor.Modules.Vocabulary.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Speaking\EnglishTutor.Modules.Speaking.Infrastructure\EnglishTutor.Modules.Speaking.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Mistakes\EnglishTutor.Modules.Mistakes.Infrastructure\EnglishTutor.Modules.Mistakes.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Progress\EnglishTutor.Modules.Progress.Infrastructure\EnglishTutor.Modules.Progress.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

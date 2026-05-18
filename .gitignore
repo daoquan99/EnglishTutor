@@ -1,0 +1,29 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio
+.vs/
+*.csproj.user
+
+## Rider
+.idea/
+
+## OS
+Thumbs.db
+.DS_Store
+
+## Logs
+logs/
+*.log
+
+## Environment
+.env
+appsettings.*.local.json
+
+## Docker
+docker-compose.override.local.yml

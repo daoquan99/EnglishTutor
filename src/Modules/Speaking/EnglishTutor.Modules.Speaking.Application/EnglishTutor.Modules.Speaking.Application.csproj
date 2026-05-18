@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Modules.Speaking.Domain\EnglishTutor.Modules.Speaking.Domain.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\Users\EnglishTutor.Modules.Users.Contracts\EnglishTutor.Modules.Users.Contracts.csproj" />
+    <ProjectReference Include="..\..\AI\EnglishTutor.Modules.AI.Contracts\EnglishTutor.Modules.AI.Contracts.csproj" />
+  </ItemGroup>
+</Project>

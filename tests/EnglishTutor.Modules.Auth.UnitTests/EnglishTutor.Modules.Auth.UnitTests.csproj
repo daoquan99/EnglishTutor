@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Auth\EnglishTutor.Modules.Auth.Domain\EnglishTutor.Modules.Auth.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Auth\EnglishTutor.Modules.Auth.Application\EnglishTutor.Modules.Auth.Application.csproj" />
+  </ItemGroup>
+</Project>
