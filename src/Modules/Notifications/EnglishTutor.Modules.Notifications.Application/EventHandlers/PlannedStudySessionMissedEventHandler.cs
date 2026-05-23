@@ -23,6 +23,7 @@ public sealed class PlannedStudySessionMissedEventHandler(
     INotificationsInboxStore inboxStore,
     INotificationsUnitOfWork unitOfWork,
     IUserLanguageSettingsReader languageSettingsReader,
+    IRealtimeNotificationSender realtimeSender,
     IDateTimeProvider dateTimeProvider)
     : IIntegrationEventHandler<PlannedStudySessionMissedIntegrationEvent>
 {
@@ -58,7 +59,7 @@ public sealed class PlannedStudySessionMissedEventHandler(
                 ? "Open your study plan and recover the missed practice session."
                 : NotificationTemplateRenderer.Render(template.BodyTemplate, values);
 
-            await notificationRepository.AddAsync(NotificationMessage.Create(
+            var notification = NotificationMessage.Create(
                 @event.UserId,
                 NotificationType.MissedStudyReminder,
                 title,
@@ -71,7 +72,16 @@ public sealed class PlannedStudySessionMissedEventHandler(
                     @event.TargetLanguageCode,
                     @event.ScheduledDateUtc
                 }),
-                utcNow), ct);
+                utcNow);
+
+            await notificationRepository.AddAsync(notification, ct);
+            await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+
+            await realtimeSender.SendNotificationAsync(@event.UserId, new NotificationPushPayload(
+                notification.Id, notification.Type.ToString(), notification.Title, notification.Body, notification.ScheduledAtUtc), ct);
+
+            return;
         }
 
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);

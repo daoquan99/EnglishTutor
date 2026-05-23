@@ -39,7 +39,7 @@ export function useUpsertAiModel() {
     }) => adminApi.upsertAiModel(providerName, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.aiProviders() });
-      toast.success("Model updated");
+      toast.success("AI model updated");
     },
   });
 }
@@ -63,7 +63,7 @@ export function useConfigureAiRoute() {
     }) => adminApi.configureAiRoute(taskType, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminKeys.aiRoutes() });
-      toast.success("Route configured");
+      toast.success("AI route configured");
     },
   });
 }

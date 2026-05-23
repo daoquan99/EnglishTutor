@@ -8,7 +8,7 @@ public static class NotificationErrors
         Error.NotFound("Notification", notificationId);
 
     public static readonly Error SettingsNotFound =
-        Error.NotFound("Notification settings", "current user");
+        Error.NotFound("Notification settings were not found for the current user.");
 
     public static readonly Error InvalidTimeZone =
         Error.Validation("Invalid time zone identifier.");

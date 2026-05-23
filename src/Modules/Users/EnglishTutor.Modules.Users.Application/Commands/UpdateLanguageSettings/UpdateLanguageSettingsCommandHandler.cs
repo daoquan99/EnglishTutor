@@ -4,6 +4,7 @@ using EnglishTutor.BuildingBlocks.SharedKernel;
 using EnglishTutor.Modules.Users.Application.Abstractions;
 using EnglishTutor.Modules.Users.Application.Shared.DTOs;
 using EnglishTutor.Modules.Users.Application.Shared.Errors;
+using EnglishTutor.Modules.Users.Domain.Entities;
 
 namespace EnglishTutor.Modules.Users.Application.Commands.UpdateLanguageSettings;
 
@@ -16,16 +17,17 @@ public sealed class UpdateLanguageSettingsCommandHandler(
 {
     public async Task<Result<LanguageSettingsResponse>> Handle(UpdateLanguageSettingsCommand request, CancellationToken cancellationToken)
     {
-        var settings = await userLanguageSettingsRepository.GetByUserIdAsync(request.UserId, cancellationToken);
-        if (settings is null)
-        {
-            return Result.Failure<LanguageSettingsResponse>(UserErrors.LanguageSettingsNotFound(request.UserId));
-        }
-
         var targetLanguages = await userTargetLanguageRepository.GetByUserIdAsync(request.UserId, cancellationToken);
         if (!targetLanguages.Any(language => language.TargetLanguageCode.Value == request.ActiveTargetLanguageCode))
         {
             return Result.Failure<LanguageSettingsResponse>(UserErrors.TargetLanguageNotFound(request.ActiveTargetLanguageCode));
+        }
+
+        var settings = await userLanguageSettingsRepository.GetByUserIdAsync(request.UserId, cancellationToken);
+        var isNew = settings is null;
+        if (isNew)
+        {
+            settings = UserLanguageSettings.CreateDefault(request.UserId, dateTimeProvider.UtcNow);
         }
 
         settings.Update(
@@ -34,6 +36,11 @@ public sealed class UpdateLanguageSettingsCommandHandler(
             LanguageCode.Create(request.ExplanationLanguageCode),
             LanguageCode.Create(request.ActiveTargetLanguageCode),
             dateTimeProvider.UtcNow);
+
+        if (isNew)
+        {
+            await userLanguageSettingsRepository.AddAsync(settings, cancellationToken);
+        }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

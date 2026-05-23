@@ -18,6 +18,7 @@ public sealed class LevelUpEventHandler(
     INotificationRepository notificationRepository,
     INotificationsInboxStore inboxStore,
     INotificationsUnitOfWork unitOfWork,
+    IRealtimeNotificationSender realtimeSender,
     IDateTimeProvider dateTimeProvider)
     : IIntegrationEventHandler<UserLevelChangedIntegrationEvent>
 {
@@ -32,7 +33,7 @@ public sealed class LevelUpEventHandler(
 
         var utcNow = dateTimeProvider.UtcNow;
 
-        await notificationRepository.AddAsync(NotificationMessage.Create(
+        var notification = NotificationMessage.Create(
             @event.UserId,
             NotificationType.LevelUpCongratulations,
             "Level up approved",
@@ -46,9 +47,13 @@ public sealed class LevelUpEventHandler(
                 @event.NewLevel,
                 @event.ChangedAtUtc
             }),
-            utcNow), ct);
+            utcNow);
 
+        await notificationRepository.AddAsync(notification, ct);
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await realtimeSender.SendNotificationAsync(@event.UserId, new NotificationPushPayload(
+            notification.Id, notification.Type.ToString(), notification.Title, notification.Body, notification.ScheduledAtUtc), ct);
     }
 }

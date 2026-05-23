@@ -55,6 +55,12 @@ public sealed class NotificationRepository(NotificationsDbContext dbContext) : I
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<NotificationMessage>> GetUnreadForUserAsync(Guid userId, CancellationToken cancellationToken) =>
+        await dbContext.NotificationMessages
+            .Where(message => message.UserId == userId && !message.IsRead)
+            .OrderByDescending(message => message.ScheduledAtUtc)
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(NotificationMessage message, CancellationToken cancellationToken) =>
         await dbContext.NotificationMessages.AddAsync(message, cancellationToken);
 }

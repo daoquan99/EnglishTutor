@@ -7,6 +7,7 @@ using EnglishTutor.Modules.Notifications.Application.Abstractions;
 using EnglishTutor.Modules.Notifications.Application.EventHandlers;
 using EnglishTutor.Modules.Notifications.Infrastructure.Persistence;
 using EnglishTutor.Modules.Notifications.Infrastructure.Persistence.Repositories;
+using EnglishTutor.Modules.Notifications.Infrastructure.Realtime;
 using EnglishTutor.Modules.Notifications.Infrastructure.Seed;
 using EnglishTutor.Modules.StudyPlans.Contracts.IntegrationEvents;
 using EnglishTutor.Modules.Users.Contracts.IntegrationEvents;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
         services.AddScoped<INotificationsInboxStore, NotificationsInboxStore>();
         services.AddScoped<INotificationsUnitOfWork>(provider => provider.GetRequiredService<NotificationsDbContext>());
+        services.AddScoped<IRealtimeNotificationSender, RedisRealtimeNotificationSender>();
         services.AddScoped<NotificationsDataSeeder>();
         services.AddScoped<IModuleSeeder, NotificationsModuleSeeder>();
 

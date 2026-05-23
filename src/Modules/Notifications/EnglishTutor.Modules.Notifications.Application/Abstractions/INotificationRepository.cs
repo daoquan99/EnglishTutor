@@ -26,5 +26,7 @@ public interface INotificationRepository
         DateOnly scheduledDateUtc,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<NotificationMessage>> GetUnreadForUserAsync(Guid userId, CancellationToken cancellationToken);
+
     Task AddAsync(NotificationMessage message, CancellationToken cancellationToken);
 }

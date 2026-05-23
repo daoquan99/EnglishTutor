@@ -32,6 +32,7 @@ using EnglishTutor.Worker.Outbox;
 using EnglishTutor.Worker.Jobs;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
+using StackExchange.Redis;
 
 namespace EnglishTutor.Worker;
 
@@ -46,6 +47,14 @@ public static class DependencyInjection
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
         services.Configure<OutboxOptions>(configuration.GetSection("Outbox"));
         services.AddFileStorage(configuration);
+
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddSingleton<IConnectionMultiplexer>(
+                ConnectionMultiplexer.Connect(redisConnectionString));
+        }
+
         services
             .AddAuthModule(configuration)
             .AddUsersModule(configuration)

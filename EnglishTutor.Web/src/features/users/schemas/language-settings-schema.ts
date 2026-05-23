@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const langCode = z.string().min(2, "Required").max(3);
+const langCode = z.string().min(2, "Language code is required").max(3);
 
 export const languageSettingsSchema = z.object({
   nativeLanguageCode: langCode,

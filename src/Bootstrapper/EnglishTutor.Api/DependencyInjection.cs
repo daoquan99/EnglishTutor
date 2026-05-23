@@ -1,4 +1,5 @@
 using System.Text;
+using EnglishTutor.Api.Hubs;
 using EnglishTutor.Api.OpenApi;
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Behaviors;
@@ -24,6 +25,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using System.Threading.RateLimiting;
 
 namespace EnglishTutor.Api;
@@ -138,8 +140,31 @@ public static class DependencyInjection
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(jwtSecret))
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
         services.AddAuthorization();
+
+        services.AddSignalR();
+
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddSingleton<IConnectionMultiplexer>(
+                ConnectionMultiplexer.Connect(redisConnectionString));
+            services.AddHostedService<RealtimeNotificationRelay>();
+        }
 
         // BuildingBlocks registrations
         services.AddScoped<ICurrentUser, CurrentUser>();

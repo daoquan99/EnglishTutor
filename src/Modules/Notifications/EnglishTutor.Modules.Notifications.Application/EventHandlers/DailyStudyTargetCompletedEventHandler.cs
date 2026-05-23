@@ -22,6 +22,7 @@ public sealed class DailyStudyTargetCompletedEventHandler(
     INotificationsInboxStore inboxStore,
     INotificationsUnitOfWork unitOfWork,
     IUserLanguageSettingsReader languageSettingsReader,
+    IRealtimeNotificationSender realtimeSender,
     IDateTimeProvider dateTimeProvider)
     : IIntegrationEventHandler<DailyStudyTargetCompletedIntegrationEvent>
 {
@@ -53,7 +54,7 @@ public sealed class DailyStudyTargetCompletedEventHandler(
             ? $"You studied {@event.ActualMinutes} minutes today."
             : NotificationTemplateRenderer.Render(template.BodyTemplate, values);
 
-        await notificationRepository.AddAsync(NotificationMessage.Create(
+        var notification = NotificationMessage.Create(
             @event.UserId,
             NotificationType.DailyTargetCompleted,
             title,
@@ -67,10 +68,14 @@ public sealed class DailyStudyTargetCompletedEventHandler(
                 @event.TargetMinutes,
                 @event.CompletedDateUtc
             }),
-            utcNow), ct);
+            utcNow);
 
+        await notificationRepository.AddAsync(notification, ct);
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await realtimeSender.SendNotificationAsync(@event.UserId, new NotificationPushPayload(
+            notification.Id, notification.Type.ToString(), notification.Title, notification.Body, notification.ScheduledAtUtc), ct);
     }
 
     private async Task<string> GetUiLanguageCodeAsync(Guid userId, CancellationToken cancellationToken)

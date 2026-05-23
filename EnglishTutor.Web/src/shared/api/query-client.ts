@@ -1,6 +1,7 @@
 "use client";
 
-import { QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { ApiError } from "./api-error";
 
 function makeQueryClient(): QueryClient {
@@ -22,6 +23,14 @@ function makeQueryClient(): QueryClient {
         retry: false,
       },
     },
+    mutationCache: new MutationCache({
+      onError: (error) => {
+        if (error instanceof ApiError && error.isUnauthorized) return;
+        const message =
+          error instanceof ApiError ? error.message : "An unexpected error occurred.";
+        toast.error(message);
+      },
+    }),
   });
 }
 

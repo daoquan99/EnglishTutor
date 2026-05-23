@@ -25,7 +25,7 @@ export function LoginForm() {
   });
 
   const serverError =
-    login.error instanceof ApiError ? login.error.message : login.error ? "Something went wrong" : null;
+    login.error instanceof ApiError ? login.error.message : login.error ? "An unexpected error occurred. Please try again." : null;
 
   return (
     <form onSubmit={handleSubmit((data) => login.mutate(data))} className="grid gap-4">

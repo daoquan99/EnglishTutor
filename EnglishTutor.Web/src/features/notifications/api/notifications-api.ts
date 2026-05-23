@@ -16,6 +16,9 @@ export const notificationsApi = {
   markRead: (id: string) =>
     httpClient.post<Notification>(`/api/notifications/${id}/mark-read`),
 
+  markAllRead: () =>
+    httpClient.post<number>("/api/notifications/mark-all-read"),
+
   getSettings: () =>
     httpClient.get<NotificationSettings>("/api/notifications/settings"),
 

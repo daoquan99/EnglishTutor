@@ -202,22 +202,19 @@ namespace EnglishTutor.Modules.Notifications.Infrastructure.Persistence.Migratio
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("MissedStudyReminderEnabled")
+                    b.Property<bool>("QuietHoursEnabled")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("MistakeReviewReminderEnabled")
-                        .HasColumnType("boolean");
+                    b.Property<TimeOnly?>("QuietHoursEnd")
+                        .HasColumnType("time without time zone");
 
-                    b.Property<bool>("MonthlySummaryEnabled")
-                        .HasColumnType("boolean");
+                    b.Property<TimeOnly?>("QuietHoursStart")
+                        .HasColumnType("time without time zone");
 
-                    b.Property<string>("PreferredChannel")
+                    b.Property<string>("TimeZone")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<bool>("StudyReminderEnabled")
-                        .HasColumnType("boolean");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -227,12 +224,6 @@ namespace EnglishTutor.Modules.Notifications.Infrastructure.Persistence.Migratio
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("VocabularyReviewReminderEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("WeeklySummaryEnabled")
-                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -299,6 +290,84 @@ namespace EnglishTutor.Modules.Notifications.Infrastructure.Persistence.Migratio
                         .HasFilter("\"IsActive\" = true AND \"IsDeleted\" = false");
 
                     b.ToTable("NotificationTemplates", "notifications");
+                });
+
+            modelBuilder.Entity("EnglishTutor.Modules.Notifications.Domain.UserNotificationSchedule.UserNotificationSchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("DayOfMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("DayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("EmailEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Frequency")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool>("InAppEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<TimeOnly?>("PreferredTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<bool>("PushEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("RemindAfterMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReminderBeforeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TargetLanguageCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "NotificationType", "TargetLanguageCode")
+                        .IsUnique();
+
+                    b.ToTable("UserNotificationSchedules", "notifications");
                 });
 
             modelBuilder.Entity("EnglishTutor.Modules.Notifications.Domain.NotificationMessage.Entities.NotificationDeliveryLog", b =>

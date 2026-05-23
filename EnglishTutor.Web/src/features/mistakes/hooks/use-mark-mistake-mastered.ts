@@ -10,7 +10,7 @@ export function useMarkMistakeMastered() {
     mutationFn: (id: string) => mistakesApi.markMastered(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mistakeKeys.all });
-      toast.success("Mastered!");
+      toast.success("Mistake mastered!");
     },
   });
 }

@@ -11,6 +11,6 @@ public sealed class ReprocessDeadLetterCommandHandler(IAdminReportQueryService q
     public async Task<Result> Handle(ReprocessDeadLetterCommand request, CancellationToken cancellationToken)
     {
         var reprocessed = await queryService.ReprocessDeadLetterAsync(request.DeadLetterId, cancellationToken);
-        return reprocessed ? Result.Success() : Result.Failure(AdminReportErrors.DeadLetterNotFound);
+        return reprocessed ? Result.Success() : Result.Failure(AdminReportErrors.DeadLetterNotFound(request.DeadLetterId));
     }
 }

@@ -14,6 +14,8 @@ import {
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { useNotifications } from "../hooks/use-notifications";
 import { useMarkNotificationRead } from "../hooks/use-mark-notification-read";
+import { useMarkAllRead } from "../hooks/use-mark-all-read";
+import { NotificationIcon } from "../lib/notification-icons";
 import type { Notification } from "../types/notifications";
 
 function formatTime(utc: string) {
@@ -52,12 +54,10 @@ function NotificationItem({
     <button
       type="button"
       onClick={handleClick}
-      className={`flex w-full gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/50 ${!notification.isRead ? "bg-primary/5" : ""} ${notification.targetUrl ? "cursor-pointer" : "cursor-default"}`}
+      className={`flex w-full gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 hover:bg-muted/50 ${!notification.isRead ? "bg-primary/5" : ""} ${notification.targetUrl ? "cursor-pointer" : "cursor-default"}`}
     >
-      <div className="mt-1.5 flex size-2 shrink-0">
-        {!notification.isRead && (
-          <span className="size-2 rounded-full bg-primary" />
-        )}
+      <div className="mt-0.5">
+        <NotificationIcon type={notification.type} />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium leading-snug">{notification.title}</p>
@@ -88,7 +88,7 @@ function NotificationSkeleton() {
     <div className="space-y-2 p-3">
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="flex gap-3">
-          <Skeleton className="mt-1 size-2 rounded-full" />
+          <Skeleton className="size-8 rounded-full" />
           <div className="flex-1 space-y-1.5">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-full" />
@@ -102,8 +102,9 @@ function NotificationSkeleton() {
 
 export function NotificationPopover() {
   const router = useRouter();
-  const { data: all, isPending, isError } = useNotifications();
+  const { data: all, isPending, isError, refetch } = useNotifications();
   const { data: unread } = useNotifications({ isRead: false });
+  const markAllRead = useMarkAllRead();
 
   const unreadCount = unread?.length ?? 0;
   const notifications = all?.slice(0, 20) ?? [];
@@ -130,9 +131,21 @@ export function NotificationPopover() {
             <span className="text-sm font-semibold text-foreground">Notifications</span>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
+                <>
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                     {unreadCount} new
                   </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                    onClick={() => markAllRead.mutate()}
+                    disabled={markAllRead.isPending}
+                  >
+                    <CheckCheck className="size-3.5" />
+                    Mark all read
+                  </Button>
+                </>
               )}
             </div>
           </DropdownMenuLabel>
@@ -145,7 +158,10 @@ export function NotificationPopover() {
             <NotificationSkeleton />
           ) : isError ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <p className="text-sm text-muted-foreground">Failed to load notifications.</p>
+              <p className="text-sm text-muted-foreground">Could not load notifications.</p>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                Try again
+              </Button>
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center">

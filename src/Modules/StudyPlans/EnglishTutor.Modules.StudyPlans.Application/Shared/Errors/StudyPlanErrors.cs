@@ -8,7 +8,7 @@ public static class StudyPlanErrors
         Error.Conflict("An active study plan already exists for this target language.");
 
     public static readonly Error PlanNotFound =
-        Error.NotFound("Study plan", "active");
+        Error.NotFound("No active study plan found for the current user.");
 
     public static Error SessionNotFound(Guid sessionId) =>
         Error.NotFound("Planned study session", sessionId);

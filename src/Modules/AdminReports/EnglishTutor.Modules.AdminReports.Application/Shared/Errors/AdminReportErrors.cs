@@ -4,5 +4,6 @@ namespace EnglishTutor.Modules.AdminReports.Application.Shared.Errors;
 
 public static class AdminReportErrors
 {
-    public static readonly Error DeadLetterNotFound = Error.NotFound("Dead letter message", "requested");
+    public static Error DeadLetterNotFound(Guid messageId) =>
+        Error.NotFound("Dead letter message", messageId);
 }

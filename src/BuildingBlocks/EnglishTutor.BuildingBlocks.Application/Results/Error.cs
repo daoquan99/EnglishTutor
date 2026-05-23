@@ -11,6 +11,9 @@ public sealed record Error(
     public static Error NotFound(string entityName, object id) =>
         new("Error.NotFound", $"{entityName} with id '{id}' was not found.");
 
+    public static Error NotFound(string message) =>
+        new("Error.NotFound", message);
+
     public static Error Validation(
         string message,
         IReadOnlyDictionary<string, string[]>? details = null) =>

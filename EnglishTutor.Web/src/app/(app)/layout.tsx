@@ -5,6 +5,7 @@ import { Skeleton } from "@/shared/components/ui/skeleton";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { AppHeader } from "@/shared/components/app-header";
+import { NotificationProvider } from "@/features/notifications/components/notification-provider";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isPending, isSuccess } = useCurrentUser();
@@ -28,6 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh">
+      <NotificationProvider />
       <AppSidebar
         open={sidebarOpen}
         collapsed={sidebarCollapsed}

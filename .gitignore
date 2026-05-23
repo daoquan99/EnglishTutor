@@ -27,3 +27,16 @@ appsettings.*.local.json
 
 ## Docker
 docker-compose.override.local.yml
+
+## Node.js / Next.js
+node_modules/
+.next/
+.turbo/
+out/
+*.tsbuildinfo
+
+## pnpm
+.pnpm-store/
+
+## Claude
+.claude/

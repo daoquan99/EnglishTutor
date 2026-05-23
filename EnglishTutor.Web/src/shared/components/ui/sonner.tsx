@@ -36,9 +36,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
+      gap={8}
       toastOptions={{
+        duration: 4000,
         classNames: {
           toast: "cn-toast",
+          title: "text-sm font-semibold",
+          description: "text-xs",
         },
       }}
       {...props}

@@ -1,5 +1,6 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Presentation;
+using EnglishTutor.Modules.Notifications.Application.Commands.MarkAllNotificationsRead;
 using EnglishTutor.Modules.Notifications.Application.Commands.MarkNotificationRead;
 using EnglishTutor.Modules.Notifications.Application.Commands.UpdateNotificationSettings;
 using EnglishTutor.Modules.Notifications.Application.Queries.GetNotifications;
@@ -32,6 +33,12 @@ public static class NotificationEndpoints
                 page ?? 1,
                 pageSize ?? 20,
                 isRead), ct)).ToHttpResult());
+
+        group.MapPost("/mark-all-read", async (
+            ICurrentUser currentUser,
+            ISender sender,
+            CancellationToken ct) =>
+            (await sender.Send(new MarkAllNotificationsReadCommand(currentUser.UserId), ct)).ToHttpResult());
 
         group.MapPost("/{id:guid}/mark-read", async (
             Guid id,

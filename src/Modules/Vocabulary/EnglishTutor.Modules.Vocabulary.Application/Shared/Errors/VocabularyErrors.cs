@@ -11,7 +11,7 @@ public static class VocabularyErrors
         Error.NotFound("Vocabulary example", id);
 
     public static readonly Error MasteryNotFound =
-        Error.NotFound("User vocabulary mastery", "requested");
+        Error.NotFound("User vocabulary mastery record was not found.");
 
     public static readonly Error ReviewScoreInvalid =
         Error.Validation("Review score must be between 0 and 100.");

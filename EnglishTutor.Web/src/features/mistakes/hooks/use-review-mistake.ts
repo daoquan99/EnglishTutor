@@ -10,7 +10,7 @@ export function useReviewMistake() {
     mutationFn: (id: string) => mistakesApi.review(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mistakeKeys.all });
-      toast.success("Reviewed");
+      toast.success("Mistake reviewed");
     },
   });
 }

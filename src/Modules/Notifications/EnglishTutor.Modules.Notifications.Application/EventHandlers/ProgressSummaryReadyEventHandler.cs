@@ -19,6 +19,7 @@ public sealed class ProgressSummaryReadyEventHandler(
     IUserNotificationScheduleRepository scheduleRepository,
     INotificationsInboxStore inboxStore,
     INotificationsUnitOfWork unitOfWork,
+    IRealtimeNotificationSender realtimeSender,
     IDateTimeProvider dateTimeProvider)
     : IIntegrationEventHandler<ProgressSummaryReadyIntegrationEvent>
 {
@@ -45,7 +46,7 @@ public sealed class ProgressSummaryReadyEventHandler(
         if (schedule is not null && schedule.IsEnabled &&
             !await notificationRepository.ExistsForUserOnDateAsync(@event.UserId, notificationType, scheduledDate, ct))
         {
-            await notificationRepository.AddAsync(NotificationMessage.Create(
+            var notification = NotificationMessage.Create(
                 @event.UserId,
                 notificationType,
                 notificationType == NotificationType.WeeklyProgressSummary
@@ -62,7 +63,16 @@ public sealed class ProgressSummaryReadyEventHandler(
                     expEarned = @event.ExpEarned,
                     generatedAtUtc = @event.GeneratedAtUtc
                 }),
-                utcNow), ct);
+                utcNow);
+
+            await notificationRepository.AddAsync(notification, ct);
+            await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+
+            await realtimeSender.SendNotificationAsync(@event.UserId, new NotificationPushPayload(
+                notification.Id, notification.Type.ToString(), notification.Title, notification.Body, notification.ScheduledAtUtc), ct);
+
+            return;
         }
 
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);

@@ -4,6 +4,8 @@
 
 Notifications owns notification settings, user notification schedules (per-type timing/channels), notification messages, templates, delivery logs, and Inbox idempotency for consumed integration events.
 
+Realtime push is provided via a SignalR hub at `/hubs/notifications`. When a notification is created by an event handler in the Worker host, it is published to a Redis pub/sub channel (`notifications:realtime`). A background relay service in the API host subscribes to that channel and forwards the payload to the connected user via SignalR.
+
 ## Data Model
 
 ### NotificationSettings (per user)
@@ -47,8 +49,15 @@ Notifications owns notification settings, user notification schedules (per-type 
 - Application flow: query current user's notifications ordered by `ScheduledAtUtc` descending.
 - Related modules: StudyPlans, Auth, Users.
 
+### `POST /api/notifications/mark-all-read`
+- Purpose: Mark all unread notifications as read for the current user.
+- Auth requirement: Authenticated user.
+- Response body: `int` — number of notifications marked as read.
+- Error codes: none.
+- Application flow: load all unread notifications for user, call `MarkAsRead()` on each, save, return count.
+
 ### `POST /api/notifications/{id}/mark-read`
-- Purpose: Mark a notification as read.
+- Purpose: Mark a single notification as read.
 - Auth requirement: Authenticated user.
 - Response body: updated `NotificationResponse`.
 - Error codes: `Error.NotFound`.
@@ -143,12 +152,51 @@ Notifications owns notification settings, user notification schedules (per-type 
 - Error codes: `Error.Validation` for invalid input, `DomainException` for invariant violations.
 - Application flow: load/create settings, update timezone and quiet hours, then for each of 7 schedule types: find-or-create schedule row, apply enable/disable, channels, and timing.
 
+## SignalR Hub
+
+### `/hubs/notifications`
+- Auth requirement: Authenticated user (JWT Bearer). Token is sent via `access_token` query parameter.
+- Connection: client connects with `@microsoft/signalr` HubConnectionBuilder. Auto-reconnect with backoff `[0, 2000, 5000, 10000, 30000]`.
+- Groups: on connect, user is added to group `user:{userId}`. On disconnect, removed.
+
+### Server-to-client events
+
+#### `ReceiveNotification`
+- Payload (JSON string):
+```json
+{
+  "id": "guid",
+  "type": "DailyTargetCompleted",
+  "title": "Daily target completed",
+  "body": "You studied 30 minutes today.",
+  "scheduledAtUtc": "2026-05-23T12:00:00Z"
+}
+```
+- Triggered when: a notification is created by an event handler and published via Redis pub/sub.
+- Client behavior: invalidate notification queries, show toast notification.
+
+## Realtime Architecture
+
+```
+Worker Host                    Redis                    API Host
+ ┌─────────────┐           ┌─────────┐          ┌──────────────────┐
+ │ EventHandler │──publish──│ pub/sub │──relay──▶│ SignalR Hub      │
+ │   (creates   │           │ channel │          │ (pushes to       │
+ │  notification)│          └─────────┘          │  connected user) │
+ └─────────────┘                                 └──────────────────┘
+```
+
+- Channel: `notifications:realtime`
+- Payload: `{ userId: Guid, payload: NotificationPushPayload }`
+- The relay is a BackgroundService in the API host (`RealtimeNotificationRelay`).
+- Push failure does not fail the event handler — it is fire-and-forget with warning logging.
+
 ## Events
 
 - Produced: none currently.
 - Consumed:
   - `UserRegisteredIntegrationEvent` — creates default settings + 7 schedule rows.
-  - `PlannedStudySessionMissedIntegrationEvent` — checks MissedStudyReminder schedule, creates notification if enabled.
-  - `DailyStudyTargetCompletedIntegrationEvent` — always creates InApp notification (system type, no user schedule).
-  - `UserLevelChangedIntegrationEvent` — always creates InApp notification (system type, no user schedule).
-  - `ProgressSummaryReadyIntegrationEvent` — checks WeeklyProgressSummary/MonthlyProgressSummary schedule, creates notification if enabled.
+  - `PlannedStudySessionMissedIntegrationEvent` — checks MissedStudyReminder schedule, creates notification if enabled, pushes realtime.
+  - `DailyStudyTargetCompletedIntegrationEvent` — always creates InApp notification (system type, no user schedule), pushes realtime.
+  - `UserLevelChangedIntegrationEvent` — always creates InApp notification (system type, no user schedule), pushes realtime.
+  - `ProgressSummaryReadyIntegrationEvent` — checks WeeklyProgressSummary/MonthlyProgressSummary schedule, creates notification if enabled, pushes realtime.

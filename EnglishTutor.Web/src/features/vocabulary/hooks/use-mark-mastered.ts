@@ -12,7 +12,7 @@ export function useMarkMastered(targetLanguageCode: string | null) {
       queryClient.invalidateQueries({
         queryKey: vocabularyKeys.today(targetLanguageCode ?? ""),
       });
-      toast.success("Marked as mastered!");
+      toast.success("Vocabulary mastered!");
     },
   });
 }

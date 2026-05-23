@@ -82,7 +82,7 @@ export function RegisterForm() {
     registerMutation.error instanceof ApiError && !registerMutation.error.isValidation
       ? registerMutation.error.message
       : registerMutation.error && !(registerMutation.error instanceof ApiError)
-        ? "Something went wrong"
+        ? "An unexpected error occurred. Please try again."
         : null;
 
   return (

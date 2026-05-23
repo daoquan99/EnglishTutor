@@ -50,6 +50,16 @@ function buildHeaders(custom?: HeadersInit): Headers {
   return headers;
 }
 
+function defaultErrorMessage(status: number): string {
+  if (status === 400) return "The request was invalid. Please check your input.";
+  if (status === 403) return "You do not have permission to perform this action.";
+  if (status === 404) return "The requested resource was not found.";
+  if (status === 409) return "This action conflicts with the current state.";
+  if (status === 422) return "The request could not be processed.";
+  if (status >= 500) return "A server error occurred. Please try again later.";
+  return "An unexpected error occurred.";
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
@@ -58,7 +68,11 @@ async function parseResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type");
   if (!contentType?.includes("application/json")) {
     if (!response.ok) {
-      throw new ApiError(response.status, undefined, response.statusText);
+      throw new ApiError(
+        response.status,
+        undefined,
+        defaultErrorMessage(response.status),
+      );
     }
     return undefined as T;
   }
@@ -69,7 +83,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
     throw new ApiError(
       response.status,
       body.error?.code,
-      body.error?.message ?? "An unexpected error occurred",
+      body.error?.message ?? defaultErrorMessage(response.status),
       body.error?.details,
     );
   }

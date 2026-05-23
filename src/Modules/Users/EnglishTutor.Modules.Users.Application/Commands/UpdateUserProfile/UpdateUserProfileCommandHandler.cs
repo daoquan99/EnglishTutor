@@ -3,6 +3,7 @@ using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Users.Application.Abstractions;
 using EnglishTutor.Modules.Users.Application.Shared.DTOs;
 using EnglishTutor.Modules.Users.Application.Shared.Errors;
+using EnglishTutor.Modules.Users.Domain.Entities;
 
 namespace EnglishTutor.Modules.Users.Application.Commands.UpdateUserProfile;
 
@@ -17,7 +18,10 @@ public sealed class UpdateUserProfileCommandHandler(
         var profile = await userProfileRepository.GetByUserIdAsync(request.UserId, cancellationToken);
         if (profile is null)
         {
-            return Result.Failure<UserProfileResponse>(UserErrors.ProfileNotFound(request.UserId));
+            profile = UserProfile.Create(request.UserId, request.DisplayName, dateTimeProvider.UtcNow);
+            await userProfileRepository.AddAsync(profile, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return new UserProfileResponse(profile.UserId, profile.DisplayName.Value, profile.AvatarUrl, profile.Bio);
         }
 
         profile.UpdateProfile(request.DisplayName, request.AvatarUrl, request.Bio, dateTimeProvider.UtcNow);

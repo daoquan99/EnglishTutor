@@ -1,4 +1,5 @@
 using EnglishTutor.Api;
+using EnglishTutor.Api.Hubs;
 using EnglishTutor.Api.Middlewares;
 using EnglishTutor.Api.Extensions;
 using EnglishTutor.BuildingBlocks.Infrastructure.Seeding;
@@ -108,6 +109,7 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
 {
     Predicate = _ => false
 });
+app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapAiEndpoints();

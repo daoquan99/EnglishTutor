@@ -17,10 +17,10 @@ public static class AuthErrors
         Error.Unauthorized("Refresh token has been revoked.");
 
     public static readonly Error RefreshTokenNotFound =
-        Error.NotFound("Refresh token", "provided");
+        Error.NotFound("Refresh token was not found.");
 
     public static readonly Error AuthSessionNotFound =
-        Error.NotFound("Auth session", "provided");
+        Error.NotFound("Auth session was not found.");
 
     public static readonly Error RefreshTokenSuspicious =
         Error.Unauthorized("Refresh token session is suspicious and has been revoked.");

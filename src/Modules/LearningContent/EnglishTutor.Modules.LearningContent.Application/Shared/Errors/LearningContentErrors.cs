@@ -11,5 +11,5 @@ public static class LearningContentErrors
         Error.NotFound("Conversation scenario", scenarioId);
 
     public static readonly Error ContentNotPublished =
-        Error.Validation("Content is not published.");
+        Error.Conflict("Content is not published.");
 }
