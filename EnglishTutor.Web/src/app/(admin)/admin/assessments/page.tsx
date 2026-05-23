@@ -1,59 +1,79 @@
 "use client";
 
 import { BookCheck } from "lucide-react";
-import { Skeleton } from "@/shared/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
+import { useMemo } from "react";
 import { PageHeader } from "@/shared/components/page-header";
+import {
+  AdminAccessDenied,
+  AdminDataTable,
+  AdminPermissionGate,
+  type AdminDataTableColumn,
+} from "@/shared/admin";
+import { PermissionCodes } from "@/features/auth/lib/permission-codes";
 import { useAssessmentPassRates } from "@/features/admin-reports/hooks/use-admin-reports";
+import type { AssessmentPassRateReport } from "@/features/admin-reports/types/admin-reports";
 
 export default function AdminAssessmentsPage() {
-  const { data } = useAssessmentPassRates();
+  const { data, isFetching } = useAssessmentPassRates();
+
+  const columns: AdminDataTableColumn<AssessmentPassRateReport>[] = useMemo(
+    () => [
+      { id: "type", header: "Type", cell: (r) => r.assessmentType },
+      { id: "level", header: "Level", cell: (r) => r.forLevel },
+      {
+        id: "attempts",
+        header: "Attempts",
+        align: "right",
+        cell: (r) => <span className="tabular-nums">{r.totalAttempts}</span>,
+      },
+      {
+        id: "passRate",
+        header: "Pass Rate",
+        align: "right",
+        cell: (r) => (
+          <span className="tabular-nums">{(r.passRate * 100).toFixed(1)}%</span>
+        ),
+      },
+      {
+        id: "avgScore",
+        header: "Avg Score",
+        align: "right",
+        cell: (r) => (
+          <span className="tabular-nums">{r.averageScore.toFixed(1)}</span>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
-    <div className="page-container page-section">
-      <PageHeader
-        icon={BookCheck}
-        iconColor="bg-vocabulary/10 text-vocabulary"
-        title="Assessment Pass Rates"
-        description="Assessment completion and scoring statistics."
-      />
-      <div className="mt-6">
-        {!data ? (
-          <Skeleton className="h-60 w-full rounded-xl" />
-        ) : (
-          <div className="overflow-hidden rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead className="text-right">Attempts</TableHead>
-                  <TableHead className="text-right">Pass Rate</TableHead>
-                  <TableHead className="text-right">Avg Score</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{r.assessmentType}</TableCell>
-                    <TableCell>{r.forLevel}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalAttempts}</TableCell>
-                    <TableCell className="text-right tabular-nums">{(r.passRate * 100).toFixed(1)}%</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.averageScore.toFixed(1)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+    <AdminPermissionGate
+      requireAny={[
+        PermissionCodes.AssessmentsRead,
+        PermissionCodes.ReportsRead,
+      ]}
+      fallback={<AdminAccessDenied />}
+    >
+      <div className="page-container page-section">
+        <PageHeader
+          icon={BookCheck}
+          iconColor="bg-vocabulary/10 text-vocabulary"
+          title="Assessment Pass Rates"
+          description="Assessment completion and scoring statistics."
+        />
+        <div className="mt-6">
+          <AdminDataTable<AssessmentPassRateReport>
+            data={data}
+            isLoading={!data}
+            isFetching={isFetching}
+            getRowId={(r) =>
+              `${r.targetLanguageCode}-${r.assessmentType}-${r.forLevel}`
+            }
+            emptyMessage="Chưa có dữ liệu assessment."
+            columns={columns}
+          />
+        </div>
       </div>
-    </div>
+    </AdminPermissionGate>
   );
 }

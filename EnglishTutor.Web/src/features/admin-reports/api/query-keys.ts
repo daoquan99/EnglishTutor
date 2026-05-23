@@ -14,8 +14,6 @@ export const adminKeys = {
     [...adminKeys.all, "audit-logs", params] as const,
   deadLetters: (params?: Record<string, unknown>) =>
     [...adminKeys.all, "dead-letters", params] as const,
-  permissions: () => [...adminKeys.all, "permissions"] as const,
-  roles: () => [...adminKeys.all, "roles"] as const,
   aiProviders: () => [...adminKeys.all, "ai-providers"] as const,
   aiRoutes: () => [...adminKeys.all, "ai-routes"] as const,
 };

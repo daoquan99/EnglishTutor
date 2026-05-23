@@ -8,7 +8,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { FormField } from "@/shared/components/form-field";
 import { PasswordInput } from "@/shared/components/password-input";
-import { ApiError } from "@/shared/api";
 import { loginSchema, type LoginFormValues } from "../schemas/login-schema";
 import { useLogin } from "../hooks/use-login";
 
@@ -24,17 +23,8 @@ export function LoginForm() {
     defaultValues: { email: "", password: "" },
   });
 
-  const serverError =
-    login.error instanceof ApiError ? login.error.message : login.error ? "An unexpected error occurred. Please try again." : null;
-
   return (
     <form onSubmit={handleSubmit((data) => login.mutate(data))} className="grid gap-4">
-      {serverError && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-          {serverError}
-        </div>
-      )}
-
       <FormField label="Email" htmlFor="email" error={errors.email?.message}>
         <div className="relative">
           <Input

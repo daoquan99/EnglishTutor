@@ -1,64 +1,78 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { Skeleton } from "@/shared/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
+import { useMemo } from "react";
 import { PageHeader } from "@/shared/components/page-header";
+import {
+  AdminAccessDenied,
+  AdminDataTable,
+  AdminPermissionGate,
+  type AdminDataTableColumn,
+} from "@/shared/admin";
+import { PermissionCodes } from "@/features/auth/lib/permission-codes";
 import { useCommonMistakesReport } from "@/features/admin-reports/hooks/use-admin-reports";
+import type { CommonMistakeStat } from "@/features/admin-reports/types/admin-reports";
 
 export default function AdminMistakesPage() {
-  const { data } = useCommonMistakesReport();
+  const { data, isFetching } = useCommonMistakesReport();
+
+  const columns: AdminDataTableColumn<CommonMistakeStat>[] = useMemo(
+    () => [
+      { id: "type", header: "Type", cell: (m) => m.mistakeType },
+      { id: "category", header: "Category", cell: (m) => m.category },
+      {
+        id: "occurrences",
+        header: "Occurrences",
+        align: "right",
+        cell: (m) => <span className="tabular-nums">{m.occurrenceCount}</span>,
+      },
+      {
+        id: "users",
+        header: "Users",
+        align: "right",
+        cell: (m) => <span className="tabular-nums">{m.affectedUsers}</span>,
+      },
+      {
+        id: "example",
+        header: "Example",
+        cell: (m) => (
+          <span className="text-xs">
+            <span className="text-destructive line-through">
+              {m.exampleOriginal}
+            </span>{" "}
+            <span className="text-success">{m.exampleCorrected}</span>
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
-    <div className="page-container page-section">
-      <PageHeader
-        icon={AlertTriangle}
-        iconColor="bg-destructive/10 text-destructive"
-        title="Common Mistakes"
-        description="Most frequent mistake patterns across all users."
-      />
-      <div className="mt-6">
-        {!data ? (
-          <Skeleton className="h-60 w-full rounded-xl" />
-        ) : (
-          <div className="overflow-hidden rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Occurrences</TableHead>
-                  <TableHead className="text-right">Users</TableHead>
-                  <TableHead>Example</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((m, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{m.mistakeType}</TableCell>
-                    <TableCell>{m.category}</TableCell>
-                    <TableCell className="text-right tabular-nums">{m.occurrenceCount}</TableCell>
-                    <TableCell className="text-right tabular-nums">{m.affectedUsers}</TableCell>
-                    <TableCell className="text-xs">
-                      <span className="text-destructive line-through">
-                        {m.exampleOriginal}
-                      </span>{" "}
-                      <span className="text-success">{m.exampleCorrected}</span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+    <AdminPermissionGate
+      requireAny={[PermissionCodes.MistakesRead, PermissionCodes.ReportsRead]}
+      fallback={<AdminAccessDenied />}
+    >
+      <div className="page-container page-section">
+        <PageHeader
+          icon={AlertTriangle}
+          iconColor="bg-destructive/10 text-destructive"
+          title="Common Mistakes"
+          description="Most frequent mistake patterns across all users."
+        />
+        <div className="mt-6">
+          <AdminDataTable<CommonMistakeStat>
+            data={data}
+            isLoading={!data}
+            isFetching={isFetching}
+            getRowId={(m) =>
+              `${m.targetLanguageCode}-${m.mistakeType}-${m.category}`
+            }
+            emptyMessage="Chưa có thống kê lỗi."
+            columns={columns}
+          />
+        </div>
       </div>
-    </div>
+    </AdminPermissionGate>
   );
 }

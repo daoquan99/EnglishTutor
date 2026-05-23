@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { vocabularyApi } from "../api/vocabulary-api";
 import { vocabularyKeys } from "../api/query-keys";
-import type { ReviewRequest } from "../types/vocabulary";
+import type { ReviewRequest, ReviewResult, StudyCard } from "../types/vocabulary";
 
 export function useReviewVocabulary(targetLanguageCode: string | null) {
   const queryClient = useQueryClient();
@@ -10,11 +9,26 @@ export function useReviewVocabulary(targetLanguageCode: string | null) {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ReviewRequest }) =>
       vocabularyApi.review(id, targetLanguageCode!, data),
-    onSuccess: () => {
+    onSuccess: (result: ReviewResult, { id }) => {
+      queryClient.setQueriesData<StudyCard>(
+        { queryKey: vocabularyKeys.studyCard(id, targetLanguageCode ?? "") },
+        (old) =>
+          old
+            ? {
+                ...old,
+                masteryStatus: result.masteryStatus,
+                meaningMasteryScore: result.meaningMasteryScore,
+                pronunciationMasteryScore: result.pronunciationMasteryScore,
+                exampleSentenceScore: result.exampleSentenceScore,
+                reviewCount: result.reviewCount,
+                consecutiveCorrectCount: result.consecutiveCorrectCount,
+                canMarkMastered: result.canMarkMastered,
+              }
+            : old,
+      );
       queryClient.invalidateQueries({
         queryKey: vocabularyKeys.today(targetLanguageCode ?? ""),
       });
-      toast.success("Review submitted");
     },
   });
 }

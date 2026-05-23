@@ -88,46 +88,6 @@ export interface DeadLetterMessage {
   status: string;
 }
 
-export interface AuthPermission {
-  id: string;
-  code: string;
-  description: string;
-  isEnabled: boolean;
-}
-
-export interface AuthRole {
-  id: string;
-  name: string;
-  description: string;
-  isSystem: boolean;
-  isEnabled: boolean;
-  permissions: AuthPermission[];
-}
-
-export interface CreatePermissionRequest {
-  code: string;
-  description: string;
-}
-
-export interface UpdatePermissionRequest {
-  description: string;
-  isEnabled: boolean;
-}
-
-export interface CreateRoleRequest {
-  name: string;
-  description: string;
-  isEnabled: boolean;
-  permissionIds: string[];
-}
-
-export interface UpdateRoleRequest {
-  name: string;
-  description: string;
-  isEnabled: boolean;
-  permissionIds: string[];
-}
-
 export interface AiProvider {
   id: string;
   providerName: string;

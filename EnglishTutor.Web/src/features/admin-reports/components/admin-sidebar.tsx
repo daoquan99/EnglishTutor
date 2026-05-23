@@ -19,43 +19,136 @@ import {
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
+import { useAdminPermission } from "@/shared/admin";
+import {
+  PermissionCodes,
+  type PermissionCode,
+} from "@/features/auth/lib/permission-codes";
 
-const navSections = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  /** User passes if they have ANY of these (admin.full_access always passes). */
+  requireAny?: readonly PermissionCode[];
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+};
+
+const NAV_SECTIONS: NavSection[] = [
   {
     label: "Overview",
     items: [
+      // Dashboard accessible to any admin-area user (no requireAny → always visible).
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     ],
   },
   {
     label: "Users & Access",
     items: [
-      { href: "/admin/users", label: "Users", icon: Users },
-      { href: "/admin/roles", label: "Roles", icon: Shield },
-      { href: "/admin/permissions", label: "Permissions", icon: Key },
+      {
+        href: "/admin/users",
+        label: "Users",
+        icon: Users,
+        requireAny: [
+          PermissionCodes.AuthUsersRead,
+          PermissionCodes.AuthUsersManage,
+        ],
+      },
+      {
+        href: "/admin/roles",
+        label: "Roles",
+        icon: Shield,
+        requireAny: [
+          PermissionCodes.AuthRolesRead,
+          PermissionCodes.AuthRolesManage,
+        ],
+      },
+      {
+        href: "/admin/permissions",
+        label: "Permissions",
+        icon: Key,
+        requireAny: [
+          PermissionCodes.AuthPermissionsRead,
+          PermissionCodes.AuthPermissionsManage,
+        ],
+      },
     ],
   },
   {
     label: "AI",
     items: [
-      { href: "/admin/ai-usage", label: "AI Usage", icon: Brain },
-      { href: "/admin/ai-providers", label: "Providers", icon: Server },
-      { href: "/admin/ai-routes", label: "Routes", icon: Route },
+      {
+        href: "/admin/ai-usage",
+        label: "AI Usage",
+        icon: Brain,
+        requireAny: [PermissionCodes.AiLogsRead, PermissionCodes.AiProvidersRead],
+      },
+      {
+        href: "/admin/ai-providers",
+        label: "Providers",
+        icon: Server,
+        requireAny: [
+          PermissionCodes.AiProvidersRead,
+          PermissionCodes.AiProvidersManage,
+        ],
+      },
+      {
+        href: "/admin/ai-routes",
+        label: "Routes",
+        icon: Route,
+        requireAny: [
+          PermissionCodes.AiRoutesRead,
+          PermissionCodes.AiRoutesManage,
+        ],
+      },
     ],
   },
   {
     label: "Reports",
     items: [
-      { href: "/admin/activity", label: "Activity", icon: Activity },
-      { href: "/admin/mistakes", label: "Mistakes", icon: AlertTriangle },
-      { href: "/admin/assessments", label: "Assessments", icon: BookCheck },
+      {
+        href: "/admin/activity",
+        label: "Activity",
+        icon: Activity,
+        requireAny: [PermissionCodes.ReportsRead],
+      },
+      {
+        href: "/admin/mistakes",
+        label: "Mistakes",
+        icon: AlertTriangle,
+        requireAny: [PermissionCodes.MistakesRead, PermissionCodes.ReportsRead],
+      },
+      {
+        href: "/admin/assessments",
+        label: "Assessments",
+        icon: BookCheck,
+        requireAny: [
+          PermissionCodes.AssessmentsRead,
+          PermissionCodes.ReportsRead,
+        ],
+      },
     ],
   },
   {
     label: "System",
     items: [
-      { href: "/admin/audit-logs", label: "Audit Logs", icon: FileText },
-      { href: "/admin/dead-letters", label: "Dead Letters", icon: Inbox },
+      {
+        href: "/admin/audit-logs",
+        label: "Audit Logs",
+        icon: FileText,
+        requireAny: [PermissionCodes.AuthSecurityEventsRead],
+      },
+      {
+        href: "/admin/dead-letters",
+        label: "Dead Letters",
+        icon: Inbox,
+        // Dead-letters is a wildcard-only area for now.
+        requireAny: [PermissionCodes.FullAccess],
+      },
     ],
   },
 ];
@@ -67,6 +160,14 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ open, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { hasAny } = useAdminPermission();
+
+  const visibleSections = NAV_SECTIONS
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => hasAny(item.requireAny)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <>
@@ -93,7 +194,7 @@ export function AdminSidebar({ open, onClose }: AdminSidebarProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.label} className="mb-4">
               <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
                 {section.label}

@@ -1,17 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { Loader2, RotateCcw } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Skeleton } from "@/shared/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
+import { AdminDataTable, type AdminDataTableColumn } from "@/shared/admin";
 import type { DeadLetterMessage } from "../types/admin-reports";
 import { useReprocessDeadLetter } from "../hooks/use-admin-reports";
 
@@ -31,58 +24,56 @@ export function DeadLetterTable({
 }) {
   const reprocess = useReprocessDeadLetter();
 
-  if (!messages) return <Skeleton className="h-60 w-full" />;
-
-  if (!messages.length) {
-    return (
-      <p className="py-4 text-center text-sm text-muted-foreground">
-        No dead letters.
-      </p>
-    );
-  }
+  const columns: AdminDataTableColumn<DeadLetterMessage>[] = useMemo(
+    () => [
+      {
+        id: "eventType",
+        header: "Event Type",
+        cell: (m) => <span className="font-mono text-xs">{m.eventType}</span>,
+      },
+      { id: "source", header: "Source", cell: (m) => m.sourceModule },
+      {
+        id: "retries",
+        header: "Retries",
+        align: "right",
+        cell: (m) => <span className="tabular-nums">{m.retryCount}</span>,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: (m) => <Badge variant="secondary">{m.status}</Badge>,
+      },
+      {
+        id: "failedAt",
+        header: "Failed At",
+        cell: (m) => <span className="text-xs">{formatDate(m.failedAtUtc)}</span>,
+      },
+    ],
+    [],
+  );
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Event Type</TableHead>
-          <TableHead>Source</TableHead>
-          <TableHead>Retries</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Failed At</TableHead>
-          <TableHead />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {messages.map((m) => (
-          <TableRow key={m.id}>
-            <TableCell className="text-xs font-mono">{m.eventType}</TableCell>
-            <TableCell>{m.sourceModule}</TableCell>
-            <TableCell>{m.retryCount}</TableCell>
-            <TableCell>
-              <Badge variant="secondary">{m.status}</Badge>
-            </TableCell>
-            <TableCell className="text-xs">
-              {formatDate(m.failedAtUtc)}
-            </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => reprocess.mutate(m.id)}
-                disabled={reprocess.isPending}
-              >
-                {reprocess.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-3 w-3" />
-                )}
-                Retry
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <AdminDataTable<DeadLetterMessage>
+      data={messages}
+      isLoading={!messages}
+      getRowId={(m) => m.id}
+      emptyMessage="Không có dead letter nào."
+      columns={columns}
+      rowActions={(m) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => reprocess.mutate(m.id)}
+          disabled={reprocess.isPending}
+        >
+          {reprocess.isPending ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <RotateCcw className="h-3 w-3" />
+          )}
+          Retry
+        </Button>
+      )}
+    />
   );
 }

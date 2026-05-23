@@ -1,14 +1,7 @@
 "use client";
 
-import { Skeleton } from "@/shared/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
+import { useMemo } from "react";
+import { AdminDataTable, type AdminDataTableColumn } from "@/shared/admin";
 import type { AuditLog } from "../types/admin-reports";
 
 function formatDate(utc: string) {
@@ -21,40 +14,41 @@ function formatDate(utc: string) {
 }
 
 export function AuditLogTable({ logs }: { logs?: AuditLog[] }) {
-  if (!logs) return <Skeleton className="h-60 w-full" />;
-
-  if (!logs.length) {
-    return (
-      <p className="py-4 text-center text-sm text-muted-foreground">
-        No audit logs found.
-      </p>
-    );
-  }
+  const columns: AdminDataTableColumn<AuditLog>[] = useMemo(
+    () => [
+      {
+        id: "action",
+        header: "Action",
+        cell: (log) => <span className="font-medium">{log.action}</span>,
+      },
+      { id: "target", header: "Target", cell: (log) => log.targetEntity },
+      {
+        id: "entityId",
+        header: "Entity ID",
+        cell: (log) => (
+          <span className="font-mono text-xs">
+            {log.targetEntityId.slice(0, 8)}...
+          </span>
+        ),
+      },
+      {
+        id: "date",
+        header: "Date",
+        cell: (log) => (
+          <span className="text-xs">{formatDate(log.createdAtUtc)}</span>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Action</TableHead>
-          <TableHead>Target</TableHead>
-          <TableHead>Entity ID</TableHead>
-          <TableHead>Date</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {logs.map((log) => (
-          <TableRow key={log.id}>
-            <TableCell className="font-medium">{log.action}</TableCell>
-            <TableCell>{log.targetEntity}</TableCell>
-            <TableCell className="text-xs font-mono">
-              {log.targetEntityId.slice(0, 8)}...
-            </TableCell>
-            <TableCell className="text-xs">
-              {formatDate(log.createdAtUtc)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <AdminDataTable<AuditLog>
+      data={logs}
+      isLoading={!logs}
+      getRowId={(log) => log.id}
+      emptyMessage="Chưa có audit log."
+      columns={columns}
+    />
   );
 }

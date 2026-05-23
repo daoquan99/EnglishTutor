@@ -19,6 +19,6 @@ export interface CurrentUser {
   userId: string;
   email: string;
   displayName: string;
-  roles: string[];
-  permissions: string[];
+  roles?: string[];
+  permissions?: string[];
 }

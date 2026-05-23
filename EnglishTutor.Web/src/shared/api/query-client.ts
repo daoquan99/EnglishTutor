@@ -24,7 +24,8 @@ function makeQueryClient(): QueryClient {
       },
     },
     mutationCache: new MutationCache({
-      onError: (error) => {
+      onError: (error, _variables, _context, mutation) => {
+        if (mutation.meta?.skipGlobalErrorToast) return;
         if (error instanceof ApiError && error.isUnauthorized) return;
         const message =
           error instanceof ApiError ? error.message : "An unexpected error occurred.";

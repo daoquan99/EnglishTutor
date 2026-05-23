@@ -7,12 +7,6 @@ import type {
   AssessmentPassRateReport,
   AuditLog,
   DeadLetterMessage,
-  AuthPermission,
-  AuthRole,
-  CreatePermissionRequest,
-  UpdatePermissionRequest,
-  CreateRoleRequest,
-  UpdateRoleRequest,
   AiProvider,
   AiRuntimeRoute,
   RegisterProviderRequest,
@@ -76,38 +70,6 @@ export const adminApi = {
 
   reprocessDeadLetter: (id: string) =>
     httpClient.post(`/api/admin/dead-letters/${id}/reprocess`),
-
-  // Auth admin
-  getPermissions: (includeDisabled = false) =>
-    httpClient.get<AuthPermission[]>("/api/admin/auth/permissions", {
-      params: { includeDisabled },
-    }),
-
-  createPermission: (data: CreatePermissionRequest) =>
-    httpClient.post<AuthPermission>("/api/admin/auth/permissions", data),
-
-  updatePermission: (id: string, data: UpdatePermissionRequest) =>
-    httpClient.put<AuthPermission>(`/api/admin/auth/permissions/${id}`, data),
-
-  deletePermission: (id: string) =>
-    httpClient.delete(`/api/admin/auth/permissions/${id}`),
-
-  getRoles: (includeDisabled = false) =>
-    httpClient.get<AuthRole[]>("/api/admin/auth/roles", {
-      params: { includeDisabled },
-    }),
-
-  getRole: (id: string) =>
-    httpClient.get<AuthRole>(`/api/admin/auth/roles/${id}`),
-
-  createRole: (data: CreateRoleRequest) =>
-    httpClient.post<AuthRole>("/api/admin/auth/roles", data),
-
-  updateRole: (id: string, data: UpdateRoleRequest) =>
-    httpClient.put<AuthRole>(`/api/admin/auth/roles/${id}`, data),
-
-  deleteRole: (id: string) =>
-    httpClient.delete(`/api/admin/auth/roles/${id}`),
 
   // AI admin
   getAiProviders: () =>

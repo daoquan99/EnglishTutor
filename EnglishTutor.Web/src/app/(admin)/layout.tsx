@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import { ADMIN_AREA_PERMISSIONS } from "@/features/auth/lib/permission-codes";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { useAdminPermission } from "@/shared/admin";
 import { AdminSidebar } from "@/features/admin-reports/components/admin-sidebar";
 import { AdminHeader } from "@/features/admin-reports/components/admin-header";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isPending, isSuccess, data } = useCurrentUser();
+  const { isPending, isSuccess } = useCurrentUser();
+  const { hasAny } = useAdminPermission();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (isPending) {
@@ -21,7 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (!isSuccess || !data?.permissions.includes("admin.full_access")) {
+  if (!isSuccess || !hasAny(ADMIN_AREA_PERMISSIONS)) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
@@ -30,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <h1 className="text-lg font-semibold">Access Denied</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            You don&apos;t have permission to access this area.
+            Bạn không có quyền truy cập khu vực admin.
           </p>
         </div>
       </div>

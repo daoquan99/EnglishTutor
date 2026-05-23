@@ -1,61 +1,87 @@
 "use client";
 
 import { Activity } from "lucide-react";
-import { Skeleton } from "@/shared/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
+import { useMemo } from "react";
 import { PageHeader } from "@/shared/components/page-header";
+import {
+  AdminAccessDenied,
+  AdminDataTable,
+  AdminPermissionGate,
+  type AdminDataTableColumn,
+} from "@/shared/admin";
+import { PermissionCodes } from "@/features/auth/lib/permission-codes";
 import { useLearningActivityReport } from "@/features/admin-reports/hooks/use-admin-reports";
+import type { LearningActivityReport } from "@/features/admin-reports/types/admin-reports";
 
 export default function LearningActivityPage() {
-  const { data } = useLearningActivityReport();
+  const { data, isFetching } = useLearningActivityReport();
+
+  const columns: AdminDataTableColumn<LearningActivityReport>[] = useMemo(
+    () => [
+      { id: "date", header: "Date", cell: (r) => r.reportDate },
+      {
+        id: "users",
+        header: "Active Users",
+        align: "right",
+        cell: (r) => <span className="tabular-nums">{r.totalActiveUsers}</span>,
+      },
+      {
+        id: "speaking",
+        header: "Speaking",
+        align: "right",
+        cell: (r) => (
+          <span className="tabular-nums">{r.totalSpeakingSessions}</span>
+        ),
+      },
+      {
+        id: "exercises",
+        header: "Exercises",
+        align: "right",
+        cell: (r) => (
+          <span className="tabular-nums">{r.totalExercisesCompleted}</span>
+        ),
+      },
+      {
+        id: "vocab",
+        header: "Vocabulary",
+        align: "right",
+        cell: (r) => (
+          <span className="tabular-nums">{r.totalVocabularyReviews}</span>
+        ),
+      },
+      {
+        id: "minutes",
+        header: "Study (min)",
+        align: "right",
+        cell: (r) => <span className="tabular-nums">{r.totalStudyMinutes}</span>,
+      },
+    ],
+    [],
+  );
 
   return (
-    <div className="page-container page-section">
-      <PageHeader
-        icon={Activity}
-        iconColor="bg-study/10 text-study"
-        title="Learning Activity"
-        description="Daily learning activity reports across all users."
-      />
-      <div className="mt-6">
-        {!data ? (
-          <Skeleton className="h-60 w-full rounded-xl" />
-        ) : (
-          <div className="overflow-hidden rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Active Users</TableHead>
-                  <TableHead className="text-right">Speaking</TableHead>
-                  <TableHead className="text-right">Exercises</TableHead>
-                  <TableHead className="text-right">Vocabulary</TableHead>
-                  <TableHead className="text-right">Study (min)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{r.reportDate}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalActiveUsers}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalSpeakingSessions}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalExercisesCompleted}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalVocabularyReviews}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalStudyMinutes}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+    <AdminPermissionGate
+      requireAny={[PermissionCodes.ReportsRead]}
+      fallback={<AdminAccessDenied />}
+    >
+      <div className="page-container page-section">
+        <PageHeader
+          icon={Activity}
+          iconColor="bg-study/10 text-study"
+          title="Learning Activity"
+          description="Daily learning activity reports across all users."
+        />
+        <div className="mt-6">
+          <AdminDataTable<LearningActivityReport>
+            data={data}
+            isLoading={!data}
+            isFetching={isFetching}
+            getRowId={(r) => `${r.reportDate}-${r.period}`}
+            emptyMessage="Chưa có dữ liệu hoạt động học tập."
+            columns={columns}
+          />
+        </div>
       </div>
-    </div>
+    </AdminPermissionGate>
   );
 }

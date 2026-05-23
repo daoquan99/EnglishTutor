@@ -3,18 +3,18 @@
 import { useEffect, useRef } from "react";
 import { HubConnectionState } from "@microsoft/signalr";
 import { useQueryClient } from "@tanstack/react-query";
-import { getAccessToken } from "@/shared/api/auth-token-store";
+import { useAuthStore } from "@/features/auth/hooks/use-auth-store";
 import { notificationKeys } from "../api/query-keys";
 import { getNotificationConnection, disposeNotificationConnection } from "../lib/signalr-connection";
 import { showNotificationToast, type NotificationPushPayload } from "../lib/toast-helpers";
 
 export function useRealtimeNotifications() {
   const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
   const startedRef = useRef(false);
 
   useEffect(() => {
-    const token = getAccessToken();
-    if (!token) return;
+    if (!user) return;
 
     const connection = getNotificationConnection();
 
@@ -47,5 +47,5 @@ export function useRealtimeNotifications() {
       disposeNotificationConnection();
       startedRef.current = false;
     };
-  }, [queryClient]);
+  }, [queryClient, user]);
 }

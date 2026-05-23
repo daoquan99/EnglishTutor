@@ -1,61 +1,75 @@
 "use client";
 
 import { Brain } from "lucide-react";
-import { Skeleton } from "@/shared/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
+import { useMemo } from "react";
 import { PageHeader } from "@/shared/components/page-header";
+import {
+  AdminAccessDenied,
+  AdminDataTable,
+  AdminPermissionGate,
+  type AdminDataTableColumn,
+} from "@/shared/admin";
+import { PermissionCodes } from "@/features/auth/lib/permission-codes";
 import { useAiUsageReport } from "@/features/admin-reports/hooks/use-admin-reports";
+import type { DailyAiUsageReport } from "@/features/admin-reports/types/admin-reports";
 
 export default function AiUsagePage() {
-  const { data } = useAiUsageReport();
+  const { data, isFetching } = useAiUsageReport();
+
+  const columns: AdminDataTableColumn<DailyAiUsageReport>[] = useMemo(
+    () => [
+      { id: "date", header: "Date", cell: (r) => r.reportDate },
+      { id: "model", header: "Model", cell: (r) => r.modelType },
+      { id: "task", header: "Task", cell: (r) => r.taskType },
+      {
+        id: "requests",
+        header: "Requests",
+        align: "right",
+        cell: (r) => <span className="tabular-nums">{r.totalRequests}</span>,
+      },
+      {
+        id: "tokens",
+        header: "Tokens",
+        align: "right",
+        cell: (r) => (
+          <span className="tabular-nums">{r.totalTokens.toLocaleString()}</span>
+        ),
+      },
+      {
+        id: "cost",
+        header: "Cost (USD)",
+        align: "right",
+        cell: (r) => (
+          <span className="tabular-nums">${r.estimatedCostUsd.toFixed(2)}</span>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
-    <div className="page-container page-section">
-      <PageHeader
-        icon={Brain}
-        iconColor="bg-speaking/10 text-speaking"
-        title="AI Usage"
-        description="Token usage, latency, and estimated costs."
-      />
-      <div className="mt-6">
-        {!data ? (
-          <Skeleton className="h-60 w-full rounded-xl" />
-        ) : (
-          <div className="overflow-hidden rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Task</TableHead>
-                  <TableHead className="text-right">Requests</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Cost (USD)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{r.reportDate}</TableCell>
-                    <TableCell>{r.modelType}</TableCell>
-                    <TableCell>{r.taskType}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalRequests}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.totalTokens.toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums">${r.estimatedCostUsd.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+    <AdminPermissionGate
+      requireAny={[PermissionCodes.AiLogsRead, PermissionCodes.AiProvidersRead]}
+      fallback={<AdminAccessDenied />}
+    >
+      <div className="page-container page-section">
+        <PageHeader
+          icon={Brain}
+          iconColor="bg-speaking/10 text-speaking"
+          title="AI Usage"
+          description="Token usage, latency, and estimated costs."
+        />
+        <div className="mt-6">
+          <AdminDataTable<DailyAiUsageReport>
+            data={data}
+            isLoading={!data}
+            isFetching={isFetching}
+            getRowId={(r) => `${r.reportDate}-${r.modelType}-${r.taskType}`}
+            emptyMessage="Chưa có dữ liệu sử dụng AI."
+            columns={columns}
+          />
+        </div>
       </div>
-    </div>
+    </AdminPermissionGate>
   );
 }

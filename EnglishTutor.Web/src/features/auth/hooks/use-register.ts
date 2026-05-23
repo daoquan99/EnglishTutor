@@ -13,6 +13,7 @@ export function useRegister() {
 
   return useMutation({
     mutationFn: (data: RegisterRequest) => authApi.register(data),
+    meta: { skipGlobalErrorToast: true },
     onSuccess: (response) => {
       setAccessToken(response.accessToken, response.expiresAtUtc);
       queryClient.invalidateQueries({ queryKey: authKeys.me() });

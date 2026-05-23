@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Mail, User } from "lucide-react";
 import { useMemo } from "react";
+import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { FormField } from "@/shared/components/form-field";
@@ -73,26 +74,17 @@ export function RegisterForm() {
               setError(key as keyof RegisterFormValues, { message: messages[0] });
             }
           }
+          return;
         }
+        const message =
+          error instanceof ApiError ? error.message : "An unexpected error occurred.";
+        toast.error(message);
       },
     });
   };
 
-  const serverError =
-    registerMutation.error instanceof ApiError && !registerMutation.error.isValidation
-      ? registerMutation.error.message
-      : registerMutation.error && !(registerMutation.error instanceof ApiError)
-        ? "An unexpected error occurred. Please try again."
-        : null;
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-      {serverError && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-          {serverError}
-        </div>
-      )}
-
       <FormField label="Display name" htmlFor="displayName" error={errors.displayName?.message}>
         <div className="relative">
           <Input

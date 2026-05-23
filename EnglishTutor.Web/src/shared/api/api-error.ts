@@ -10,7 +10,7 @@ export class ApiError extends Error {
   }
 
   get isValidation(): boolean {
-    return this.status === 400 && !!this.details;
+    return this.status === 422 && !!this.details;
   }
 
   get isUnauthorized(): boolean {
