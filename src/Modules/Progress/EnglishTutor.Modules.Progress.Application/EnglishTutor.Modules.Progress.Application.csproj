@@ -3,8 +3,12 @@
     <ProjectReference Include="..\EnglishTutor.Modules.Progress.Domain\EnglishTutor.Modules.Progress.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.EventBus\EnglishTutor.BuildingBlocks.EventBus.csproj" />
+    <ProjectReference Include="..\..\Exercises\EnglishTutor.Modules.Exercises.Contracts\EnglishTutor.Modules.Exercises.Contracts.csproj" />
     <ProjectReference Include="..\..\Vocabulary\EnglishTutor.Modules.Vocabulary.Contracts\EnglishTutor.Modules.Vocabulary.Contracts.csproj" />
     <ProjectReference Include="..\..\Speaking\EnglishTutor.Modules.Speaking.Contracts\EnglishTutor.Modules.Speaking.Contracts.csproj" />
     <ProjectReference Include="..\..\Mistakes\EnglishTutor.Modules.Mistakes.Contracts\EnglishTutor.Modules.Mistakes.Contracts.csproj" />
+    <ProjectReference Include="..\..\LearningContent\EnglishTutor.Modules.LearningContent.Contracts\EnglishTutor.Modules.LearningContent.Contracts.csproj" />
+    <ProjectReference Include="..\..\StudyPlans\EnglishTutor.Modules.StudyPlans.Contracts\EnglishTutor.Modules.StudyPlans.Contracts.csproj" />
+    <ProjectReference Include="..\..\Users\EnglishTutor.Modules.Users.Contracts\EnglishTutor.Modules.Users.Contracts.csproj" />
   </ItemGroup>
 </Project>

@@ -1,8 +1,7 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Vocabulary.Application.Abstractions;
-using EnglishTutor.Modules.Vocabulary.Application.DTOs;
-using EnglishTutor.Modules.Vocabulary.Application.Errors;
+using EnglishTutor.Modules.Vocabulary.Application.Shared.Errors;
 
 namespace EnglishTutor.Modules.Vocabulary.Application.Queries.GetStudyCard;
 
@@ -17,6 +16,11 @@ public sealed class GetStudyCardQueryHandler(
         if (item is null)
         {
             return Result.Failure<StudyCardResponse>(VocabularyErrors.VocabularyItemNotFound(request.VocabularyItemId));
+        }
+
+        if (item.TargetLanguageCode.Value != request.TargetLanguageCode)
+        {
+            return Result.Failure<StudyCardResponse>(VocabularyErrors.TargetLanguageMismatch);
         }
 
         var mastery = await masteryRepository.GetAsync(

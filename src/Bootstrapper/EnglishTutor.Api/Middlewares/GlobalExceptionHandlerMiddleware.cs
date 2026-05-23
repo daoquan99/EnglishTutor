@@ -34,6 +34,7 @@ public sealed class GlobalExceptionHandlerMiddleware(
         var (statusCode, title, detail) = exception switch
         {
             BusinessRuleValidationException ex => (HttpStatusCode.UnprocessableEntity, "Business rule validation failed.", ex.Details),
+            DomainException ex => (HttpStatusCode.UnprocessableEntity, "Domain validation failed.", ex.Message),
             NotFoundException ex => (HttpStatusCode.NotFound, "Resource not found.", ex.Message),
             ValidationException => (HttpStatusCode.UnprocessableEntity, "Validation failed.", "One or more validation errors occurred."),
             UnauthorizedAccessException ex => (HttpStatusCode.Unauthorized, "Unauthorized.", ex.Message),

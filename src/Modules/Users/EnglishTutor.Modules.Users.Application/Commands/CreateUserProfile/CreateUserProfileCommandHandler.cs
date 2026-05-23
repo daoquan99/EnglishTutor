@@ -9,19 +9,22 @@ public sealed class CreateUserProfileCommandHandler(
     IUserProfileRepository userProfileRepository,
     IUserLanguageSettingsRepository userLanguageSettingsRepository,
     IUserTargetLanguageRepository userTargetLanguageRepository,
+    IDateTimeProvider dateTimeProvider,
     IUsersUnitOfWork unitOfWork)
     : ICommandHandler<CreateUserProfileCommand>
 {
     public async Task<Result> Handle(CreateUserProfileCommand request, CancellationToken cancellationToken)
     {
-        var profile = UserProfile.Create(request.UserId, request.DisplayName);
-        var settings = UserLanguageSettings.CreateDefault(request.UserId);
+        var utcNow = dateTimeProvider.UtcNow;
+        var profile = UserProfile.Create(request.UserId, request.DisplayName, utcNow);
+        var settings = UserLanguageSettings.CreateDefault(request.UserId, utcNow);
         var targetLanguage = UserTargetLanguage.CreateActive(
             request.UserId,
             BuildingBlocks.SharedKernel.LanguageCode.English,
             BuildingBlocks.SharedKernel.LanguageLevel.A1,
             BuildingBlocks.SharedKernel.LanguageLevel.B2,
-            []);
+            [],
+            utcNow);
 
         await userProfileRepository.AddAsync(profile, cancellationToken);
         await userLanguageSettingsRepository.AddAsync(settings, cancellationToken);

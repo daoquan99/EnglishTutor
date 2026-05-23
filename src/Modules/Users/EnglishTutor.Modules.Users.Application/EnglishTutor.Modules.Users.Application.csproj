@@ -3,6 +3,7 @@
     <ProjectReference Include="..\EnglishTutor.Modules.Users.Domain\EnglishTutor.Modules.Users.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.EventBus\EnglishTutor.BuildingBlocks.EventBus.csproj" />
+    <ProjectReference Include="..\..\Assessments\EnglishTutor.Modules.Assessments.Contracts\EnglishTutor.Modules.Assessments.Contracts.csproj" />
     <ProjectReference Include="..\..\Auth\EnglishTutor.Modules.Auth.Contracts\EnglishTutor.Modules.Auth.Contracts.csproj" />
   </ItemGroup>
 </Project>

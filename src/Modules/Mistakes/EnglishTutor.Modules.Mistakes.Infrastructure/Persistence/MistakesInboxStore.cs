@@ -1,24 +1,19 @@
-using EnglishTutor.BuildingBlocks.Outbox;
+using EnglishTutor.BuildingBlocks.Application.Abstractions;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Modules.Mistakes.Application.Abstractions;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnglishTutor.Modules.Mistakes.Infrastructure.Persistence;
 
-public sealed class MistakesInboxStore(MistakesDbContext dbContext) : IMistakesInboxStore
+public sealed class MistakesInboxStore(
+    MistakesDbContext dbContext,
+    IDateTimeProvider dateTimeProvider) : IMistakesInboxStore
 {
     public Task<bool> IsProcessedAsync(Guid eventId, string handlerName, CancellationToken cancellationToken) =>
-        dbContext.InboxMessages.AnyAsync(
-            message => message.EventId == eventId && message.HandlerName == handlerName,
-            cancellationToken);
+        EfCoreInboxStore.IsProcessedAsync(dbContext.InboxMessages, eventId, handlerName, cancellationToken);
 
     public Task MarkProcessedAsync(Guid eventId, string eventType, string handlerName, CancellationToken cancellationToken)
     {
-        dbContext.InboxMessages.Add(new InboxMessage
-        {
-            EventId = eventId,
-            EventType = eventType,
-            HandlerName = handlerName
-        });
+        EfCoreInboxStore.MarkProcessed(dbContext.InboxMessages, dateTimeProvider, eventId, eventType, handlerName);
 
         return Task.CompletedTask;
     }

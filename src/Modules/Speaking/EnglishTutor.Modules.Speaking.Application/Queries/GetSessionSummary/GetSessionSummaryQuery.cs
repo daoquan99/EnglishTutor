@@ -1,5 +1,5 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
-using EnglishTutor.Modules.Speaking.Application.DTOs;
+using EnglishTutor.Modules.Speaking.Application.Shared.DTOs;
 
 namespace EnglishTutor.Modules.Speaking.Application.Queries.GetSessionSummary;
 

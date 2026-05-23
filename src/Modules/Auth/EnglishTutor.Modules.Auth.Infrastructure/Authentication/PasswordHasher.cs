@@ -1,5 +1,5 @@
 using EnglishTutor.Modules.Auth.Application.Abstractions;
-using EnglishTutor.Modules.Auth.Domain.ValueObjects;
+using EnglishTutor.Modules.Auth.Domain.AuthUser.ValueObjects;
 
 namespace EnglishTutor.Modules.Auth.Infrastructure.Authentication;
 

@@ -6,6 +6,9 @@ namespace EnglishTutor.Modules.Speaking.Infrastructure.Persistence.Repositories;
 
 public sealed class SpeakingTurnRepository(SpeakingDbContext dbContext) : ISpeakingTurnRepository
 {
+    public async Task AddTurnAsync(SpeakingTurn turn, CancellationToken cancellationToken) =>
+        await dbContext.SpeakingTurns.AddAsync(turn, cancellationToken);
+
     public Task AddResultAsync(SpeakingTurnResult result, CancellationToken cancellationToken)
     {
         dbContext.SpeakingTurnResults.Add(result);
@@ -14,13 +17,11 @@ public sealed class SpeakingTurnRepository(SpeakingDbContext dbContext) : ISpeak
 
     public async Task<IReadOnlyList<SpeakingTurnResult>> GetResultsBySessionIdAsync(Guid speakingSessionId, CancellationToken cancellationToken)
     {
-        var turnIds = await dbContext.SpeakingTurns
-            .Where(turn => turn.SpeakingSessionId == speakingSessionId)
-            .Select(turn => turn.Id)
-            .ToListAsync(cancellationToken);
-
-        return await dbContext.SpeakingTurnResults
-            .Where(result => turnIds.Contains(result.SpeakingTurnId))
+        return await (
+            from result in dbContext.SpeakingTurnResults
+            join turn in dbContext.SpeakingTurns on result.SpeakingTurnId equals turn.Id
+            where turn.SpeakingSessionId == speakingSessionId
+            select result)
             .ToListAsync(cancellationToken);
     }
 }

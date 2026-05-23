@@ -8,6 +8,8 @@ namespace EnglishTutor.Modules.Mistakes.UnitTests;
 
 public sealed class MistakeDomainTests
 {
+    private static readonly DateTime UtcNow = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     [Fact]
     public void CreateFromCorrection_Sets_New_Status_And_Raises_Event()
     {
@@ -23,10 +25,10 @@ public sealed class MistakeDomainTests
         var mistake = CreateMistake();
         mistake.ClearDomainEvents();
 
-        mistake.Review();
+        mistake.Review(UtcNow);
 
         Assert.Equal(MistakeStatus.Reviewed, mistake.Status);
-        Assert.True(mistake.NextReviewAtUtc > DateTime.UtcNow);
+        Assert.Equal(UtcNow.AddDays(1), mistake.NextReviewAtUtc);
         Assert.Contains(mistake.DomainEvents, domainEvent => domainEvent is MistakeReviewedDomainEvent);
     }
 
@@ -35,7 +37,7 @@ public sealed class MistakeDomainTests
     {
         var mistake = CreateMistake();
 
-        mistake.MarkMastered();
+        mistake.MarkMastered(UtcNow);
 
         Assert.Equal(MistakeStatus.Mastered, mistake.Status);
         Assert.NotNull(mistake.MasteredAtUtc);
@@ -53,5 +55,6 @@ public sealed class MistakeDomainTests
             "Use base verb after I.",
             LanguageCode.English,
             LanguageCode.Vietnamese,
-            LanguageCode.Vietnamese);
+            LanguageCode.Vietnamese,
+            UtcNow);
 }

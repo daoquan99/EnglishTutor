@@ -23,4 +23,32 @@ public sealed class VocabularyItemRepository(VocabularyDbContext dbContext) : IV
             .Where(item => item.TargetLanguageCode == languageCode)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<VocabularyItem>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> itemIds,
+        CancellationToken cancellationToken) =>
+        itemIds.Count == 0
+            ? []
+            : await dbContext.VocabularyItems
+                .Where(item => itemIds.Contains(item.Id))
+                .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<VocabularyItem>> GetNewItemsAsync(
+        Guid userId,
+        string targetLanguageCode,
+        int take,
+        CancellationToken cancellationToken)
+    {
+        var languageCode = LanguageCode.Create(targetLanguageCode);
+        return await dbContext.VocabularyItems
+            .Where(item =>
+                item.TargetLanguageCode == languageCode &&
+                !dbContext.UserVocabularyMasteries.Any(mastery =>
+                    mastery.UserId == userId &&
+                    mastery.TargetLanguageCode == languageCode &&
+                    mastery.VocabularyItemId == item.Id))
+            .OrderBy(item => item.Word)
+            .Take(Math.Max(0, take))
+            .ToListAsync(cancellationToken);
+    }
 }

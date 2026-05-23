@@ -9,7 +9,7 @@ public sealed class DeadLetterMessage
     public string EventType { get; set; } = string.Empty;
     public string Payload { get; set; } = string.Empty;
     public string SourceModule { get; set; } = string.Empty;
-    public DateTime FailedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime FailedAtUtc { get; set; }
     public int RetryCount { get; set; }
     public string LastError { get; set; } = string.Empty;
     public string? StackTrace { get; set; }

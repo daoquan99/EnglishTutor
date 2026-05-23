@@ -23,6 +23,6 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
 
         RuleFor(command => command.DisplayName)
             .NotEmpty()
-            .Length(2, 50);
+            .Length(2, 100);
     }
 }

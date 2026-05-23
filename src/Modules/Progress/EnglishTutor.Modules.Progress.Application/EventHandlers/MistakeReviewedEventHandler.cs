@@ -23,27 +23,43 @@ public sealed class MistakeReviewedEventHandler(
         }
 
         const int exp = 10;
+        var reviewedAt = @event.ReviewedAtUtc;
         await progressRepository.AddActivityLogAsync(LearningActivityLog.Create(
             @event.UserId,
             LanguageCode.Create(@event.TargetLanguageCode),
             ActivityType.MistakeReviewed,
             @event.MistakeId,
-            @event.ReviewedAtUtc,
-            @event.ReviewedAtUtc,
+            reviewedAt,
+            reviewedAt,
             exp,
             100,
             "Reviewed"), ct);
 
         var experience = await progressRepository.GetOrCreateExperienceAsync(@event.UserId, @event.TargetLanguageCode, ct);
-        experience.GrantExp(exp, nameof(MistakeReviewedIntegrationEvent), @event.MistakeId, "Mistake reviewed");
+        experience.GrantExp(exp, nameof(MistakeReviewedIntegrationEvent), @event.MistakeId, "Mistake reviewed", reviewedAt);
 
         await ProgressAggregationUpdater.RecordPeriodProgressAsync(
             progressRepository,
             @event.UserId,
             @event.TargetLanguageCode,
-            @event.ReviewedAtUtc,
+            reviewedAt,
             exp,
             ct);
+
+        var streak = await progressRepository.GetOrCreateStreakAsync(@event.UserId, @event.TargetLanguageCode, ct);
+        streak.RecordActivity(reviewedAt);
+        var dashboard = await progressRepository.GetOrCreateDashboardSnapshotAsync(@event.UserId, @event.TargetLanguageCode, DateOnly.FromDateTime(reviewedAt), ct);
+        dashboard.Update(
+            experience.TotalExp,
+            dashboard.CurrentLevel,
+            streak.CurrentStreakDays,
+            dashboard.VocabularyMastered,
+            dashboard.TotalSpeakingSessions,
+            dashboard.TotalExercisesCompleted,
+            dashboard.TotalMistakes,
+            dashboard.WeakSkills,
+            dashboard.StrongSkills,
+            reviewedAt);
 
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
         await unitOfWork.SaveChangesAsync(ct);

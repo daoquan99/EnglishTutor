@@ -12,6 +12,7 @@
 
   <!-- Bootstrapper -->
   <Folder Name="/Bootstrapper/">
+    <Project Path="src/Bootstrapper/EnglishTutor.AppHost/EnglishTutor.AppHost.csproj" />
     <Project Path="src/Bootstrapper/EnglishTutor.Api/EnglishTutor.Api.csproj" />
     <Project Path="src/Bootstrapper/EnglishTutor.Worker/EnglishTutor.Worker.csproj" />
   </Folder>
@@ -135,13 +136,20 @@
 
   <!-- Tests -->
   <Folder Name="/Tests/">
+    <Project Path="tests/EnglishTutor.IntegrationTests/EnglishTutor.IntegrationTests.csproj" />
     <Project Path="tests/EnglishTutor.ArchitectureTests/EnglishTutor.ArchitectureTests.csproj" />
     <Project Path="tests/EnglishTutor.Modules.Auth.UnitTests/EnglishTutor.Modules.Auth.UnitTests.csproj" />
     <Project Path="tests/EnglishTutor.Modules.Users.UnitTests/EnglishTutor.Modules.Users.UnitTests.csproj" />
     <Project Path="tests/EnglishTutor.Modules.AI.UnitTests/EnglishTutor.Modules.AI.UnitTests.csproj" />
     <Project Path="tests/EnglishTutor.Modules.Vocabulary.UnitTests/EnglishTutor.Modules.Vocabulary.UnitTests.csproj" />
     <Project Path="tests/EnglishTutor.Modules.Speaking.UnitTests/EnglishTutor.Modules.Speaking.UnitTests.csproj" />
+    <Project Path="tests/EnglishTutor.Modules.StudyPlans.UnitTests/EnglishTutor.Modules.StudyPlans.UnitTests.csproj" />
+    <Project Path="tests/EnglishTutor.Modules.Notifications.UnitTests/EnglishTutor.Modules.Notifications.UnitTests.csproj" />
+    <Project Path="tests/EnglishTutor.Modules.LearningContent.UnitTests/EnglishTutor.Modules.LearningContent.UnitTests.csproj" />
+    <Project Path="tests/EnglishTutor.Modules.Exercises.UnitTests/EnglishTutor.Modules.Exercises.UnitTests.csproj" />
     <Project Path="tests/EnglishTutor.Modules.Mistakes.UnitTests/EnglishTutor.Modules.Mistakes.UnitTests.csproj" />
     <Project Path="tests/EnglishTutor.Modules.Progress.UnitTests/EnglishTutor.Modules.Progress.UnitTests.csproj" />
+    <Project Path="tests/EnglishTutor.Modules.AdminReports.UnitTests/EnglishTutor.Modules.AdminReports.UnitTests.csproj" />
+    <Project Path="tests/EnglishTutor.Worker.UnitTests/EnglishTutor.Worker.UnitTests.csproj" />
   </Folder>
 </Solution>

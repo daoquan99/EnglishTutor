@@ -4,7 +4,13 @@
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
+    <PackageReference Include="AspNetCore.HealthChecks.Redis" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,5 +31,17 @@
     <ProjectReference Include="..\..\Modules\Mistakes\EnglishTutor.Modules.Mistakes.Presentation\EnglishTutor.Modules.Mistakes.Presentation.csproj" />
     <ProjectReference Include="..\..\Modules\Progress\EnglishTutor.Modules.Progress.Infrastructure\EnglishTutor.Modules.Progress.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Progress\EnglishTutor.Modules.Progress.Presentation\EnglishTutor.Modules.Progress.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\StudyPlans\EnglishTutor.Modules.StudyPlans.Infrastructure\EnglishTutor.Modules.StudyPlans.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\StudyPlans\EnglishTutor.Modules.StudyPlans.Presentation\EnglishTutor.Modules.StudyPlans.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\EnglishTutor.Modules.Notifications.Infrastructure\EnglishTutor.Modules.Notifications.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\EnglishTutor.Modules.Notifications.Presentation\EnglishTutor.Modules.Notifications.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\LearningContent\EnglishTutor.Modules.LearningContent.Infrastructure\EnglishTutor.Modules.LearningContent.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\LearningContent\EnglishTutor.Modules.LearningContent.Presentation\EnglishTutor.Modules.LearningContent.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Exercises\EnglishTutor.Modules.Exercises.Infrastructure\EnglishTutor.Modules.Exercises.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Exercises\EnglishTutor.Modules.Exercises.Presentation\EnglishTutor.Modules.Exercises.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\Assessments\EnglishTutor.Modules.Assessments.Infrastructure\EnglishTutor.Modules.Assessments.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Assessments\EnglishTutor.Modules.Assessments.Presentation\EnglishTutor.Modules.Assessments.Presentation.csproj" />
+    <ProjectReference Include="..\..\Modules\AdminReports\EnglishTutor.Modules.AdminReports.Infrastructure\EnglishTutor.Modules.AdminReports.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\AdminReports\EnglishTutor.Modules.AdminReports.Presentation\EnglishTutor.Modules.AdminReports.Presentation.csproj" />
   </ItemGroup>
 </Project>

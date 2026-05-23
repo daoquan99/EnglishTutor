@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Modules.StudyPlans.Contracts\EnglishTutor.Modules.StudyPlans.Contracts.csproj" />
     <ProjectReference Include="..\EnglishTutor.Modules.StudyPlans.Domain\EnglishTutor.Modules.StudyPlans.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
   </ItemGroup>

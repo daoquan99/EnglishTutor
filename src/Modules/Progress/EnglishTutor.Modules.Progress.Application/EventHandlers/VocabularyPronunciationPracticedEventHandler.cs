@@ -23,36 +23,37 @@ public sealed class VocabularyPronunciationPracticedEventHandler(
         }
 
         var exp = @event.PronunciationScore >= 80 ? 15 : 5;
+        var practicedAt = @event.PracticedAtUtc;
         await progressRepository.AddActivityLogAsync(LearningActivityLog.Create(
             @event.UserId,
             LanguageCode.Create(@event.TargetLanguageCode),
             ActivityType.VocabularyPronunciationPracticed,
             @event.VocabularyItemId,
-            @event.PracticedAtUtc,
-            @event.PracticedAtUtc,
+            practicedAt,
+            practicedAt,
             exp,
             @event.PronunciationScore,
             "Pronunciation practiced"), ct);
 
         var experience = await progressRepository.GetOrCreateExperienceAsync(@event.UserId, @event.TargetLanguageCode, ct);
-        experience.GrantExp(exp, nameof(VocabularyPronunciationPracticedIntegrationEvent), @event.VocabularyItemId, "Vocabulary pronunciation practiced");
+        experience.GrantExp(exp, nameof(VocabularyPronunciationPracticedIntegrationEvent), @event.VocabularyItemId, "Vocabulary pronunciation practiced", practicedAt);
 
         var skill = await progressRepository.GetOrCreateSkillProgressAsync(@event.UserId, @event.TargetLanguageCode, LearningSkill.Pronunciation, ct);
-        skill.RecordScore(@event.PronunciationScore);
+        skill.RecordScore(@event.PronunciationScore, practicedAt);
 
         await ProgressAggregationUpdater.RecordPeriodProgressAsync(
             progressRepository,
             @event.UserId,
             @event.TargetLanguageCode,
-            @event.PracticedAtUtc,
+            practicedAt,
             exp,
             ct);
 
         var streak = await progressRepository.GetOrCreateStreakAsync(@event.UserId, @event.TargetLanguageCode, ct);
-        streak.RecordActivity(@event.PracticedAtUtc);
+        streak.RecordActivity(practicedAt);
 
-        var dashboard = await progressRepository.GetOrCreateDashboardSnapshotAsync(@event.UserId, @event.TargetLanguageCode, DateOnly.FromDateTime(@event.PracticedAtUtc), ct);
-        dashboard.Update(experience.TotalExp, "A1", streak.CurrentStreakDays, 0, 0, 0, 0, string.Empty, "Pronunciation");
+        var dashboard = await progressRepository.GetOrCreateDashboardSnapshotAsync(@event.UserId, @event.TargetLanguageCode, DateOnly.FromDateTime(practicedAt), ct);
+        dashboard.Update(experience.TotalExp, dashboard.CurrentLevel, streak.CurrentStreakDays, dashboard.VocabularyMastered, dashboard.TotalSpeakingSessions, dashboard.TotalExercisesCompleted, dashboard.TotalMistakes, dashboard.WeakSkills, "Pronunciation", practicedAt);
 
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
         await unitOfWork.SaveChangesAsync(ct);

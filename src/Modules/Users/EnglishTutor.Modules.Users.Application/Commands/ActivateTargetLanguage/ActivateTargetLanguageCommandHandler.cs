@@ -1,14 +1,15 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Users.Application.Abstractions;
-using EnglishTutor.Modules.Users.Application.DTOs;
-using EnglishTutor.Modules.Users.Application.Errors;
+using EnglishTutor.Modules.Users.Application.Shared.DTOs;
+using EnglishTutor.Modules.Users.Application.Shared.Errors;
 
 namespace EnglishTutor.Modules.Users.Application.Commands.ActivateTargetLanguage;
 
 public sealed class ActivateTargetLanguageCommandHandler(
     IUserTargetLanguageRepository userTargetLanguageRepository,
     IUserLanguageSettingsRepository userLanguageSettingsRepository,
+    IDateTimeProvider dateTimeProvider,
     IUsersUnitOfWork unitOfWork)
     : ICommandHandler<ActivateTargetLanguageCommand, TargetLanguageResponse>
 {
@@ -21,7 +22,8 @@ public sealed class ActivateTargetLanguageCommandHandler(
             return Result.Failure<TargetLanguageResponse>(UserErrors.TargetLanguageNotFound(request.TargetLanguageId));
         }
 
-        targetLanguage.Activate(targetLanguages);
+        var utcNow = dateTimeProvider.UtcNow;
+        targetLanguage.Activate(targetLanguages, utcNow);
 
         var settings = await userLanguageSettingsRepository.GetByUserIdAsync(request.UserId, cancellationToken);
         if (settings is not null)
@@ -30,7 +32,8 @@ public sealed class ActivateTargetLanguageCommandHandler(
                 settings.NativeLanguageCode,
                 settings.UiLanguageCode,
                 settings.ExplanationLanguageCode,
-                targetLanguage.TargetLanguageCode);
+                targetLanguage.TargetLanguageCode,
+                utcNow);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

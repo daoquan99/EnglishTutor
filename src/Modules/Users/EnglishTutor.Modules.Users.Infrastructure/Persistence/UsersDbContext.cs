@@ -1,5 +1,6 @@
 using EnglishTutor.BuildingBlocks.Domain;
 using EnglishTutor.BuildingBlocks.EventBus;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.BuildingBlocks.Infrastructure.Serialization;
 using EnglishTutor.BuildingBlocks.Outbox;
 using EnglishTutor.Modules.Users.Application.Abstractions;
@@ -25,6 +26,7 @@ public sealed class UsersDbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("users");
+        modelBuilder.Ignore<DomainEvent>();
 
         modelBuilder.Entity<UserProfile>(builder =>
         {
@@ -86,6 +88,7 @@ public sealed class UsersDbContext(
             builder.Property(message => message.EventType).HasMaxLength(1000).IsRequired();
             builder.Property(message => message.SourceModule).HasMaxLength(100).IsRequired();
             builder.Property(message => message.Status).HasConversion<string>().HasMaxLength(32);
+            builder.Property(message => message.Payload).IsRequired();
             builder.HasIndex(message => new { message.Status, message.NextRetryAtUtc });
         });
 
@@ -97,12 +100,32 @@ public sealed class UsersDbContext(
             builder.Property(message => message.HandlerName).HasMaxLength(300);
             builder.HasIndex(message => new { message.EventId, message.HandlerName }).IsUnique();
         });
+
+        modelBuilder.ApplySoftDeleteQueryFilters();
+    }
+
+    public override int SaveChanges()
+    {
+        AddOutboxMessages();
+        return base.SaveChanges();
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        AddOutboxMessages();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         AddOutboxMessages();
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        AddOutboxMessages();
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
     private void AddOutboxMessages()
@@ -144,11 +167,22 @@ public sealed class UsersDbContext(
                         added.TargetLanguageCode,
                         added.CurrentLevel,
                         added.TargetLevel,
-                        true,
+                        added.IsActive,
                         added.OccurredOnUtc)
                     {
                         EventId = added.EventId,
                         OccurredOnUtc = added.OccurredOnUtc
+                    },
+                    UserTargetLanguageActivationChangedDomainEvent changed => new UserTargetLanguageChangedIntegrationEvent(
+                        changed.UserId,
+                        changed.TargetLanguageCode,
+                        changed.CurrentLevel,
+                        changed.TargetLevel,
+                        changed.IsActive,
+                        changed.ChangedAtUtc)
+                    {
+                        EventId = changed.EventId,
+                        OccurredOnUtc = changed.OccurredOnUtc
                     },
                     UserLevelChangedDomainEvent changed => new UserLevelChangedIntegrationEvent(
                         changed.UserId,
@@ -168,13 +202,7 @@ public sealed class UsersDbContext(
                     continue;
                 }
 
-                OutboxMessages.Add(new OutboxMessage
-                {
-                    EventId = integrationEvent.EventId,
-                    EventType = integrationEvent.GetType().AssemblyQualifiedName!,
-                    Payload = serializer.Serialize(integrationEvent),
-                    SourceModule = "users"
-                });
+                OutboxMessages.Add(OutboxMessageFactory.Create(integrationEvent, "users", serializer.Serialize(integrationEvent)));
             }
 
             holder.ClearDomainEvents();

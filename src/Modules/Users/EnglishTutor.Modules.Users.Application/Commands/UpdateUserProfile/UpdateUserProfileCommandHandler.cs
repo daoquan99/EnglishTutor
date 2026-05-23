@@ -1,13 +1,14 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Users.Application.Abstractions;
-using EnglishTutor.Modules.Users.Application.DTOs;
-using EnglishTutor.Modules.Users.Application.Errors;
+using EnglishTutor.Modules.Users.Application.Shared.DTOs;
+using EnglishTutor.Modules.Users.Application.Shared.Errors;
 
 namespace EnglishTutor.Modules.Users.Application.Commands.UpdateUserProfile;
 
 public sealed class UpdateUserProfileCommandHandler(
     IUserProfileRepository userProfileRepository,
+    IDateTimeProvider dateTimeProvider,
     IUsersUnitOfWork unitOfWork)
     : ICommandHandler<UpdateUserProfileCommand, UserProfileResponse>
 {
@@ -19,7 +20,7 @@ public sealed class UpdateUserProfileCommandHandler(
             return Result.Failure<UserProfileResponse>(UserErrors.ProfileNotFound(request.UserId));
         }
 
-        profile.UpdateProfile(request.DisplayName, request.AvatarUrl, request.Bio);
+        profile.UpdateProfile(request.DisplayName, request.AvatarUrl, request.Bio, dateTimeProvider.UtcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new UserProfileResponse(profile.UserId, profile.DisplayName.Value, profile.AvatarUrl, profile.Bio);

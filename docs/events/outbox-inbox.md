@@ -11,9 +11,9 @@ API requests save business data and OutboxMessages in the same transaction. Work
 1. An aggregate raises a Domain Event.
 2. The Application layer maps the Domain Event to an Integration Event when cross-module communication is needed.
 3. The producer module saves an OutboxMessage in its own schema in the same transaction as business data.
-4. `EnglishTutor.Worker` fetches pending outbox messages.
-5. Worker locks messages with row-locking fields.
-6. Worker deserializes the integration event and dispatches it through `IEventBus`.
+4. `EnglishTutor.Worker` discovers module outbox tables through registered `IModuleOutboxStore` entries and leases pending outbox messages with `FOR UPDATE SKIP LOCKED` inside a transaction.
+5. Worker sets `Status=Processing`, `LockedBy`, and `LockedUntilUtc` before dispatching outside the lease transaction.
+6. Worker delegates single-message dispatch to `OutboxMessageDispatcher`, which deserializes the integration event and publishes it through `IEventBus`.
 7. Each consumer checks its Inbox.
 8. If not processed, the handler executes and marks the InboxMessage as processed.
 9. The producer outbox message is marked processed.
@@ -35,6 +35,7 @@ API requests save business data and OutboxMessages in the same transaction. Work
 - `OutboxMessage`
 - `InboxMessage`
 - `DeadLetterMessage`
+- `IModuleOutboxStore`
 
 ## Events Published/Consumed
 
@@ -47,13 +48,14 @@ Current producers:
 - Vocabulary publishes review, mastery, and pronunciation events.
 - Speaking publishes session and correction events.
 - Mistakes publishes mistake created/reviewed/mastered events.
+- AdminReports publishes progress-summary-ready events after weekly/monthly report generation.
 
 Current consumers:
 
 - Users consumes Auth registration events.
 - Mistakes consumes Speaking correction and Vocabulary pronunciation events.
 - Progress consumes Vocabulary, Speaking, and Mistakes events.
-- `EnglishTutor.Worker` scans the `auth`, `users`, `vocabulary`, `speaking`, and `mistakes` outbox tables and writes exhausted failures to `messaging.DeadLetterMessages`.
+- `EnglishTutor.Worker` scans registered module outbox stores for `auth`, `users`, `vocabulary`, `speaking`, `mistakes`, `studyplans`, `learningcontent`, `exercises`, `assessments`, and `adminreports`, then writes exhausted failures to `messaging.DeadLetterMessages`.
 
 ## Read Models/Projections Updated
 
@@ -66,3 +68,6 @@ Progress and Mistakes projections are updated by consumer handlers through Integ
 - Failed messages increment retry count and set `NextRetryAtUtc`.
 - Retry uses exponential backoff.
 - Messages exceeding retry limits are moved to `messaging.DeadLetterMessages` and their next retry timestamp is moved out to prevent repeated dead-letter inserts.
+- `messaging.DeadLetterMessages.EventId` is unique so a lease/retry race cannot persist duplicate dead-letter rows for the same integration event.
+- In-process event dispatch creates a DI scope per published event so scoped handlers and DbContexts are resolved safely.
+- Single-message dispatch behavior is unit-tested without requiring PostgreSQL; full database scanning remains an EF Core Worker responsibility.

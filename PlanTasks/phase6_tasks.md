@@ -78,11 +78,11 @@ src/Modules/LearningContent/EnglishTutor.Modules.LearningContent.Domain/
 **LearningPathCardStatus enum:** `Locked, Available, InProgress, Completed`
 
 **Acceptance Criteria:**
-- [ ] Lesson requires at least 1 section to publish
-- [ ] ConversationLines are ordered (Order field)
-- [ ] All content entities support translations
-- [ ] Learning path card is a read model (denormalized for fast query)
-- [ ] No infrastructure dependencies
+- [x] Lesson requires at least 1 section to publish
+- [x] ConversationLines are ordered (Order field)
+- [x] All content entities support translations
+- [x] Learning path card is a read model (denormalized for fast query)
+- [x] No infrastructure dependencies
 
 ---
 
@@ -167,11 +167,11 @@ src/Modules/LearningContent/EnglishTutor.Modules.LearningContent.Application/
 5. Mark in Inbox
 
 **Acceptance Criteria:**
-- [ ] Lesson list returns translations in user's language
-- [ ] Learning path shows correct status per card
-- [ ] Level change refreshes learning path
-- [ ] Completing conversation via Speaking marks path card
-- [ ] Inbox idempotency on all event handlers
+- [x] Lesson list returns translations in user's language
+- [x] Learning path shows correct status per card
+- [x] Level change refreshes learning path
+- [x] Completing conversation via Speaking marks path card
+- [x] Inbox idempotency on all event handlers
 
 ---
 
@@ -231,11 +231,11 @@ src/Modules/LearningContent/EnglishTutor.Modules.LearningContent.Infrastructure/
 - Initial learning path cards for seed content
 
 **Acceptance Criteria:**
-- [ ] Schema is `"learningcontent"`
-- [ ] 11 tables + OutboxMessages + InboxMessages configured
-- [ ] All translation tables have unique `(ParentId, LanguageCode)` constraint
-- [ ] ConversationScenarioReader returns read model, not entity
-- [ ] Seed data provides testable content
+- [x] Schema is `"learningcontent"`
+- [x] 11 tables + OutboxMessages + InboxMessages configured
+- [x] All translation tables have unique `(ParentId, LanguageCode)` constraint
+- [x] ConversationScenarioReader returns read model, not entity
+- [x] Seed data provides testable content
 
 ---
 
@@ -264,10 +264,10 @@ src/Modules/LearningContent/EnglishTutor.Modules.LearningContent.Presentation/
 | GET | `/api/conversations/{id}` | Yes | Get scenario with conversation lines |
 
 **Acceptance Criteria:**
-- [ ] All 6 endpoints authenticated
-- [ ] Lesson list supports level/topic/skill filtering
-- [ ] Lesson detail returns translations in user's language
-- [ ] Conversation detail returns lines in order with translations
+- [x] All 6 endpoints authenticated
+- [x] Lesson list supports level/topic/skill filtering
+- [x] Lesson detail returns translations in user's language
+- [x] Conversation detail returns lines in order with translations
 
 ---
 
@@ -304,9 +304,9 @@ Task<ConversationScenarioReadModel?> GetByIdAsync(Guid scenarioId, CancellationT
 - `Guid UserId`, `Guid LessonId`, `string TargetLanguageCode`, `string Level`, `string Topic`, `string Skill`, `int DurationSeconds`, `DateTime CompletedAtUtc`
 
 **Acceptance Criteria:**
-- [ ] Contract reader returns read model with lines
-- [ ] Events carry enough data for Progress to log activity + grant EXP
-- [ ] No domain entities exposed
+- [x] Contract reader returns read model with lines
+- [x] Events carry enough data for Progress to log activity + grant EXP
+- [x] No domain entities exposed
 
 ---
 
@@ -338,10 +338,10 @@ src/Modules/Speaking/EnglishTutor.Modules.Speaking.Domain/Entities/
 - Add `CurrentLineOrder (int?)` to track conversation progress
 
 **Acceptance Criteria:**
-- [ ] Conversation practice loads scenario from LearningContent.Contracts
-- [ ] Session stores scenario reference
-- [ ] Speaking does NOT reference LearningContent.Infrastructure
-- [ ] Free talk sessions still work without scenario
+- [x] Conversation practice loads scenario from LearningContent.Contracts
+- [x] Session stores scenario reference
+- [x] Speaking does NOT reference LearningContent.Infrastructure
+- [x] Free talk sessions still work without scenario
 
 ---
 
@@ -405,12 +405,12 @@ docs/api/learning-content.md
 
 ## Phase 6 Definition of Done
 
-- [ ] Lessons with sections + translations queryable with filters
-- [ ] Conversation scenarios with ordered lines + translations
-- [ ] Learning path cards show correct status per user
-- [ ] Lesson completion updates path card + unlocks next
-- [ ] Level change refreshes learning path via events
-- [ ] Conversation practice in Speaking loads scenario from LearningContent.Contracts
-- [ ] `dotnet build && dotnet test` passes
-- [ ] At least 12 unit tests pass
-- [ ] API docs created
+- [x] Lessons with sections + translations queryable with filters
+- [x] Conversation scenarios with ordered lines + translations
+- [x] Learning path cards show correct status per user
+- [x] Lesson completion updates path card + unlocks next
+- [x] Level change refreshes learning path via events
+- [x] Conversation practice in Speaking loads scenario from LearningContent.Contracts
+- [x] `dotnet build && dotnet test` passes
+- [x] At least 12 unit tests pass
+- [x] API docs created

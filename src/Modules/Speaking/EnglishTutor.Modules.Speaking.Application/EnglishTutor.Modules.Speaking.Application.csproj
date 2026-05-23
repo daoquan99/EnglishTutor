@@ -4,5 +4,6 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\Users\EnglishTutor.Modules.Users.Contracts\EnglishTutor.Modules.Users.Contracts.csproj" />
     <ProjectReference Include="..\..\AI\EnglishTutor.Modules.AI.Contracts\EnglishTutor.Modules.AI.Contracts.csproj" />
+    <ProjectReference Include="..\..\LearningContent\EnglishTutor.Modules.LearningContent.Contracts\EnglishTutor.Modules.LearningContent.Contracts.csproj" />
   </ItemGroup>
 </Project>

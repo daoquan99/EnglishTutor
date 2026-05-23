@@ -1,14 +1,14 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.AI.Application.Abstractions;
-using EnglishTutor.Modules.AI.Application.DTOs;
+using EnglishTutor.Modules.AI.Application.Shared.DTOs;
 using EnglishTutor.Modules.AI.Domain.Enums;
 
 namespace EnglishTutor.Modules.AI.Application.Commands.GenerateVocabularyExamples;
 
 public sealed class GenerateVocabularyExamplesCommandHandler(
     IAiClient aiClient,
-    IModelRouter modelRouter,
+    IAiRuntimeRouter runtimeRouter,
     IPromptBuilder promptBuilder)
     : ICommandHandler<GenerateVocabularyExamplesCommand, IReadOnlyList<VocabularyExampleResult>>
 {
@@ -16,8 +16,10 @@ public sealed class GenerateVocabularyExamplesCommandHandler(
         GenerateVocabularyExamplesCommand request,
         CancellationToken cancellationToken)
     {
-        var rule = await modelRouter.GetRoutingRuleAsync(AiTaskType.VocabularyExampleGeneration, cancellationToken);
-        var model = rule.PreferredModel;
+        var route = await runtimeRouter.ResolveAsync(
+            AiTaskType.VocabularyExampleGeneration,
+            AiCapabilityType.TextGeneration,
+            cancellationToken);
         var prompt = await promptBuilder.BuildPromptAsync(
             "vocabulary_examples",
             new Dictionary<string, string>
@@ -31,7 +33,18 @@ public sealed class GenerateVocabularyExamplesCommandHandler(
             cancellationToken);
 
         var response = await aiClient.SendAsync(
-            new AiRequest(AiTaskType.VocabularyExampleGeneration, model, prompt, rule.MaxTokens, rule.Temperature),
+            new AiRequest(
+                AiTaskType.VocabularyExampleGeneration,
+                route.LegacyModel,
+                prompt,
+                route.MaxTokens,
+                route.Temperature,
+                route.PreferredProviderName,
+                route.PreferredModelCode,
+                route.Capability,
+                route.PreferredProviderType,
+                route.PreferredBaseUrl,
+                route.PreferredApiKeySecretName),
             cancellationToken);
 
         return new List<VocabularyExampleResult>

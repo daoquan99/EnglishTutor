@@ -17,9 +17,11 @@ public sealed class SpeakingSessionRepository(SpeakingDbContext dbContext) : ISp
             .Include(session => session.Turns)
             .SingleOrDefaultAsync(session => session.Id == id, cancellationToken);
 
-    public async Task<IReadOnlyList<SpeakingSession>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<SpeakingSession>> GetByUserIdAsync(Guid userId, int skip, int take, CancellationToken cancellationToken) =>
         await dbContext.SpeakingSessions
             .Where(session => session.UserId == userId)
             .OrderByDescending(session => session.StartedAtUtc)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync(cancellationToken);
 }

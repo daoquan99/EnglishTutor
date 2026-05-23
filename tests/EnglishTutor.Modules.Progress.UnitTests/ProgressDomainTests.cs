@@ -7,12 +7,14 @@ namespace EnglishTutor.Modules.Progress.UnitTests;
 
 public sealed class ProgressDomainTests
 {
+    private static readonly DateTime UtcNow = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     [Fact]
     public void GrantExp_Adds_Transaction_And_Updates_Rank()
     {
-        var experience = UserExperience.Create(Guid.NewGuid(), LanguageCode.English);
+        var experience = UserExperience.Create(Guid.NewGuid(), LanguageCode.English, UtcNow);
 
-        experience.GrantExp(250, "test", Guid.NewGuid(), "reason");
+        experience.GrantExp(250, "test", Guid.NewGuid(), "reason", UtcNow);
 
         Assert.Equal(250, experience.TotalExp);
         Assert.Equal(AppRank.Bronze, experience.CurrentAppRank);

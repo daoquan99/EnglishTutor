@@ -17,6 +17,18 @@ public sealed class UserVocabularyMasteryRepository(VocabularyDbContext dbContex
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<UserVocabularyMastery>> GetByUserAndTargetLanguageAsync(
+        Guid userId,
+        string targetLanguageCode,
+        CancellationToken cancellationToken)
+    {
+        var languageCode = LanguageCode.Create(targetLanguageCode);
+        return await dbContext.UserVocabularyMasteries
+            .Where(mastery => mastery.UserId == userId &&
+                              mastery.TargetLanguageCode == languageCode)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<UserVocabularyMastery>> GetDueAsync(
         Guid userId,
         string targetLanguageCode,

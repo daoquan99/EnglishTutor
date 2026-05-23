@@ -1,4 +1,4 @@
-using EnglishTutor.Modules.Mistakes.Application.DTOs;
+using EnglishTutor.Modules.Mistakes.Application.Shared.DTOs;
 using EnglishTutor.Modules.Mistakes.Domain.Entities;
 
 namespace EnglishTutor.Modules.Mistakes.Application;

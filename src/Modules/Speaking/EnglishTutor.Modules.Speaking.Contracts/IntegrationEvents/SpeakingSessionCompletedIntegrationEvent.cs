@@ -9,4 +9,5 @@ public sealed record SpeakingSessionCompletedIntegrationEvent(
     int TotalTurns,
     int OverallScore,
     long DurationSeconds,
+    Guid? ConversationScenarioId,
     DateTime CompletedAtUtc) : IntegrationEvent;

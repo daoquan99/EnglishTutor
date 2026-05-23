@@ -6,6 +6,10 @@ namespace EnglishTutor.BuildingBlocks.Infrastructure;
 
 public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUser
 {
+    private const string PermissionClaimType = "permission";
+    private const string FullAccessPermission = "admin.full_access";
+    private IReadOnlyCollection<string>? _permissions;
+
     public Guid UserId
     {
         get
@@ -20,8 +24,27 @@ public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICur
 
     public string? Email => FindClaimValue("email", ClaimTypes.Email);
 
-    public bool IsAdmin =>
-        httpContextAccessor.HttpContext?.User.IsInRole("Admin") ?? false;
+    public bool IsAdmin => HasPermission(FullAccessPermission);
+
+    public IReadOnlyCollection<string> Permissions => _permissions ??=
+        httpContextAccessor.HttpContext?.User.FindAll(PermissionClaimType)
+            .Select(claim => claim.Value)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray()
+        ?? [];
+
+    public bool HasPermission(string permissionCode)
+    {
+        if (string.IsNullOrWhiteSpace(permissionCode))
+        {
+            return false;
+        }
+
+        var permissions = Permissions;
+        return permissions.Contains(FullAccessPermission, StringComparer.OrdinalIgnoreCase) ||
+            permissions.Contains(permissionCode.Trim(), StringComparer.OrdinalIgnoreCase);
+    }
 
     private string? FindClaimValue(params string[] claimTypes)
     {

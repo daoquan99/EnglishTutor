@@ -1,8 +1,6 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Vocabulary.Application.Abstractions;
-using EnglishTutor.Modules.Vocabulary.Application.DTOs;
-
 namespace EnglishTutor.Modules.Vocabulary.Application.Queries.GetTodayVocabulary;
 
 public sealed class GetTodayVocabularyQueryHandler(
@@ -18,21 +16,27 @@ public sealed class GetTodayVocabularyQueryHandler(
             request.TargetLanguageCode,
             dateTimeProvider.UtcNow,
             cancellationToken);
-
-        var allItems = await vocabularyItemRepository.GetByTargetLanguageAsync(request.TargetLanguageCode, cancellationToken);
-        var dueItems = dueMasteries.Select(mastery =>
-        {
-            var item = allItems.Single(vocabulary => vocabulary.Id == mastery.VocabularyItemId);
-            return new TodayVocabularyItemResponse(
+        var dueItemsById = (await vocabularyItemRepository.GetByIdsAsync(
+            dueMasteries.Select(mastery => mastery.VocabularyItemId).Distinct().ToArray(),
+            cancellationToken))
+            .ToDictionary(item => item.Id);
+        var dueItems = dueMasteries
+            .Where(mastery => dueItemsById.ContainsKey(mastery.VocabularyItemId))
+            .Select(mastery =>
+            {
+                var item = dueItemsById[mastery.VocabularyItemId];
+                return new TodayVocabularyItemResponse(
                 item.Id,
                 item.Word,
                 mastery.Status.ToString(),
                 mastery.NextReviewAtUtc);
-        }).ToList();
-
-        var unseenItems = allItems
-            .Where(item => dueMasteries.All(mastery => mastery.VocabularyItemId != item.Id))
-            .Take(5)
+            })
+            .ToList();
+        var unseenItems = (await vocabularyItemRepository.GetNewItemsAsync(
+                request.UserId,
+                request.TargetLanguageCode,
+                5,
+                cancellationToken))
             .Select(item => new TodayVocabularyItemResponse(
                 item.Id,
                 item.Word,

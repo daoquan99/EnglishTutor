@@ -6,4 +6,6 @@ public interface ICurrentUser
     bool IsAuthenticated { get; }
     string? Email { get; }
     bool IsAdmin { get; }
+    IReadOnlyCollection<string> Permissions { get; }
+    bool HasPermission(string permissionCode);
 }

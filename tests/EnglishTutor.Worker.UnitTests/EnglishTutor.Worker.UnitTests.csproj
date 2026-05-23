@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bootstrapper\EnglishTutor.Worker\EnglishTutor.Worker.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.EventBus\EnglishTutor.BuildingBlocks.EventBus.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Outbox\EnglishTutor.BuildingBlocks.Outbox.csproj" />
+  </ItemGroup>
+</Project>

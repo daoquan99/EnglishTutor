@@ -52,9 +52,9 @@ src/Modules/AdminReports/EnglishTutor.Modules.AdminReports.Domain/
 **ReportPeriod enum:** `Daily, Weekly, Monthly`
 
 **Acceptance Criteria:**
-- [ ] All entities are projection/read-model friendly
-- [ ] AuditLog captures old/new values for change tracking
-- [ ] Report entities support daily/weekly/monthly periods
+- [x] All entities are projection/read-model friendly
+- [x] AuditLog captures old/new values for change tracking
+- [x] Report entities support daily/weekly/monthly periods
 
 ---
 
@@ -123,10 +123,10 @@ FROM mistakes.Mistakes GROUP BY ...
 - `DailyAiUsageReport`: index on `(ReportDate, ModelType)`
 
 **Acceptance Criteria:**
-- [ ] Schema is `"adminreports"`
-- [ ] DB views are for reporting only, not core business
-- [ ] AuditLogInterceptor captures admin actions automatically
-- [ ] 7 tables + InboxMessages configured
+- [x] Schema is `"adminreports"`
+- [x] DB views are for reporting only, not core business
+- [x] AuditLogInterceptor captures admin actions automatically
+- [x] 7 tables + InboxMessages configured
 
 ---
 
@@ -161,9 +161,9 @@ src/Modules/AdminReports/EnglishTutor.Modules.AdminReports.Presentation/
 
 **Acceptance Criteria:**
 - [ ] All 8 endpoints require Admin role
-- [ ] Report endpoints support date range filters
-- [ ] User overview sortable by TotalExp, LastActivity, RegisteredAt
-- [ ] Dead-letter reprocess moves message back to source outbox
+- [x] Report endpoints support date range filters
+- [x] User overview sortable by TotalExp, LastActivity, RegisteredAt
+- [x] Dead-letter reprocess moves message back to source outbox
 
 ---
 
@@ -197,8 +197,8 @@ Each handler:
 
 **Acceptance Criteria:**
 - [ ] All learning events update relevant report projections
-- [ ] Inbox idempotency on all handlers
-- [ ] UserOverviewCard updated incrementally, not rebuilt each time
+- [x] Inbox idempotency on all handlers
+- [x] UserOverviewCard updated incrementally, not rebuilt each time
 
 ---
 
@@ -213,9 +213,9 @@ Each handler:
 4. Applies to: PromptTemplate changes, ModelRoutingRule changes, Assessment result overrides, User level overrides
 
 **Acceptance Criteria:**
-- [ ] Only admin actions are audited
-- [ ] Old/new values captured as JSON
-- [ ] IP address captured from HttpContext
+- [x] Only admin actions are audited
+- [x] Old/new values captured as JSON
+- [x] IP address captured from HttpContext
 
 ---
 
@@ -228,9 +228,9 @@ Each handler:
 - `POST /api/admin/dead-letters/{id}/reprocess`: change Status from Dead→Reprocessing, create new `OutboxMessage` in source module's outbox with the original payload, reset retry count
 
 **Acceptance Criteria:**
-- [ ] Admin can see all failed events with error details
-- [ ] Reprocess creates fresh outbox entry for retry
-- [ ] Reprocessed dead letter marked as Reprocessed
+- [x] Admin can see all failed events with error details
+- [x] Reprocess creates fresh outbox entry for retry
+- [x] Reprocessed dead letter marked as Reprocessed
 
 ---
 
@@ -257,10 +257,10 @@ src/Bootstrapper/EnglishTutor.Worker/Jobs/
 3. Generate `MonthlyProgressSummary` notifications
 
 **Acceptance Criteria:**
-- [ ] Weekly job runs every Monday
-- [ ] Monthly job runs 1st of month
-- [ ] Reports aggregated correctly
-- [ ] Summary notifications created for active users
+- [x] Weekly job runs every Monday
+- [x] Monthly job runs 1st of month
+- [x] Reports aggregated correctly
+- [x] Summary notifications created for active users
 
 ---
 
@@ -295,11 +295,11 @@ src/Bootstrapper/EnglishTutor.Worker/Jobs/
 
 ## Phase 9 Definition of Done
 
-- [ ] Admin can view user overview, AI usage, activity stats, mistake trends, assessment pass rates
-- [ ] Audit logs capture admin actions with old/new values
-- [ ] Dead-letter messages visible + reprocessable by admin
-- [ ] Weekly/monthly report generation jobs run on schedule
+- [x] Admin can view user overview, AI usage, activity stats, mistake trends, assessment pass rates
+- [x] Audit logs capture admin actions with old/new values
+- [x] Dead-letter messages visible + reprocessable by admin
+- [x] Weekly/monthly report generation jobs run on schedule
 - [ ] All admin endpoints require Admin role
-- [ ] `dotnet build && dotnet test` passes
-- [ ] At least 10 unit tests pass
-- [ ] API + workflow docs created
+- [x] `dotnet build && dotnet test` passes
+- [x] At least 10 unit tests pass
+- [x] API + workflow docs created

@@ -20,26 +20,27 @@ public sealed class SpeakingTurnCorrectedEventHandler(
             return;
         }
 
+        var correctedAt = @event.CorrectedAtUtc;
         var speaking = await progressRepository.GetOrCreateSkillProgressAsync(
             @event.UserId,
             @event.TargetLanguageCode,
             LearningSkill.Speaking,
             ct);
-        speaking.RecordScore(@event.OverallScore);
+        speaking.RecordScore(@event.OverallScore, correctedAt);
 
         var grammar = await progressRepository.GetOrCreateSkillProgressAsync(
             @event.UserId,
             @event.TargetLanguageCode,
             LearningSkill.Grammar,
             ct);
-        grammar.RecordScore(@event.GrammarScore);
+        grammar.RecordScore(@event.GrammarScore, correctedAt);
 
         var vocabulary = await progressRepository.GetOrCreateSkillProgressAsync(
             @event.UserId,
             @event.TargetLanguageCode,
             LearningSkill.Vocabulary,
             ct);
-        vocabulary.RecordScore(@event.VocabularyScore);
+        vocabulary.RecordScore(@event.VocabularyScore, correctedAt);
 
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
         await unitOfWork.SaveChangesAsync(ct);

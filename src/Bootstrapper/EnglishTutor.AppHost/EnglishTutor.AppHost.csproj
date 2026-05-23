@@ -1,0 +1,16 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.3.3">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>english-tutor-apphost-dev</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    <PackageReference Include="Aspire.Hosting.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Api\EnglishTutor.Api.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Worker\EnglishTutor.Worker.csproj" />
+  </ItemGroup>
+</Project>

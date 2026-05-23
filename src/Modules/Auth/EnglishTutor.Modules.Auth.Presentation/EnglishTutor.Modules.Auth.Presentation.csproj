@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.Modules.Auth.Application\EnglishTutor.Modules.Auth.Application.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Modules.Auth.Contracts\EnglishTutor.Modules.Auth.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Presentation\EnglishTutor.BuildingBlocks.Presentation.csproj" />
   </ItemGroup>

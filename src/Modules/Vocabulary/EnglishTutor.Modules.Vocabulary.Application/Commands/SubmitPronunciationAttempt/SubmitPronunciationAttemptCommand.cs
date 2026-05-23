@@ -1,5 +1,5 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
-using EnglishTutor.Modules.Vocabulary.Application.DTOs;
+using EnglishTutor.Modules.Vocabulary.Application.Shared.DTOs;
 
 namespace EnglishTutor.Modules.Vocabulary.Application.Commands.SubmitPronunciationAttempt;
 

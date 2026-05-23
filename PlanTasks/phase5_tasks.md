@@ -59,10 +59,10 @@ src/Modules/StudyPlans/EnglishTutor.Modules.StudyPlans.Domain/
 - `static Error PlanAlreadyExists`, `PlanNotFound`, `SessionNotFound`, `SessionNotPlanned`, `InvalidTimeZone`
 
 **Acceptance Criteria:**
-- [ ] Session status transitions enforced (only Planned → other)
-- [ ] Default study week Mon–Fri
-- [ ] Domain events raised on create, update, missed
-- [ ] No infrastructure dependencies
+- [x] Session status transitions enforced (only Planned → other)
+- [x] Default study week Mon–Fri
+- [x] Domain events raised on create, update, missed
+- [x] No infrastructure dependencies
 
 ---
 
@@ -133,10 +133,10 @@ src/Modules/StudyPlans/EnglishTutor.Modules.StudyPlans.Application/
 - `UpdateStudyPlanCommandValidator`: same rules for non-null fields
 
 **Acceptance Criteria:**
-- [ ] Only one active plan per user per target language
-- [ ] Plan creation auto-generates next 7 days of sessions
-- [ ] Schedule update regenerates future sessions
-- [ ] Skip only works on Planned status
+- [x] Only one active plan per user per target language
+- [x] Plan creation auto-generates next 7 days of sessions
+- [x] Schedule update regenerates future sessions
+- [x] Skip only works on Planned status
 
 ---
 
@@ -172,10 +172,10 @@ src/Modules/StudyPlans/EnglishTutor.Modules.StudyPlans.Infrastructure/
 - `StudyPlanTarget`: table `studyplans.StudyPlanTargets`, FK to UserStudyPlan
 
 **Acceptance Criteria:**
-- [ ] Schema is `"studyplans"`
-- [ ] 4 tables + OutboxMessages configured
-- [ ] Unique constraint prevents duplicate active plans
-- [ ] Indexes optimized for missed session detection query
+- [x] Schema is `"studyplans"`
+- [x] 4 tables + OutboxMessages configured
+- [x] Unique constraint prevents duplicate active plans
+- [x] Indexes optimized for missed session detection query
 
 ---
 
@@ -205,10 +205,10 @@ src/Modules/StudyPlans/EnglishTutor.Modules.StudyPlans.Presentation/
 | POST | `/api/study-plans/me/planned-sessions/{id}/skip` | Yes | Skip a planned session |
 
 **Acceptance Criteria:**
-- [ ] All 6 endpoints authenticated
-- [ ] `me` routes use `ICurrentUser.UserId`
-- [ ] Planned sessions support date range + status filters
-- [ ] No business logic in endpoints
+- [x] All 6 endpoints authenticated
+- [x] `me` routes use `ICurrentUser.UserId`
+- [x] Planned sessions support date range + status filters
+- [x] No business logic in endpoints
 
 ---
 
@@ -235,9 +235,9 @@ src/Modules/StudyPlans/EnglishTutor.Modules.StudyPlans.Contracts/
 - `Guid UserId`, `string TargetLanguageCode`, `int ActualMinutes`, `int TargetMinutes`, `DateTime CompletedDateUtc`
 
 **Acceptance Criteria:**
-- [ ] All events past tense
-- [ ] Events carry enough data for Notifications/Progress to act without callback
-- [ ] No domain entities in contracts
+- [x] All events past tense
+- [x] Events carry enough data for Notifications/Progress to act without callback
+- [x] No domain entities in contracts
 
 ---
 
@@ -292,10 +292,10 @@ src/Modules/Notifications/EnglishTutor.Modules.Notifications.Domain/
 - Templates use placeholders: `{userName}`, `{studyTime}`, `{streakDays}`, `{date}`
 
 **Acceptance Criteria:**
-- [ ] Default settings: all enabled, InApp
-- [ ] Message status transitions enforced in domain
-- [ ] Templates support multi-language
-- [ ] No infrastructure dependencies
+- [x] Default settings: all enabled, InApp
+- [x] Message status transitions enforced in domain
+- [x] Templates support multi-language
+- [x] No infrastructure dependencies
 
 ---
 
@@ -357,10 +357,10 @@ src/Modules/Notifications/EnglishTutor.Modules.Notifications.Application/
 **UpdateNotificationSettingsCommand:** all boolean flags + `PreferredChannel`
 
 **Acceptance Criteria:**
-- [ ] Notifications only created if user has that type enabled
-- [ ] Templates rendered with correct UI language
-- [ ] Default settings auto-created on user registration
-- [ ] Inbox idempotency on all event handlers
+- [x] Notifications only created if user has that type enabled
+- [x] Templates rendered with correct UI language
+- [x] Default settings auto-created on user registration
+- [x] Inbox idempotency on all event handlers
 
 ---
 
@@ -405,10 +405,10 @@ src/Modules/Notifications/EnglishTutor.Modules.Notifications.Infrastructure/
 - etc.
 
 **Acceptance Criteria:**
-- [ ] Schema `"notifications"`
-- [ ] 4 tables + InboxMessages
-- [ ] Seed templates for vi + en
-- [ ] Indexes optimized for user notification list query
+- [x] Schema `"notifications"`
+- [x] 4 tables + InboxMessages
+- [x] Seed templates for vi + en
+- [x] Indexes optimized for user notification list query
 
 ---
 
@@ -433,10 +433,10 @@ src/Modules/Notifications/EnglishTutor.Modules.Notifications.Presentation/
 | PUT | `/api/notifications/settings` | Yes | Update settings |
 
 **Acceptance Criteria:**
-- [ ] All 4 endpoints authenticated
-- [ ] Pagination on notification list
-- [ ] Only owner can read/update own notifications
-- [ ] No business logic in endpoints
+- [x] All 4 endpoints authenticated
+- [x] Pagination on notification list
+- [x] Only owner can read/update own notifications
+- [x] No business logic in endpoints
 
 ---
 
@@ -468,11 +468,11 @@ src/Bootstrapper/EnglishTutor.Worker/Jobs/
 6. Save directly (in-process, since Worker owns this)
 
 **Acceptance Criteria:**
-- [ ] Missed detection only marks sessions older than 2 hours
-- [ ] Reminder respects user timezone
-- [ ] Reminder only sent on study days
-- [ ] No duplicate reminders for same day
-- [ ] Jobs registered in Worker DI with correct Quartz cron
+- [x] Missed detection only marks sessions older than 2 hours
+- [x] Reminder respects user timezone
+- [x] Reminder only sent on study days
+- [x] No duplicate reminders for same day
+- [x] Jobs registered in Worker DI with correct Quartz cron
 
 ---
 
@@ -530,10 +530,10 @@ tests/EnglishTutor.Modules.Notifications.UnitTests/
 **Target:** At least 15 tests across both modules
 
 **Acceptance Criteria:**
-- [ ] Domain logic tested without infrastructure
-- [ ] Event handler tests mock repositories + Inbox
-- [ ] Validator tests cover edge cases
-- [ ] All tests pass
+- [x] Domain logic tested without infrastructure
+- [x] Event handler tests mock repositories + Inbox
+- [x] Validator tests cover edge cases
+- [x] All tests pass
 
 ---
 
@@ -569,13 +569,13 @@ docs/workflows/study-reminder.md
 
 ## Phase 5 Definition of Done
 
-- [ ] Study plan CRUD works (create, update, schedule, skip)
-- [ ] Planned sessions auto-generated for study days
-- [ ] Worker detects missed sessions every 15 min
-- [ ] Study reminders sent before preferred study time
-- [ ] Missed study notifications created via Outbox→Worker→Inbox
-- [ ] Notification settings respected (enable/disable per type)
-- [ ] Default notification settings auto-created on user registration
-- [ ] `dotnet build && dotnet test` passes
-- [ ] At least 15 unit tests pass
-- [ ] All docs created (2 API + 1 workflow)
+- [x] Study plan CRUD works (create, update, schedule, skip)
+- [x] Planned sessions auto-generated for study days
+- [x] Worker detects missed sessions every 15 min
+- [x] Study reminders sent before preferred study time
+- [x] Missed study notifications created via Outbox→Worker→Inbox
+- [x] Notification settings respected (enable/disable per type)
+- [x] Default notification settings auto-created on user registration
+- [x] `dotnet build && dotnet test` passes
+- [x] At least 15 unit tests pass
+- [x] All docs created (2 API + 1 workflow)

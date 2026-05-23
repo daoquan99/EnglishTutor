@@ -2,9 +2,13 @@ namespace EnglishTutor.BuildingBlocks.Infrastructure.Storage;
 
 public interface IFileStorageService
 {
-    Task<string> SaveAsync(Stream content, string fileName, CancellationToken ct = default);
+    Task<FileMetadata> UploadAsync(Stream file, string fileName, string contentType, string? folder, CancellationToken ct);
 
-    Task<Stream> OpenReadAsync(string storagePath, CancellationToken ct = default);
+    Task<Stream> DownloadAsync(string fileKey, CancellationToken ct);
 
-    Task DeleteAsync(string storagePath, CancellationToken ct = default);
+    Task DeleteAsync(string fileKey, CancellationToken ct);
+
+    string GeneratePresignedUrl(string fileKey, TimeSpan expiry);
+
+    Task<bool> ExistsAsync(string fileKey, CancellationToken ct);
 }

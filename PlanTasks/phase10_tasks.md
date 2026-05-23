@@ -46,10 +46,10 @@ public interface IFileStorageService
 **StorageProvider enum:** `Local, S3, CloudflareR2, GoogleCloudStorage, AzureBlobStorage`
 
 **Acceptance Criteria:**
-- [ ] Abstraction is cloud-agnostic
-- [ ] FileKey is unique path (e.g., `speaking/sessions/{sessionId}/turn-{turnId}.webm`)
-- [ ] Presigned URL supports time-limited access
-- [ ] StorageOptions configurable per environment
+- [x] Abstraction is cloud-agnostic
+- [x] FileKey is unique path (e.g., `speaking/sessions/{sessionId}/turn-{turnId}.webm`)
+- [x] Presigned URL supports time-limited access
+- [x] StorageOptions configurable per environment
 
 ---
 
@@ -102,11 +102,11 @@ public static IServiceCollection AddFileStorage(this IServiceCollection services
 **Add to Directory.Packages.props:** `AWSSDK.S3`
 
 **Acceptance Criteria:**
-- [ ] Local storage works for dev without any cloud config
-- [ ] S3 storage works with configurable endpoint (supports R2)
-- [ ] DI registration switches based on config
-- [ ] Files stored with correct content type
-- [ ] Presigned URLs expire correctly
+- [x] Local storage works for dev without any cloud config
+- [x] S3 storage works with configurable endpoint (supports R2)
+- [x] DI registration switches based on config
+- [x] Files stored with correct content type
+- [x] Presigned URLs expire correctly
 
 ---
 
@@ -142,11 +142,11 @@ src/Modules/Speaking/EnglishTutor.Modules.Speaking.Domain/Entities/
 - Validation: either AudioFile or UserText must be provided
 
 **Acceptance Criteria:**
-- [ ] Audio upload stores file via storage service
-- [ ] AudioUrl saved on SpeakingTurn entity
-- [ ] Text-only turns still work without audio
-- [ ] File key follows consistent naming pattern
-- [ ] Speaking module references IAudioStorageService from BuildingBlocks only
+- [x] Audio upload stores file via storage service
+- [x] AudioUrl saved on SpeakingTurn entity
+- [x] Text-only turns still work without audio
+- [x] File key follows consistent naming pattern
+- [x] Speaking module references IAudioStorageService from BuildingBlocks only
 
 ---
 
@@ -183,10 +183,10 @@ src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Application/Commands/Subm
 5. Update mastery + save outbox event
 
 **Acceptance Criteria:**
-- [ ] Audio files uploaded with unique keys per attempt
-- [ ] AI pronunciation scoring returns per-word feedback for sentences
-- [ ] Mastery scores updated after each attempt
-- [ ] Both word + sentence pronunciation flows work
+- [x] Audio files uploaded with unique keys per attempt
+- [x] AI pronunciation scoring returns per-word feedback for sentences
+- [x] Mastery scores updated after each attempt
+- [x] Both word + sentence pronunciation flows work
 
 ---
 
@@ -235,10 +235,10 @@ public interface IAudioGenerationService
 - Generated AudioUrl stored on `VocabularyItem` or `VocabularyExample`
 
 **Acceptance Criteria:**
-- [ ] TTS generation works for single words and sentences
+- [x] TTS generation works for single words and sentences
 - [ ] Generated audio stored in cloud storage
 - [ ] AI request logged with token/cost metrics
-- [ ] Audio cached by text hash (don't regenerate same text)
+- [x] Audio cached by text hash (don't regenerate same text)
 
 ---
 
@@ -285,9 +285,9 @@ public interface IRealtimeVoiceService
 
 **Acceptance Criteria:**
 - [ ] GeminiLiveClient can establish WebSocket connection
-- [ ] Session config passes language context
-- [ ] Abstraction in Contracts allows Speaking module to use later
-- [ ] Connection error handling + graceful shutdown
+- [x] Session config passes language context
+- [x] Abstraction in Contracts allows Speaking module to use later
+- [x] Connection error handling + graceful shutdown
 
 ---
 
@@ -328,21 +328,21 @@ tests/EnglishTutor.Modules.AI.UnitTests/
 **Target:** At least 12 tests
 
 **Acceptance Criteria:**
-- [ ] Storage tests use real local filesystem (integration)
-- [ ] S3 tests mock AWS client
+- [x] Storage tests use real local filesystem (integration)
+- [x] S3 tests mock AWS client
 - [ ] Audio upload flows tested end-to-end with mock storage
-- [ ] All tests pass
+- [x] All tests pass
 
 ---
 
 ## Phase 10 Definition of Done
 
-- [ ] File storage abstraction supports Local + S3/R2
+- [x] File storage abstraction supports Local + S3/R2
 - [ ] Speaking turn accepts audio upload → stores → processes
 - [ ] Vocabulary pronunciation accepts audio → AI scores → mastery updated
-- [ ] TTS generates sample audio for vocabulary words/sentences
+- [x] TTS generates sample audio for vocabulary words/sentences
 - [ ] Gemini Live client can establish WebSocket connection
-- [ ] Storage provider switchable via configuration
-- [ ] `dotnet build && dotnet test` passes
-- [ ] At least 12 tests pass
-- [ ] No storage implementation leaked outside BuildingBlocks.Infrastructure
+- [x] Storage provider switchable via configuration
+- [x] `dotnet build && dotnet test` passes
+- [x] At least 12 tests pass
+- [x] No storage implementation leaked outside BuildingBlocks.Infrastructure

@@ -1,4 +1,4 @@
-using EnglishTutor.Modules.Auth.Application.DTOs;
+using EnglishTutor.Modules.Auth.Application.Shared.DTOs;
 using Microsoft.AspNetCore.Http;
 
 namespace EnglishTutor.Modules.Auth.Presentation;
@@ -26,29 +26,36 @@ internal static class AuthCookieManager
             !string.IsNullOrWhiteSpace(deviceId);
     }
 
-    public static void SetAuthCookies(HttpResponse response, AuthTokenResponse tokenResponse)
+    public static void SetAuthCookies(HttpResponse response, AuthTokenResponse tokenResponse, AuthCookieSettings settings)
     {
-        var options = CreateOptions(tokenResponse.RefreshTokenExpiresAtUtc);
+        var options = CreateOptions(tokenResponse.RefreshTokenExpiresAtUtc, settings);
         response.Cookies.Append(RefreshTokenCookieName, tokenResponse.RefreshToken, options);
         response.Cookies.Append(SessionIdCookieName, tokenResponse.SessionId.ToString("N"), options);
         response.Cookies.Append(DeviceIdCookieName, tokenResponse.DeviceId, options);
     }
 
-    public static void ClearAuthCookies(HttpResponse response)
+    public static void ClearAuthCookies(HttpResponse response, AuthCookieSettings settings)
     {
-        var options = CreateOptions(DateTimeOffset.UtcNow.AddDays(-1));
+        var options = CreateOptions(DateTimeOffset.UtcNow.AddDays(-1), settings);
         response.Cookies.Delete(RefreshTokenCookieName, options);
         response.Cookies.Delete(SessionIdCookieName, options);
         response.Cookies.Delete(DeviceIdCookieName, options);
     }
 
-    private static CookieOptions CreateOptions(DateTimeOffset expires) =>
+    private static CookieOptions CreateOptions(DateTimeOffset expires, AuthCookieSettings settings) =>
         new()
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Path = "/api/auth",
+            Secure = settings.Secure,
+            SameSite = settings.SameSite,
+            Path = settings.Path,
             Expires = expires
         };
+}
+
+public sealed class AuthCookieSettings
+{
+    public bool Secure { get; init; } = true;
+    public SameSiteMode SameSite { get; init; } = SameSiteMode.Lax;
+    public string Path { get; init; } = "/api/auth";
 }

@@ -10,12 +10,14 @@ namespace EnglishTutor.Modules.Speaking.UnitTests;
 
 public sealed class SpeakingDomainTests
 {
+    private static readonly DateTime UtcNow = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     [Fact]
     public void Start_Captures_LanguageSnapshot_And_Raises_Event()
     {
         var snapshot = CreateSnapshot();
 
-        var session = SpeakingSession.Start(Guid.NewGuid(), snapshot, SpeakingSessionType.FreeTalk, "travel");
+        var session = SpeakingSession.Start(Guid.NewGuid(), snapshot, SpeakingSessionType.FreeTalk, "travel", UtcNow);
 
         Assert.Equal(snapshot, session.LanguageSnapshot);
         Assert.Equal(SpeakingSessionStatus.Active, session.Status);
@@ -25,10 +27,10 @@ public sealed class SpeakingDomainTests
     [Fact]
     public void AddTurn_Increments_Turn_Number()
     {
-        var session = SpeakingSession.Start(Guid.NewGuid(), CreateSnapshot(), SpeakingSessionType.FreeTalk, null);
+        var session = SpeakingSession.Start(Guid.NewGuid(), CreateSnapshot(), SpeakingSessionType.FreeTalk, null, UtcNow);
 
-        var first = session.AddTurn("Hello");
-        var second = session.AddTurn("How are you?");
+        var first = session.AddTurn("Hello", UtcNow);
+        var second = session.AddTurn("How are you?", UtcNow.AddMinutes(1));
 
         Assert.Equal(1, first.TurnNumber);
         Assert.Equal(2, second.TurnNumber);
@@ -37,10 +39,10 @@ public sealed class SpeakingDomainTests
     [Fact]
     public void Completed_Session_Cannot_Add_Turn()
     {
-        var session = SpeakingSession.Start(Guid.NewGuid(), CreateSnapshot(), SpeakingSessionType.FreeTalk, null);
-        session.Complete(totalTurns: 1, overallScore: 80);
+        var session = SpeakingSession.Start(Guid.NewGuid(), CreateSnapshot(), SpeakingSessionType.FreeTalk, null, UtcNow);
+        session.Complete(totalTurns: 1, overallScore: 80, UtcNow.AddMinutes(1));
 
-        Assert.Throws<DomainException>(() => session.AddTurn("Again"));
+        Assert.Throws<DomainException>(() => session.AddTurn("Again", UtcNow.AddMinutes(2)));
     }
 
     [Fact]
@@ -62,7 +64,8 @@ public sealed class SpeakingDomainTests
             "vi",
             null,
             null,
-            null);
+            null,
+            UtcNow);
 
         Assert.Equal(100, result.GrammarScore);
         Assert.Equal(0, result.PronunciationScore);
@@ -114,5 +117,6 @@ public sealed class SpeakingDomainTests
             "vi",
             null,
             null,
-            null);
+            null,
+            UtcNow);
 }

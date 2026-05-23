@@ -1,13 +1,14 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Mistakes.Application.Abstractions;
-using EnglishTutor.Modules.Mistakes.Application.DTOs;
-using EnglishTutor.Modules.Mistakes.Application.Errors;
+using EnglishTutor.Modules.Mistakes.Application.Shared.DTOs;
+using EnglishTutor.Modules.Mistakes.Application.Shared.Errors;
 
 namespace EnglishTutor.Modules.Mistakes.Application.Commands.MarkMistakeMastered;
 
 public sealed class MarkMistakeMasteredCommandHandler(
     IMistakeRepository mistakeRepository,
+    IDateTimeProvider dateTimeProvider,
     IMistakesUnitOfWork unitOfWork)
     : ICommandHandler<MarkMistakeMasteredCommand, MistakeResponse>
 {
@@ -19,7 +20,7 @@ public sealed class MarkMistakeMasteredCommandHandler(
             return Result.Failure<MistakeResponse>(MistakeErrors.MistakeNotFound(request.MistakeId));
         }
 
-        mistake.MarkMastered();
+        mistake.MarkMastered(dateTimeProvider.UtcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return MistakeMappers.ToResponse(mistake);
     }

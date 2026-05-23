@@ -1,3 +1,5 @@
+using EnglishTutor.BuildingBlocks.Domain;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.BuildingBlocks.Outbox;
 using EnglishTutor.Modules.Progress.Application.Abstractions;
 using EnglishTutor.Modules.Progress.Domain.Entities;
@@ -22,6 +24,7 @@ public sealed class ProgressDbContext(DbContextOptions<ProgressDbContext> option
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("progress");
+        modelBuilder.Ignore<DomainEvent>();
 
         modelBuilder.Entity<LearningActivityLog>(builder =>
         {
@@ -43,6 +46,12 @@ public sealed class ProgressDbContext(DbContextOptions<ProgressDbContext> option
                 .HasMaxLength(3);
             builder.Property(exp => exp.CurrentAppRank).HasConversion<string>().HasMaxLength(50);
             builder.HasIndex(exp => new { exp.UserId, exp.TargetLanguageCode }).IsUnique();
+            // Optimistic concurrency via Postgres xmin: prevents lost updates when concurrent
+            // event handlers grant EXP to the same user simultaneously.
+            builder.Property<uint>("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
             builder.Metadata.FindNavigation(nameof(UserExperience.Transactions))!.SetPropertyAccessMode(PropertyAccessMode.Field);
         });
 
@@ -101,6 +110,10 @@ public sealed class ProgressDbContext(DbContextOptions<ProgressDbContext> option
                 .HasConversion(code => code.Value, value => BuildingBlocks.SharedKernel.LanguageCode.Create(value))
                 .HasMaxLength(3);
             builder.HasIndex(snapshot => new { snapshot.UserId, snapshot.TargetLanguageCode, snapshot.Date }).IsUnique();
+            builder.Property<uint>("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
         });
 
         modelBuilder.Entity<UserStreak>(builder =>
@@ -111,6 +124,10 @@ public sealed class ProgressDbContext(DbContextOptions<ProgressDbContext> option
                 .HasConversion(code => code.Value, value => BuildingBlocks.SharedKernel.LanguageCode.Create(value))
                 .HasMaxLength(3);
             builder.HasIndex(streak => new { streak.UserId, streak.TargetLanguageCode }).IsUnique();
+            builder.Property<uint>("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
         });
 
         modelBuilder.Entity<InboxMessage>(builder =>
@@ -121,5 +138,7 @@ public sealed class ProgressDbContext(DbContextOptions<ProgressDbContext> option
             builder.Property(message => message.HandlerName).HasMaxLength(300);
             builder.HasIndex(message => new { message.EventId, message.HandlerName }).IsUnique();
         });
+
+        modelBuilder.ApplySoftDeleteQueryFilters();
     }
 }

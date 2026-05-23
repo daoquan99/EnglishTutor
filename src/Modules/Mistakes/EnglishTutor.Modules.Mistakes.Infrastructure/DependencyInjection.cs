@@ -1,5 +1,7 @@
 using EnglishTutor.BuildingBlocks.EventBus;
 using EnglishTutor.BuildingBlocks.Infrastructure.Serialization;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.Modules.Exercises.Contracts.IntegrationEvents;
 using EnglishTutor.Modules.Mistakes.Application.Abstractions;
 using EnglishTutor.Modules.Mistakes.Application.EventHandlers;
 using EnglishTutor.Modules.Mistakes.Infrastructure.Persistence;
@@ -17,10 +19,11 @@ public static class DependencyInjection
     public static IServiceCollection AddMistakesModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<JsonSerializerService>();
-        services.AddDbContext<MistakesDbContext>(options =>
+        services.AddDbContext<MistakesDbContext>((provider, options) =>
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
-                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "mistakes")));
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "mistakes"))
+                .AddInterceptors(provider.GetRequiredService<AuditableEntitySaveChangesInterceptor>()));
 
         services.AddScoped<IMistakeRepository, MistakeRepository>();
         services.AddScoped<IMistakesUnitOfWork>(provider => provider.GetRequiredService<MistakesDbContext>());
@@ -28,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationEventHandler<SpeakingTurnCorrectedIntegrationEvent>, SpeakingTurnCorrectedEventHandler>();
         services.AddScoped<IIntegrationEventHandler<VocabularyPronunciationPracticedIntegrationEvent>, VocabularyPronunciationPracticedEventHandler>();
         services.AddScoped<IIntegrationEventHandler<ExampleSentencePronunciationPracticedIntegrationEvent>, ExampleSentencePronunciationPracticedEventHandler>();
+        services.AddScoped<IIntegrationEventHandler<ExerciseCompletedIntegrationEvent>, ExerciseCompletedEventHandler>();
 
         return services;
     }

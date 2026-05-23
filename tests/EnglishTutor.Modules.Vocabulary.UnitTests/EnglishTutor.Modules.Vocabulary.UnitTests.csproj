@@ -13,5 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Vocabulary\EnglishTutor.Modules.Vocabulary.Domain\EnglishTutor.Modules.Vocabulary.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\Vocabulary\EnglishTutor.Modules.Vocabulary.Application\EnglishTutor.Modules.Vocabulary.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Vocabulary\EnglishTutor.Modules.Vocabulary.Infrastructure\EnglishTutor.Modules.Vocabulary.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

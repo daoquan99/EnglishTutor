@@ -1,8 +1,12 @@
 namespace EnglishTutor.BuildingBlocks.Domain;
 
-public abstract class Entity<TId> : IEquatable<Entity<TId>> where TId : notnull
+public abstract class Entity<TId> : IAuditableEntity, IEquatable<Entity<TId>> where TId : notnull
 {
     public TId Id { get; protected set; } = default!;
+    public DateTime CreatedAtUtc { get; protected set; }
+    public Guid? CreatedByUserId { get; protected set; }
+    public DateTime UpdatedAtUtc { get; protected set; }
+    public Guid? UpdatedByUserId { get; protected set; }
 
     protected Entity() { }
 

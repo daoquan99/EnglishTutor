@@ -61,9 +61,9 @@ src/Modules/Speaking/EnglishTutor.Modules.Speaking.Domain/
 - `NativeLanguageCode`, `TargetLanguageCode`, `UiLanguageCode`, `ExplanationLanguageCode`, `UserLevel`
 
 **Acceptance Criteria:**
-- [ ] Language snapshot captured at session start (immutable after creation)
-- [ ] Session status transitions enforced (can't add turn to completed session)
-- [ ] Domain events raised on start, correction, completion
+- [x] Language snapshot captured at session start (immutable after creation)
+- [x] Session status transitions enforced (can't add turn to completed session)
+- [x] Domain events raised on start, correction, completion
 
 ---
 
@@ -118,10 +118,10 @@ src/Modules/Speaking/EnglishTutor.Modules.Speaking.Application/
 4. Save summary + save `SpeakingSessionCompletedIntegrationEvent` to outbox
 
 **Acceptance Criteria:**
-- [ ] Uses `Users.Contracts` for language settings (no direct DB access)
-- [ ] Uses `AI.Contracts` for correction (no direct Gemini call)
-- [ ] Outbox messages saved in same transaction as business data
-- [ ] Session summary calculates correct averages
+- [x] Uses `Users.Contracts` for language settings (no direct DB access)
+- [x] Uses `AI.Contracts` for correction (no direct Gemini call)
+- [x] Outbox messages saved in same transaction as business data
+- [x] Session summary calculates correct averages
 
 ---
 
@@ -355,11 +355,11 @@ Speaking.AddTurn → AI correction → SpeakingTurnCorrected outbox
 ```
 
 **Acceptance Criteria:**
-- [ ] Worker processes outbox messages from all modules
-- [ ] Inbox prevents duplicate processing
-- [ ] Failed events retried with exponential backoff
-- [ ] Dead events moved to DeadLetterMessages after max retries
-- [ ] Full chain works end-to-end
+- [x] Worker processes outbox messages from all modules
+- [x] Inbox prevents duplicate processing
+- [x] Failed events retried with exponential backoff
+- [x] Dead events moved to DeadLetterMessages after max retries
+- [x] Full chain works end-to-end
 
 ---
 
@@ -409,12 +409,12 @@ Wire concrete event consumers:
 
 ## Phase 4 Definition of Done
 
-- [ ] Speaking full flow: start → turns with AI correction → complete → summary
-- [ ] Mistakes auto-created from speaking corrections via Outbox→Worker→Inbox
-- [ ] Progress updated: EXP, activity log, skill progress, streak, dashboard
-- [ ] Vocabulary review events → Progress updates (from Phase 3 wiring)
-- [ ] Outbox→Worker→Inbox pipeline works reliably
-- [ ] Dead-letter captures failed events
-- [ ] Dashboard query returns pre-computed snapshot
-- [ ] `dotnet build && dotnet test` passes
-- [ ] All API + workflow + event docs created
+- [x] Speaking full flow: start → turns with AI correction → complete → summary
+- [x] Mistakes auto-created from speaking corrections via Outbox→Worker→Inbox
+- [x] Progress updated: EXP, activity log, skill progress, streak, dashboard
+- [x] Vocabulary review events → Progress updates (from Phase 3 wiring)
+- [x] Outbox→Worker→Inbox pipeline works reliably
+- [x] Dead-letter captures failed events
+- [x] Dashboard query returns pre-computed snapshot
+- [x] `dotnet build && dotnet test` passes
+- [x] All API + workflow + event docs created

@@ -1,5 +1,7 @@
 using EnglishTutor.BuildingBlocks.EventBus;
 using EnglishTutor.BuildingBlocks.Infrastructure.Serialization;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.Modules.Assessments.Contracts.IntegrationEvents;
 using EnglishTutor.Modules.Auth.Contracts.IntegrationEvents;
 using EnglishTutor.Modules.Users.Application.Abstractions;
 using EnglishTutor.Modules.Users.Application.EventHandlers;
@@ -18,10 +20,11 @@ public static class DependencyInjection
     public static IServiceCollection AddUsersModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<JsonSerializerService>();
-        services.AddDbContext<UsersDbContext>(options =>
+        services.AddDbContext<UsersDbContext>((provider, options) =>
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
-                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "users")));
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "users"))
+                .AddInterceptors(provider.GetRequiredService<AuditableEntitySaveChangesInterceptor>()));
 
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IUserLanguageSettingsRepository, UserLanguageSettingsRepository>();
@@ -33,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IUserLanguageSettingsReader, UserLanguageSettingsReader>();
         services.AddScoped<IUserTargetLanguageReader, UserTargetLanguageReader>();
         services.AddScoped<IIntegrationEventHandler<UserRegisteredIntegrationEvent>, UserRegisteredIntegrationEventHandler>();
+        services.AddScoped<IIntegrationEventHandler<LevelUpApprovedIntegrationEvent>, LevelUpApprovedEventHandler>();
 
         return services;
     }

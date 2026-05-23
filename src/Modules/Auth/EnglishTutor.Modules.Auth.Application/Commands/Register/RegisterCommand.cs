@@ -1,5 +1,5 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
-using EnglishTutor.Modules.Auth.Application.DTOs;
+using EnglishTutor.Modules.Auth.Application.Shared.DTOs;
 
 namespace EnglishTutor.Modules.Auth.Application.Commands.Register;
 

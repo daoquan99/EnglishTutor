@@ -68,12 +68,12 @@ src/Modules/Exercises/EnglishTutor.Modules.Exercises.Domain/
 - `static Error ExerciseSetNotFound`, `AttemptNotFound`, `AttemptAlreadyCompleted`, `QuestionNotFound`, `QuestionAlreadyAnswered`, `NotAllQuestionsAnswered`
 
 **Acceptance Criteria:**
-- [ ] Attempt tracks correct count incrementally
-- [ ] Score calculated as percentage on completion
-- [ ] Cannot complete with unanswered questions
-- [ ] Cannot answer same question twice
-- [ ] AI-graded flag on question level
-- [ ] Domain events on start, answer, complete
+- [x] Attempt tracks correct count incrementally
+- [x] Score calculated as percentage on completion
+- [x] Cannot complete with unanswered questions
+- [x] Cannot answer same question twice
+- [x] AI-graded flag on question level
+- [x] Domain events on start, answer, complete
 
 ---
 
@@ -160,12 +160,12 @@ src/Modules/Exercises/EnglishTutor.Modules.Exercises.Application/
 - `GradeStaticAnswer(ExerciseType type, string userAnswer, string correctAnswer) → (bool isCorrect, int score)`
 
 **Acceptance Criteria:**
-- [ ] Static grading works for all 5 MVP types
-- [ ] AI grading called only for AI-graded questions
-- [ ] Cannot submit answer for completed attempt
-- [ ] Cannot complete with missing answers
-- [ ] Wrong answers included in completion event for Mistakes module
-- [ ] CancellationToken on all async methods
+- [x] Static grading works for all 5 MVP types
+- [x] AI grading called only for AI-graded questions
+- [x] Cannot submit answer for completed attempt
+- [x] Cannot complete with missing answers
+- [x] Wrong answers included in completion event for Mistakes module
+- [x] CancellationToken on all async methods
 
 ---
 
@@ -216,10 +216,10 @@ src/Modules/Exercises/EnglishTutor.Modules.Exercises.Infrastructure/
 - All A1 level English, published
 
 **Acceptance Criteria:**
-- [ ] Schema is `"exercises"`
-- [ ] 6 tables + OutboxMessages configured
-- [ ] Unique constraint prevents duplicate answers per question
-- [ ] Seed provides testable exercises across MVP types
+- [x] Schema is `"exercises"`
+- [x] 6 tables + OutboxMessages configured
+- [x] Unique constraint prevents duplicate answers per question
+- [x] Seed provides testable exercises across MVP types
 
 ---
 
@@ -249,10 +249,10 @@ src/Modules/Exercises/EnglishTutor.Modules.Exercises.Presentation/
 **Important:** `GET /api/exercises/{id}` must NOT return `CorrectAnswer` or `IsCorrect` on options — only after completion.
 
 **Acceptance Criteria:**
-- [ ] Exercise detail hides correct answers
-- [ ] Result endpoint shows correct answers + explanations + user answers
-- [ ] Only attempt owner can submit answers / complete
-- [ ] POST returns 201 for start, 200 for submit/complete
+- [x] Exercise detail hides correct answers
+- [x] Result endpoint shows correct answers + explanations + user answers
+- [x] Only attempt owner can submit answers / complete
+- [x] POST returns 201 for start, 200 for submit/complete
 
 ---
 
@@ -278,9 +278,9 @@ src/Modules/Exercises/EnglishTutor.Modules.Exercises.Contracts/
 - `Guid QuestionId`, `string Prompt`, `string UserAnswer`, `string CorrectAnswer`, `string? Explanation`, `string QuestionType`
 
 **Acceptance Criteria:**
-- [ ] WrongAnswers list allows Mistakes module to create specific mistakes
-- [ ] Event carries all data needed — no callback required
-- [ ] All events are records
+- [x] WrongAnswers list allows Mistakes module to create specific mistakes
+- [x] Event carries all data needed — no callback required
+- [x] All events are records
 
 ---
 
@@ -320,10 +320,10 @@ src/Modules/Progress/EnglishTutor.Modules.Progress.Application/EventHandlers/
 6. Mark in Inbox
 
 **Acceptance Criteria:**
-- [ ] Mistakes created for each wrong answer
-- [ ] Progress EXP scales with score
-- [ ] Skill progress updated for relevant skills
-- [ ] Inbox prevents duplicate processing
+- [x] Mistakes created for each wrong answer
+- [x] Progress EXP scales with score
+- [x] Skill progress updated for relevant skills
+- [x] Inbox prevents duplicate processing
 
 ---
 
@@ -397,12 +397,12 @@ docs/workflows/exercise-completion.md
 
 ## Phase 7 Definition of Done
 
-- [ ] 5 MVP exercise types work (MultipleChoice, FillInTheBlank, VerbConjugation, SentenceCorrection, SentenceOrdering)
-- [ ] Static grading correct for all MVP types
-- [ ] AI grading works for open-answer questions (mocked in tests)
-- [ ] Exercise detail hides correct answers until completion
-- [ ] Mistakes auto-created from wrong answers via events
-- [ ] Progress updated (EXP + skills) via events
-- [ ] `dotnet build && dotnet test` passes
-- [ ] At least 15 unit tests pass
-- [ ] API + workflow docs created
+- [x] 5 MVP exercise types work (MultipleChoice, FillInTheBlank, VerbConjugation, SentenceCorrection, SentenceOrdering)
+- [x] Static grading correct for all MVP types
+- [x] AI grading works for open-answer questions (mocked in tests)
+- [x] Exercise detail hides correct answers until completion
+- [x] Mistakes auto-created from wrong answers via events
+- [x] Progress updated (EXP + skills) via events
+- [x] `dotnet build && dotnet test` passes
+- [x] At least 15 unit tests pass
+- [x] API + workflow docs created

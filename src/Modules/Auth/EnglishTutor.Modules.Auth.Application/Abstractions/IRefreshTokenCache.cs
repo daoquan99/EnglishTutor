@@ -2,9 +2,9 @@ namespace EnglishTutor.Modules.Auth.Application.Abstractions;
 
 public interface IRefreshTokenCache
 {
-    Task<string?> GetTokenHashAsync(Guid sessionId, string deviceId, CancellationToken cancellationToken);
+    Task<RefreshTokenCacheReadResult> GetTokenHashAsync(Guid sessionId, string deviceId, CancellationToken cancellationToken);
 
-    Task StoreTokenHashAsync(
+    Task<bool> StoreTokenHashAsync(
         Guid sessionId,
         string deviceId,
         string tokenHash,
@@ -12,4 +12,11 @@ public interface IRefreshTokenCache
         CancellationToken cancellationToken);
 
     Task RemoveTokenHashAsync(Guid sessionId, string deviceId, CancellationToken cancellationToken);
+}
+
+public sealed record RefreshTokenCacheReadResult(bool IsAvailable, string? TokenHash)
+{
+    public static RefreshTokenCacheReadResult Available(string? tokenHash) => new(true, tokenHash);
+
+    public static RefreshTokenCacheReadResult Unavailable() => new(false, null);
 }

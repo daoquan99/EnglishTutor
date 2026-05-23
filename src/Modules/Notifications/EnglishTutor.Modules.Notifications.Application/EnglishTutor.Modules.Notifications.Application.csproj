@@ -1,6 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.Modules.Notifications.Domain\EnglishTutor.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\Auth\EnglishTutor.Modules.Auth.Contracts\EnglishTutor.Modules.Auth.Contracts.csproj" />
+    <ProjectReference Include="..\..\StudyPlans\EnglishTutor.Modules.StudyPlans.Contracts\EnglishTutor.Modules.StudyPlans.Contracts.csproj" />
+    <ProjectReference Include="..\..\Users\EnglishTutor.Modules.Users.Contracts\EnglishTutor.Modules.Users.Contracts.csproj" />
+    <ProjectReference Include="..\..\AdminReports\EnglishTutor.Modules.AdminReports.Contracts\EnglishTutor.Modules.AdminReports.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.EventBus\EnglishTutor.BuildingBlocks.EventBus.csproj" />
   </ItemGroup>
 </Project>

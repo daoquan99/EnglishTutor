@@ -5,6 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\EnglishTutor.BuildingBlocks.EventBus\EnglishTutor.BuildingBlocks.EventBus.csproj" />
   </ItemGroup>
 </Project>

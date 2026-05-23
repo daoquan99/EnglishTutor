@@ -1,4 +1,4 @@
-using EnglishTutor.Modules.AI.Application.DTOs;
+using EnglishTutor.Modules.AI.Application.Shared.DTOs;
 
 namespace EnglishTutor.Modules.AI.Application.Abstractions;
 

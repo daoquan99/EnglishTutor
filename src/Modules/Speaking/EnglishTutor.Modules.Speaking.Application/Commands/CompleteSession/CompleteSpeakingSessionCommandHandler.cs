@@ -2,8 +2,8 @@ using System.Text.Json;
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Speaking.Application.Abstractions;
-using EnglishTutor.Modules.Speaking.Application.DTOs;
-using EnglishTutor.Modules.Speaking.Application.Errors;
+using EnglishTutor.Modules.Speaking.Application.Shared.DTOs;
+using EnglishTutor.Modules.Speaking.Application.Shared.Errors;
 using EnglishTutor.Modules.Speaking.Domain.Entities;
 
 namespace EnglishTutor.Modules.Speaking.Application.Commands.CompleteSession;
@@ -12,6 +12,7 @@ public sealed class CompleteSpeakingSessionCommandHandler(
     ISpeakingSessionRepository speakingSessionRepository,
     ISpeakingTurnRepository speakingTurnRepository,
     ISpeakingSessionSummaryRepository speakingSessionSummaryRepository,
+    IDateTimeProvider dateTimeProvider,
     ISpeakingUnitOfWork unitOfWork)
     : ICommandHandler<CompleteSpeakingSessionCommand, SpeakingSessionSummaryResponse>
 {
@@ -39,7 +40,7 @@ public sealed class CompleteSpeakingSessionCommandHandler(
             "Continue expanding vocabulary.",
             "Keep practicing daily.");
 
-        session.Complete(summary.TotalTurns, summary.OverallScore);
+        session.Complete(summary.TotalTurns, summary.OverallScore, dateTimeProvider.UtcNow);
         await speakingSessionSummaryRepository.AddAsync(summary, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

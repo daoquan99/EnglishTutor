@@ -24,14 +24,16 @@ public sealed class UserRegisteredIntegrationEventHandler(
 
         if (await userProfileRepository.GetByUserIdAsync(@event.UserId, ct) is null)
         {
-            var profile = UserProfile.Create(@event.UserId, @event.DisplayName);
-            var settings = UserLanguageSettings.CreateDefault(@event.UserId);
+            var utcNow = @event.OccurredOnUtc;
+            var profile = UserProfile.Create(@event.UserId, @event.DisplayName, utcNow);
+            var settings = UserLanguageSettings.CreateDefault(@event.UserId, utcNow);
             var targetLanguage = UserTargetLanguage.CreateActive(
                 @event.UserId,
                 BuildingBlocks.SharedKernel.LanguageCode.English,
                 BuildingBlocks.SharedKernel.LanguageLevel.A1,
                 BuildingBlocks.SharedKernel.LanguageLevel.B2,
-                []);
+                [],
+                utcNow);
 
             await userProfileRepository.AddAsync(profile, ct);
             await userLanguageSettingsRepository.AddAsync(settings, ct);

@@ -4,8 +4,7 @@ using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.AI.Contracts.DTOs;
 using EnglishTutor.Modules.AI.Contracts.Services;
 using EnglishTutor.Modules.Speaking.Application.Abstractions;
-using EnglishTutor.Modules.Speaking.Application.DTOs;
-using EnglishTutor.Modules.Speaking.Application.Errors;
+using EnglishTutor.Modules.Speaking.Application.Shared.Errors;
 using EnglishTutor.Modules.Speaking.Domain.Entities;
 using EnglishTutor.Modules.Speaking.Domain.Events;
 
@@ -15,6 +14,9 @@ public sealed class AddSpeakingTurnCommandHandler(
     ISpeakingSessionRepository speakingSessionRepository,
     ISpeakingTurnRepository speakingTurnRepository,
     IEnglishCorrectionService correctionService,
+    IPronunciationScoringService pronunciationScoringService,
+    ISpeakingAudioStorage speakingAudioStorage,
+    IDateTimeProvider dateTimeProvider,
     ISpeakingUnitOfWork unitOfWork)
     : ICommandHandler<AddSpeakingTurnCommand, SpeakingTurnResponse>
 {
@@ -26,11 +28,38 @@ public sealed class AddSpeakingTurnCommandHandler(
             return Result.Failure<SpeakingTurnResponse>(SpeakingErrors.SessionNotFound(request.SessionId));
         }
 
-        var turn = session.AddTurn(request.UserText);
+        var utcNow = dateTimeProvider.UtcNow;
+        var userText = string.Join(' ', (request.UserText ?? string.Empty).Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        if (string.IsNullOrWhiteSpace(userText))
+        {
+            return Result.Failure<SpeakingTurnResponse>(SpeakingErrors.TurnTextRequired);
+        }
+
+        var nextTurnNumber = session.Turns.Count + 1;
+        string? audioUrl = null;
+        using MemoryStream? audioBuffer = request.AudioFile is not null ? new MemoryStream() : null;
+        if (request.AudioFile is not null)
+        {
+            await request.AudioFile.CopyToAsync(audioBuffer!, cancellationToken);
+            audioBuffer!.Position = 0;
+
+            audioUrl = await speakingAudioStorage.StoreTurnAudioAsync(
+                session.Id,
+                nextTurnNumber,
+                audioBuffer,
+                request.AudioFileName ?? $"turn-{nextTurnNumber}.webm",
+                request.AudioContentType ?? "audio/webm",
+                cancellationToken);
+            audioBuffer.Position = 0;
+        }
+
+        var turn = session.AddTurn(userText, utcNow, audioUrl);
+        await speakingTurnRepository.AddTurnAsync(turn, cancellationToken);
+
         var correction = await correctionService.CorrectSentenceAsync(
             new CorrectionRequest(
                 request.UserId,
-                request.UserText,
+                userText,
                 session.LanguageSnapshot.NativeLanguageCode.Value,
                 session.LanguageSnapshot.TargetLanguageCode.Value,
                 session.LanguageSnapshot.ExplanationLanguageCode.Value,
@@ -50,23 +79,37 @@ public sealed class AddSpeakingTurnCommandHandler(
             ? null
             : JsonSerializer.Serialize(correction.Mistakes);
 
+        var (pronunciationScore, fluencyScore, taskCompletionScore, recognizedText, pronunciationFeedbackJson) =
+            await ResolvePerformanceScoresAsync(
+                request,
+                audioBuffer,
+                userText,
+                session.LanguageSnapshot.TargetLanguageCode.Value,
+                correction.GrammarScore,
+                correction.VocabularyScore,
+                cancellationToken);
+
+        var includePerfScores = audioBuffer is not null;
+
         var result = SpeakingTurnResult.Create(
             turn.Id,
             request.UserId,
             session.LanguageSnapshot.TargetLanguageCode,
-            request.UserText,
+            userText,
             correction.CorrectedText,
             correction.NaturalVersion,
             correction.GrammarScore,
             correction.VocabularyScore,
-            0,
-            0,
-            100,
+            pronunciationScore,
+            fluencyScore,
+            taskCompletionScore,
             correction.Feedback,
             correction.FeedbackLanguageCode,
             null,
-            null,
-            wordLevelFeedbackJson);
+            recognizedText,
+            pronunciationFeedbackJson ?? wordLevelFeedbackJson,
+            utcNow,
+            includePerformanceScoresInOverall: includePerfScores);
 
         session.ApplyCorrection(turn, result, mistakes);
         await speakingTurnRepository.AddResultAsync(result, cancellationToken);
@@ -82,4 +125,40 @@ public sealed class AddSpeakingTurnCommandHandler(
             result.OverallScore,
             result.Feedback);
     }
+
+    private async Task<(int Pronunciation, int Fluency, int TaskCompletion, string? RecognizedText, string? WordFeedbackJson)>
+        ResolvePerformanceScoresAsync(
+            AddSpeakingTurnCommand request,
+            Stream? audioStream,
+            string expectedText,
+            string targetLanguage,
+            int grammarScore,
+            int vocabularyScore,
+            CancellationToken cancellationToken)
+    {
+        if (audioStream is null)
+        {
+            // Text-only turn: pronunciation/fluency don't apply. Mirror the content-quality scores so
+            // session-level averages aren't dragged to 0 by typing-only turns.
+            var proxy = (grammarScore + vocabularyScore) / 2;
+            return (proxy, proxy, proxy, null, null);
+        }
+
+        var scoring = await pronunciationScoringService.ScoreAsync(
+            new PronunciationScoringRequest(
+                request.UserId,
+                expectedText,
+                targetLanguage,
+                audioStream,
+                request.AudioContentType ?? "audio/webm"),
+            cancellationToken);
+
+        return (
+            scoring.PronunciationScore,
+            scoring.FluencyScore,
+            scoring.CompletenessScore,
+            string.IsNullOrWhiteSpace(scoring.RecognizedText) ? null : scoring.RecognizedText,
+            scoring.WordLevelFeedbackJson);
+    }
 }
+

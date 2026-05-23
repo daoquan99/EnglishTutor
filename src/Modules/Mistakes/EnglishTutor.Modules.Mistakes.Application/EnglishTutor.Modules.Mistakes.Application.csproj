@@ -3,7 +3,9 @@
     <ProjectReference Include="..\EnglishTutor.Modules.Mistakes.Domain\EnglishTutor.Modules.Mistakes.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.EventBus\EnglishTutor.BuildingBlocks.EventBus.csproj" />
+    <ProjectReference Include="..\..\Exercises\EnglishTutor.Modules.Exercises.Contracts\EnglishTutor.Modules.Exercises.Contracts.csproj" />
     <ProjectReference Include="..\..\Speaking\EnglishTutor.Modules.Speaking.Contracts\EnglishTutor.Modules.Speaking.Contracts.csproj" />
     <ProjectReference Include="..\..\Vocabulary\EnglishTutor.Modules.Vocabulary.Contracts\EnglishTutor.Modules.Vocabulary.Contracts.csproj" />
+    <ProjectReference Include="..\..\Users\EnglishTutor.Modules.Users.Contracts\EnglishTutor.Modules.Users.Contracts.csproj" />
   </ItemGroup>
 </Project>

@@ -1,10 +1,13 @@
+using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.Modules.AI.Application.Abstractions;
 using EnglishTutor.Modules.AI.Domain.Entities;
 using EnglishTutor.Modules.AI.Infrastructure.Seed;
 
 namespace EnglishTutor.Modules.AI.Infrastructure.Prompts;
 
-public sealed class PromptBuilder(IPromptTemplateRepository promptTemplateRepository) : IPromptBuilder
+public sealed class PromptBuilder(
+    IPromptTemplateRepository promptTemplateRepository,
+    IDateTimeProvider dateTimeProvider) : IPromptBuilder
 {
     public async Task<string> BuildPromptAsync(
         string templateName,
@@ -12,7 +15,7 @@ public sealed class PromptBuilder(IPromptTemplateRepository promptTemplateReposi
         CancellationToken cancellationToken)
     {
         var template = await promptTemplateRepository.GetActiveByNameAsync(templateName, cancellationToken)
-            ?? AiSeedData.CreateDefaultPromptTemplate(templateName);
+            ?? AiSeedData.CreateDefaultPromptTemplate(templateName, dateTimeProvider.UtcNow);
 
         if (template is null)
         {

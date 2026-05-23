@@ -41,11 +41,11 @@ src/Modules/Auth/EnglishTutor.Modules.Auth.Domain/
 - Validates format, max 256 chars, lowercase normalization
 
 **Acceptance Criteria:**
-- [ ] AuthUser raises domain event on registration
-- [ ] Email value object validates format
-- [ ] RefreshToken tracks revocation state
-- [ ] No infrastructure dependencies
-- [ ] Domain does not reference Application `Result` or `Error`
+- [x] AuthUser raises domain event on registration
+- [x] Email value object validates format
+- [x] RefreshToken tracks revocation state
+- [x] No infrastructure dependencies
+- [x] Domain does not reference Application `Result` or `Error`
 
 ---
 
@@ -121,10 +121,10 @@ src/Modules/Auth/EnglishTutor.Modules.Auth.Application/
 - Login: email required, password required
 
 **Acceptance Criteria:**
-- [ ] All commands use Result pattern
-- [ ] Validators prevent invalid input before handler runs
-- [ ] Token generation is abstracted (not in handler)
-- [ ] CancellationToken on all async methods
+- [x] All commands use Result pattern
+- [x] Validators prevent invalid input before handler runs
+- [x] Token generation is abstracted (not in handler)
+- [x] CancellationToken on all async methods
 
 ---
 
@@ -181,11 +181,11 @@ src/Modules/Auth/EnglishTutor.Modules.Auth.Infrastructure/
 - Register MediatR handlers from Application assembly
 
 **Acceptance Criteria:**
-- [ ] Schema is `auth`
-- [ ] Migration history table in `auth` schema
-- [ ] JWT tokens are valid and parseable
-- [ ] Passwords are never stored in plain text
-- [ ] DI wires all services correctly
+- [x] Schema is `auth`
+- [x] Migration history table in `auth` schema
+- [x] JWT tokens are valid and parseable
+- [x] Passwords are never stored in plain text
+- [x] DI wires all services correctly
 
 ---
 
@@ -221,11 +221,11 @@ src/Modules/Auth/EnglishTutor.Modules.Auth.Presentation/
 - Has unique operation ID for Swagger
 
 **Acceptance Criteria:**
-- [ ] 5 endpoints mapped
-- [ ] Anonymous endpoints don't require auth
-- [ ] Protected endpoints return 401 without JWT
-- [ ] Request DTOs are separate from commands
-- [ ] No business logic in endpoints
+- [x] 5 endpoints mapped
+- [x] Anonymous endpoints don't require auth
+- [x] Protected endpoints return 401 without JWT
+- [x] Request DTOs are separate from commands
+- [x] No business logic in endpoints
 
 ---
 
@@ -253,9 +253,9 @@ src/Modules/Auth/EnglishTutor.Modules.Auth.Contracts/
 - `Guid UserId`, `string Email`, `string DisplayName`
 
 **Acceptance Criteria:**
-- [ ] No domain entity exposed
-- [ ] Only references `BuildingBlocks.EventBus`
-- [ ] Integration event is a record type
+- [x] No domain entity exposed
+- [x] Only references `BuildingBlocks.EventBus`
+- [x] Integration event is a record type
 
 ---
 
@@ -297,11 +297,11 @@ src/Modules/Users/EnglishTutor.Modules.Users.Domain/
 - `void UpdateLevel(LanguageLevel newLevel)` — raises `UserLevelChangedDomainEvent`
 
 **Acceptance Criteria:**
-- [ ] Uses SharedKernel `LanguageCode`, `LanguageLevel`
-- [ ] Level changes tracked via domain events
-- [ ] Only one target language active at a time (business rule)
-- [ ] No infrastructure dependencies
-- [ ] Domain does not reference Application `Result` or `Error`
+- [x] Uses SharedKernel `LanguageCode`, `LanguageLevel`
+- [x] Level changes tracked via domain events
+- [x] Only one target language active at a time (business rule)
+- [x] No infrastructure dependencies
+- [x] Domain does not reference Application `Result` or `Error`
 
 ---
 
@@ -368,10 +368,10 @@ src/Modules/Users/EnglishTutor.Modules.Users.Application/
 - Uses Inbox to ensure idempotency
 
 **Acceptance Criteria:**
-- [ ] User profile auto-created when Auth publishes registration event
-- [ ] All handlers use Result pattern
-- [ ] CancellationToken on all async methods
-- [ ] Inbox idempotency in event handler
+- [x] User profile auto-created when Auth publishes registration event
+- [x] All handlers use Result pattern
+- [x] CancellationToken on all async methods
+- [x] Inbox idempotency in event handler
 
 ---
 
@@ -417,10 +417,10 @@ src/Modules/Users/EnglishTutor.Modules.Users.Infrastructure/
 **Key rule:** Contract readers return DTOs/read models only, never domain entities
 
 **Acceptance Criteria:**
-- [ ] Schema is `"users"`
-- [ ] Contract readers return read models, not entities
-- [ ] Indexes on `UserId` for all tables
-- [ ] Unique index on `(UserId, TargetLanguageCode)` for UserTargetLanguages
+- [x] Schema is `"users"`
+- [x] Contract readers return read models, not entities
+- [x] Indexes on `UserId` for all tables
+- [x] Unique index on `(UserId, TargetLanguageCode)` for UserTargetLanguages
 
 ---
 
@@ -453,10 +453,10 @@ src/Modules/Users/EnglishTutor.Modules.Users.Presentation/
 | PUT | `/api/users/me/target-languages/{id}/activate` | Yes | Activate target language |
 
 **Acceptance Criteria:**
-- [ ] All 7 endpoints require authentication
-- [ ] `me` routes use `ICurrentUser.UserId`
-- [ ] No business logic in endpoint methods
-- [ ] Proper HTTP status codes (200, 201, 404, 422)
+- [x] All 7 endpoints require authentication
+- [x] `me` routes use `ICurrentUser.UserId`
+- [x] No business logic in endpoint methods
+- [x] Proper HTTP status codes (200, 201, 404, 422)
 
 ---
 
@@ -499,10 +499,10 @@ public sealed record UserLanguageSettingsReadModel(
 - `Guid UserId`, `string TargetLanguageCode`, `string PreviousLevel`, `string NewLevel`, `DateTime ChangedAtUtc`
 
 **Acceptance Criteria:**
-- [ ] Only DTOs, read models, interfaces, and integration events
-- [ ] No domain entities referenced
-- [ ] Read model records are immutable
-- [ ] All reader interfaces use `CancellationToken`
+- [x] Only DTOs, read models, interfaces, and integration events
+- [x] No domain entities referenced
+- [x] Read model records are immutable
+- [x] All reader interfaces use `CancellationToken`
 
 ---
 
@@ -528,10 +528,10 @@ users.OutboxMessages (
 ```
 
 **Acceptance Criteria:**
-- [ ] Domain events mapped to integration events automatically
-- [ ] OutboxMessages saved in same transaction as business data
-- [ ] Outbox table lives in `users` schema
-- [ ] Worker can process users outbox messages
+- [x] Domain events mapped to integration events automatically
+- [x] OutboxMessages saved in same transaction as business data
+- [x] Outbox table lives in `users` schema
+- [x] Worker can process users outbox messages
 
 ---
 
@@ -575,10 +575,10 @@ tests/EnglishTutor.Modules.Users.UnitTests/
 - Validators reject invalid input
 
 **Acceptance Criteria:**
-- [ ] At least 20 unit tests across both modules
-- [ ] Domain logic tested without mocking infrastructure
-- [ ] Handler tests mock repositories
-- [ ] All tests pass
+- [x] At least 20 unit tests across both modules
+- [x] Domain logic tested without mocking infrastructure
+- [x] Handler tests mock repositories
+- [x] All tests pass
 
 ---
 
@@ -602,9 +602,9 @@ tests/EnglishTutor.ArchitectureTests/LayerDependencyTests.cs
 - Users.Contracts must not expose `UserProfile` entity
 
 **Acceptance Criteria:**
-- [ ] Tests verify Auth↔Users isolation
-- [ ] Tests fail if someone adds cross-module domain reference
-- [ ] All architecture tests pass
+- [x] Tests verify Auth↔Users isolation
+- [x] Tests fail if someone adds cross-module domain reference
+- [x] All architecture tests pass
 
 ---
 
@@ -633,20 +633,20 @@ docs/api/users.md
 - Integration events consumed
 
 **Acceptance Criteria:**
-- [ ] All 12 endpoints documented (5 Auth + 7 Users)
-- [ ] Request/response examples are valid JSON
-- [ ] Validation rules match FluentValidation rules
-- [ ] Error codes match Application `AuthErrors` and `UserErrors`
+- [x] All 12 endpoints documented (5 Auth + 7 Users)
+- [x] Request/response examples are valid JSON
+- [x] Validation rules match FluentValidation rules
+- [x] Error codes match Application `AuthErrors` and `UserErrors`
 
 ---
 
 ## Phase 2 Definition of Done
 
-- [ ] Register → Login → JWT → access `/api/users/me/profile` works e2e
-- [ ] Language settings CRUD works
-- [ ] Target languages CRUD works
-- [ ] UserRegistered event → auto-create UserProfile via Outbox/Worker/Inbox
-- [ ] `dotnet build && dotnet test` passes
-- [ ] Architecture tests verify Auth↔Users isolation
-- [ ] `docs/api/auth.md` and `docs/api/users.md` created
-- [ ] At least 20 unit tests pass
+- [x] Register → Login → JWT → access `/api/users/me/profile` works e2e
+- [x] Language settings CRUD works
+- [x] Target languages CRUD works
+- [x] UserRegistered event → auto-create UserProfile via Outbox/Worker/Inbox
+- [x] `dotnet build && dotnet test` passes
+- [x] Architecture tests verify Auth↔Users isolation
+- [x] `docs/api/auth.md` and `docs/api/users.md` created
+- [x] At least 20 unit tests pass

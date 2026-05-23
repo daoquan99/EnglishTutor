@@ -2,5 +2,9 @@
   <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.Modules.Notifications.Application\EnglishTutor.Modules.Notifications.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Presentation\EnglishTutor.BuildingBlocks.Presentation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>

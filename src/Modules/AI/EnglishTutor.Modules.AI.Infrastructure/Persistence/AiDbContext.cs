@@ -1,3 +1,5 @@
+using EnglishTutor.BuildingBlocks.Domain;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Modules.AI.Application.Abstractions;
 using EnglishTutor.Modules.AI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -10,12 +12,16 @@ public sealed class AiDbContext(DbContextOptions<AiDbContext> options) : DbConte
     public DbSet<PromptTemplate> PromptTemplates => Set<PromptTemplate>();
     public DbSet<PromptVersion> PromptVersions => Set<PromptVersion>();
     public DbSet<ModelRoutingRule> ModelRoutingRules => Set<ModelRoutingRule>();
+    public DbSet<AiProvider> AiProviders => Set<AiProvider>();
+    public DbSet<AiProviderModel> AiProviderModels => Set<AiProviderModel>();
+    public DbSet<AiRuntimeRoute> AiRuntimeRoutes => Set<AiRuntimeRoute>();
     public DbSet<AiUsageCounter> AiUsageCounters => Set<AiUsageCounter>();
     public DbSet<AiCostEstimation> AiCostEstimations => Set<AiCostEstimation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("ai");
+        modelBuilder.Ignore<DomainEvent>();
 
         modelBuilder.Entity<AiRequestLog>(builder =>
         {
@@ -57,6 +63,48 @@ public sealed class AiDbContext(DbContextOptions<AiDbContext> options) : DbConte
             builder.HasIndex(rule => rule.TaskType).IsUnique();
         });
 
+        modelBuilder.Entity<AiProvider>(builder =>
+        {
+            builder.ToTable("AiProviders");
+            builder.HasKey(provider => provider.Id);
+            builder.Property(provider => provider.ProviderName).HasMaxLength(100).IsRequired();
+            builder.Property(provider => provider.DisplayName).HasMaxLength(200).IsRequired();
+            builder.Property(provider => provider.ProviderType).HasConversion<string>().HasMaxLength(100);
+            builder.Property(provider => provider.BaseUrl).HasMaxLength(500);
+            builder.Property(provider => provider.ApiKeySecretName).HasMaxLength(200);
+            builder.HasIndex(provider => provider.ProviderName).IsUnique();
+            builder.HasMany(provider => provider.Models)
+                .WithOne()
+                .HasForeignKey(model => model.ProviderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Metadata.FindNavigation(nameof(AiProvider.Models))!
+                .SetPropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<AiProviderModel>(builder =>
+        {
+            builder.ToTable("AiProviderModels");
+            builder.HasKey(model => model.Id);
+            builder.Property(model => model.ModelCode).HasMaxLength(150).IsRequired();
+            builder.Property(model => model.DisplayName).HasMaxLength(200).IsRequired();
+            builder.Property(model => model.Capability).HasConversion<string>().HasMaxLength(100);
+            builder.HasIndex(model => new { model.ProviderId, model.ModelCode, model.Capability }).IsUnique();
+            builder.HasIndex(model => new { model.Capability, model.IsEnabled, model.Priority });
+        });
+
+        modelBuilder.Entity<AiRuntimeRoute>(builder =>
+        {
+            builder.ToTable("AiRuntimeRoutes");
+            builder.HasKey(route => route.Id);
+            builder.Property(route => route.TaskType).HasConversion<string>().HasMaxLength(100);
+            builder.Property(route => route.Capability).HasConversion<string>().HasMaxLength(100);
+            builder.Property(route => route.PreferredProviderName).HasMaxLength(100).IsRequired();
+            builder.Property(route => route.PreferredModelCode).HasMaxLength(150).IsRequired();
+            builder.Property(route => route.FallbackProviderName).HasMaxLength(100);
+            builder.Property(route => route.FallbackModelCode).HasMaxLength(150);
+            builder.HasIndex(route => new { route.TaskType, route.Capability }).IsUnique();
+        });
+
         modelBuilder.Entity<AiUsageCounter>(builder =>
         {
             builder.ToTable("AiUsageCounters");
@@ -71,5 +119,7 @@ public sealed class AiDbContext(DbContextOptions<AiDbContext> options) : DbConte
             builder.HasKey(estimation => estimation.Id);
             builder.Property(estimation => estimation.ModelType).HasConversion<string>().HasMaxLength(100);
         });
+
+        modelBuilder.ApplySoftDeleteQueryFilters();
     }
 }

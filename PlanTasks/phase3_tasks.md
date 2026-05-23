@@ -58,10 +58,10 @@ Gemma, GeminiFlash, GeminiPro, GeminiLive, GeminiTTS
 - `TaskType`, `PreferredModel`, `FallbackModel`, `MaxTokens`, `Temperature`, `IsActive`
 
 **Acceptance Criteria:**
-- [ ] AiRequestLog captures all metrics for cost/usage analysis
-- [ ] PromptTemplate supports versioning
-- [ ] ModelRoutingRule maps task types to AI models
-- [ ] No external AI client dependencies in Domain
+- [x] AiRequestLog captures all metrics for cost/usage analysis
+- [x] PromptTemplate supports versioning
+- [x] ModelRoutingRule maps task types to AI models
+- [x] No external AI client dependencies in Domain
 
 ---
 
@@ -127,11 +127,11 @@ public sealed record AiLanguageContext(
 - `string OriginalText`, `string CorrectedText`, `string NaturalVersion`, `int GrammarScore`, `int VocabularyScore`, `string Feedback`, `List<MistakeDetail> Mistakes`
 
 **Acceptance Criteria:**
-- [ ] All AI calls go through `IAiClient` abstraction
-- [ ] Model routing resolved per task type
-- [ ] Every AI call logged to `AiRequestLog`
-- [ ] Language context included in all prompts
-- [ ] CancellationToken on all async methods
+- [x] All AI calls go through `IAiClient` abstraction
+- [x] Model routing resolved per task type
+- [x] Every AI call logged to `AiRequestLog`
+- [x] Language context included in all prompts
+- [x] CancellationToken on all async methods
 
 ---
 
@@ -199,11 +199,11 @@ src/Modules/AI/EnglishTutor.Modules.AI.Infrastructure/
 - Default `PromptTemplate` + `PromptVersion` for sentence correction
 
 **Acceptance Criteria:**
-- [ ] AI clients only exist in AI.Infrastructure (architecture test enforced)
-- [ ] Gemini/Gemma API keys from configuration, never hardcoded
-- [ ] All AI requests logged with token counts and latency
-- [ ] Model routing is data-driven (DB), not hardcoded
-- [ ] Schema is `"ai"`
+- [x] AI clients only exist in AI.Infrastructure (architecture test enforced)
+- [x] Gemini/Gemma API keys from configuration, never hardcoded
+- [x] All AI requests logged with token counts and latency
+- [x] Model routing is data-driven (DB), not hardcoded
+- [x] Schema is `"ai"`
 
 ---
 
@@ -246,10 +246,10 @@ Task<CorrectionResponse> CorrectSentenceAsync(CorrectionRequest request, Cancell
 - `string Type` (Grammar/Vocabulary/Spelling), `string Original`, `string Corrected`, `string Explanation`
 
 **Acceptance Criteria:**
-- [ ] Only interfaces and DTOs — no implementations
-- [ ] No reference to AI.Domain or AI.Infrastructure
-- [ ] DTOs are records (immutable)
-- [ ] All methods use CancellationToken
+- [x] Only interfaces and DTOs — no implementations
+- [x] No reference to AI.Domain or AI.Infrastructure
+- [x] DTOs are records (immutable)
+- [x] All methods use CancellationToken
 
 ---
 
@@ -301,10 +301,10 @@ src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Domain/
 - `PronunciationScore`, `AccuracyScore`, `FluencyScore`, `CompletenessScore`, `Feedback`, `AttemptedAtUtc`
 
 **Acceptance Criteria:**
-- [ ] Spaced repetition logic in domain (NextReviewAtUtc calculation)
-- [ ] Mastery status transitions: New→Learning→Reviewing→Mastered (or →Weak)
-- [ ] Domain events raised on review and mastery
-- [ ] Pronunciation attempts store all scoring metrics
+- [x] Spaced repetition logic in domain (NextReviewAtUtc calculation)
+- [x] Mastery status transitions: New→Learning→Reviewing→Mastered (or →Weak)
+- [x] Domain events raised on review and mastery
+- [x] Pronunciation attempts store all scoring metrics
 
 ---
 
@@ -365,10 +365,10 @@ src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Application/
 4. Save integration event to outbox
 
 **Acceptance Criteria:**
-- [ ] Today's vocabulary considers spaced repetition schedule
-- [ ] Study card includes translations in user's native language
-- [ ] Review updates mastery scores and next review date
-- [ ] All commands save outbox messages
+- [x] Today's vocabulary considers spaced repetition schedule
+- [x] Study card includes translations in user's native language
+- [x] Review updates mastery scores and next review date
+- [x] All commands save outbox messages
 
 ---
 
@@ -410,10 +410,10 @@ src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Infrastructure/
 **Seed data:** 20-30 sample vocabulary items for English (common words) with Vietnamese translations
 
 **Acceptance Criteria:**
-- [ ] Schema is `"vocabulary"`
-- [ ] All 10 tables configured
-- [ ] Performance indexes for query patterns
-- [ ] Seed data provides testable vocabulary
+- [x] Schema is `"vocabulary"`
+- [x] All 10 tables configured
+- [x] Performance indexes for query patterns
+- [x] Seed data provides testable vocabulary
 
 ---
 
@@ -433,10 +433,10 @@ src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Infrastructure/
 | POST | `/api/vocabulary/{id}/mark-mastered` | Yes | Mark vocabulary as mastered |
 
 **Acceptance Criteria:**
-- [ ] 6 endpoints, all authenticated
-- [ ] Proper route parameter naming
-- [ ] POST endpoints return 201
-- [ ] GET endpoints return 200
+- [x] 6 endpoints, all authenticated
+- [x] Proper route parameter naming
+- [x] POST endpoints return 201
+- [x] GET endpoints return 200
 
 ---
 
@@ -462,9 +462,9 @@ src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Contracts/
 - `Guid UserId`, `Guid VocabularyItemId`, `string TargetLanguageCode`, `int PronunciationScore`, `int AccuracyScore`, `int FluencyScore`, `DateTime PracticedAtUtc`
 
 **Acceptance Criteria:**
-- [ ] All events are past tense
-- [ ] Events carry enough data for consumers (Progress, Mistakes) to act without callback
-- [ ] No domain entities in contracts
+- [x] All events are past tense
+- [x] Events carry enough data for consumers (Progress, Mistakes) to act without callback
+- [x] No domain entities in contracts
 
 ---
 
@@ -479,9 +479,9 @@ src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Contracts/
 - Register outbox table in Worker's `IOutboxProcessor` scan list
 
 **Acceptance Criteria:**
-- [ ] Vocabulary review → outbox message created in same transaction
-- [ ] Worker processes vocabulary outbox messages
-- [ ] Events deserialized and dispatched correctly
+- [x] Vocabulary review → outbox message created in same transaction
+- [x] Worker processes vocabulary outbox messages
+- [x] Events deserialized and dispatched correctly
 
 ---
 
@@ -518,9 +518,9 @@ tests/EnglishTutor.Modules.Vocabulary.UnitTests/
 - GetTodayVocabulary returns items due for review
 
 **Acceptance Criteria:**
-- [ ] At least 15 tests across AI + Vocabulary
-- [ ] Spaced repetition logic thoroughly tested
-- [ ] AI handler tests mock IAiClient
+- [x] At least 15 tests across AI + Vocabulary
+- [x] Spaced repetition logic thoroughly tested
+- [x] AI handler tests mock IAiClient
 
 ---
 
@@ -535,8 +535,8 @@ tests/EnglishTutor.Modules.Vocabulary.UnitTests/
 - Vocabulary may reference AI.Contracts only
 
 **Acceptance Criteria:**
-- [ ] Test fails if Speaking/Exercises/Assessments imports Gemini client
-- [ ] Test fails if AI client class found outside AI.Infrastructure
+- [x] Test fails if Speaking/Exercises/Assessments imports Gemini client
+- [x] Test fails if AI client class found outside AI.Infrastructure
 
 ---
 
@@ -552,21 +552,21 @@ docs/api/vocabulary.md
 ```
 
 **Acceptance Criteria:**
-- [ ] AI docs note which endpoints are internal vs public
-- [ ] Vocabulary docs include spaced repetition behavior description
-- [ ] All 6 vocabulary endpoints + AI endpoints documented
-- [ ] Integration events listed with payload fields
+- [x] AI docs note which endpoints are internal vs public
+- [x] Vocabulary docs include spaced repetition behavior description
+- [x] All 6 vocabulary endpoints + AI endpoints documented
+- [x] Integration events listed with payload fields
 
 ---
 
 ## Phase 3 Definition of Done
 
-- [ ] AI sentence correction works end-to-end (API → AI client → response)
-- [ ] AI request logged with token counts and latency
-- [ ] Vocabulary CRUD + review + mastery tracking works
-- [ ] Spaced repetition calculates next review dates
-- [ ] Pronunciation attempts stored with scores
-- [ ] Outbox messages created for vocabulary events
-- [ ] Architecture tests enforce AI client isolation
-- [ ] `dotnet build && dotnet test` passes
-- [ ] Docs updated
+- [x] AI sentence correction works end-to-end (API → AI client → response)
+- [x] AI request logged with token counts and latency
+- [x] Vocabulary CRUD + review + mastery tracking works
+- [x] Spaced repetition calculates next review dates
+- [x] Pronunciation attempts stored with scores
+- [x] Outbox messages created for vocabulary events
+- [x] Architecture tests enforce AI client isolation
+- [x] `dotnet build && dotnet test` passes
+- [x] Docs updated

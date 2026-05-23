@@ -2,14 +2,15 @@ using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.BuildingBlocks.SharedKernel;
 using EnglishTutor.Modules.Users.Application.Abstractions;
-using EnglishTutor.Modules.Users.Application.DTOs;
-using EnglishTutor.Modules.Users.Application.Errors;
+using EnglishTutor.Modules.Users.Application.Shared.DTOs;
+using EnglishTutor.Modules.Users.Application.Shared.Errors;
 using EnglishTutor.Modules.Users.Domain.Entities;
 
 namespace EnglishTutor.Modules.Users.Application.Commands.AddTargetLanguage;
 
 public sealed class AddTargetLanguageCommandHandler(
     IUserTargetLanguageRepository userTargetLanguageRepository,
+    IDateTimeProvider dateTimeProvider,
     IUsersUnitOfWork unitOfWork)
     : ICommandHandler<AddTargetLanguageCommand, TargetLanguageResponse>
 {
@@ -31,7 +32,8 @@ public sealed class AddTargetLanguageCommandHandler(
             request.UserId,
             LanguageCode.Create(request.TargetLanguageCode),
             currentLevel,
-            targetLevel);
+            targetLevel,
+            dateTimeProvider.UtcNow);
 
         await userTargetLanguageRepository.AddAsync(targetLanguage, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

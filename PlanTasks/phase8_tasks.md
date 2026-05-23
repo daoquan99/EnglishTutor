@@ -79,11 +79,11 @@ src/Modules/Assessments/EnglishTutor.Modules.Assessments.Domain/
 - `static Error DefinitionNotFound`, `AttemptNotFound`, `NotEligible`, `AttemptAlreadySubmitted`, `NotAllQuestionsAnswered`, `AttemptNotOwned`, `AlreadyGraded`
 
 **Acceptance Criteria:**
-- [ ] Pass/fail is domain logic, not AI decision
-- [ ] AI = grader, Assessments = decision engine, Users = level owner
-- [ ] Section weights sum to 1.0 per assessment
-- [ ] Attempt status transitions enforced (InProgress→Submitted→Grading→Passed/Failed)
-- [ ] Rubric provides scoring guide for AI grader
+- [x] Pass/fail is domain logic, not AI decision
+- [x] AI = grader, Assessments = decision engine, Users = level owner
+- [x] Section weights sum to 1.0 per assessment
+- [x] Attempt status transitions enforced (InProgress→Submitted→Grading→Passed/Failed)
+- [x] Rubric provides scoring guide for AI grader
 
 ---
 
@@ -157,12 +157,12 @@ src/Modules/Assessments/EnglishTutor.Modules.Assessments.Application/
 11. If Failed: save `AssessmentFailedIntegrationEvent(userId, score, weakSkills)` to outbox
 
 **Acceptance Criteria:**
-- [ ] Eligibility check prevents spam attempts
-- [ ] Static + AI grading combined per assessment
-- [ ] Section scores weighted correctly
-- [ ] Pass/fail decided by domain rule, not AI
-- [ ] LevelUpApproved event includes previous + new level
-- [ ] CancellationToken everywhere
+- [x] Eligibility check prevents spam attempts
+- [x] Static + AI grading combined per assessment
+- [x] Section scores weighted correctly
+- [x] Pass/fail decided by domain rule, not AI
+- [x] LevelUpApproved event includes previous + new level
+- [x] CancellationToken everywhere
 
 ---
 
@@ -260,10 +260,10 @@ src/Modules/Notifications/EnglishTutor.Modules.Notifications.Application/EventHa
 ```
 
 **Acceptance Criteria:**
-- [ ] Full chain works: Assessment passed → Users updates level → Progress + LearningContent + Notifications react
-- [ ] Inbox idempotency at every step
-- [ ] Level update is eventual consistency (not synchronous)
-- [ ] If any handler fails, retry via Outbox — others already processed check Inbox and skip
+- [x] Full chain works: Assessment passed → Users updates level → Progress + LearningContent + Notifications react
+- [x] Inbox idempotency at every step
+- [x] Level update is eventual consistency (not synchronous)
+- [x] If any handler fails, retry via Outbox — others already processed check Inbox and skip
 
 ---
 
@@ -298,12 +298,12 @@ src/Modules/Notifications/EnglishTutor.Modules.Notifications.Application/EventHa
 
 ## Phase 8 Definition of Done
 
-- [ ] Placement test + level-up test work end-to-end
-- [ ] Static + AI grading combined, rubric-based
-- [ ] Pass/fail decided by domain rules (≥75 total, ≥60 per section)
-- [ ] Level-up chain: Assessments → Users → Progress + LearningContent + Notifications
-- [ ] Eligibility check prevents spam attempts
-- [ ] Inbox idempotency at every handler in the chain
-- [ ] `dotnet build && dotnet test` passes
-- [ ] At least 12 unit tests pass
-- [ ] API + workflow docs created
+- [x] Placement test + level-up test work end-to-end
+- [x] Static + AI grading combined, rubric-based
+- [x] Pass/fail decided by domain rules (≥75 total, ≥60 per section)
+- [x] Level-up chain: Assessments → Users → Progress + LearningContent + Notifications
+- [x] Eligibility check prevents spam attempts
+- [x] Inbox idempotency at every handler in the chain
+- [x] `dotnet build && dotnet test` passes
+- [x] At least 12 unit tests pass
+- [x] API + workflow docs created

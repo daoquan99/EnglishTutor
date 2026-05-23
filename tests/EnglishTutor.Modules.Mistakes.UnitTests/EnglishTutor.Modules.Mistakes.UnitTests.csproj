@@ -8,9 +8,14 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="FluentAssertions" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Mistakes\EnglishTutor.Modules.Mistakes.Domain\EnglishTutor.Modules.Mistakes.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Mistakes\EnglishTutor.Modules.Mistakes.Application\EnglishTutor.Modules.Mistakes.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Users\EnglishTutor.Modules.Users.Contracts\EnglishTutor.Modules.Users.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Speaking\EnglishTutor.Modules.Speaking.Contracts\EnglishTutor.Modules.Speaking.Contracts.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 namespace EnglishTutor.BuildingBlocks.Outbox;
 
-public enum OutboxMessageStatus { Pending, Processing, Processed, Failed }
+public enum OutboxMessageStatus { Pending, Processing, Processed, Failed, DeadLettered }
 
 public sealed class OutboxMessage
 {
@@ -15,7 +15,7 @@ public sealed class OutboxMessage
     public DateTime? NextRetryAtUtc { get; set; }
     public string? LockedBy { get; set; }
     public DateTime? LockedUntilUtc { get; set; }
-    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAtUtc { get; set; }
     public DateTime? ProcessedAtUtc { get; set; }
     public string? LastError { get; set; }
 }

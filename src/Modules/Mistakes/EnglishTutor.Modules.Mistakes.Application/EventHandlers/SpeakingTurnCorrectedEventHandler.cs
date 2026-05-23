@@ -4,11 +4,13 @@ using EnglishTutor.Modules.Mistakes.Application.Abstractions;
 using EnglishTutor.Modules.Mistakes.Domain.Entities;
 using EnglishTutor.Modules.Mistakes.Domain.Enums;
 using EnglishTutor.Modules.Speaking.Contracts.IntegrationEvents;
+using EnglishTutor.Modules.Users.Contracts.Readers;
 
 namespace EnglishTutor.Modules.Mistakes.Application.EventHandlers;
 
 public sealed class SpeakingTurnCorrectedEventHandler(
     IMistakeRepository mistakeRepository,
+    IUserLanguageSettingsReader userLanguageSettingsReader,
     IMistakesInboxStore inboxStore,
     IMistakesUnitOfWork unitOfWork)
     : IIntegrationEventHandler<SpeakingTurnCorrectedIntegrationEvent>
@@ -20,6 +22,24 @@ public sealed class SpeakingTurnCorrectedEventHandler(
         if (await inboxStore.IsProcessedAsync(@event.EventId, HandlerName, ct))
         {
             return;
+        }
+
+        string nativeLanguageCode = @event.NativeLanguageCode;
+        string explanationLanguageCode = @event.ExplanationLanguageCode;
+
+        if (string.IsNullOrWhiteSpace(nativeLanguageCode) || string.IsNullOrWhiteSpace(explanationLanguageCode))
+        {
+            var settings = await userLanguageSettingsReader.GetByUserIdAsync(@event.UserId, ct);
+            if (string.IsNullOrWhiteSpace(nativeLanguageCode))
+            {
+                nativeLanguageCode = !string.IsNullOrWhiteSpace(settings?.NativeLanguageCode) ? settings.NativeLanguageCode : "en";
+            }
+            if (string.IsNullOrWhiteSpace(explanationLanguageCode))
+            {
+                explanationLanguageCode = !string.IsNullOrWhiteSpace(settings?.ExplanationLanguageCode) 
+                    ? settings.ExplanationLanguageCode 
+                    : (!string.IsNullOrWhiteSpace(settings?.NativeLanguageCode) ? settings.NativeLanguageCode : "en");
+            }
         }
 
         foreach (var mistakeDetail in @event.Mistakes)
@@ -38,8 +58,9 @@ public sealed class SpeakingTurnCorrectedEventHandler(
                 mistakeDetail.Corrected,
                 mistakeDetail.Explanation,
                 LanguageCode.Create(@event.TargetLanguageCode),
-                LanguageCode.Create(string.IsNullOrWhiteSpace(@event.NativeLanguageCode) ? "vi" : @event.NativeLanguageCode),
-                LanguageCode.Create(string.IsNullOrWhiteSpace(@event.ExplanationLanguageCode) ? "vi" : @event.ExplanationLanguageCode)),
+                LanguageCode.Create(nativeLanguageCode),
+                LanguageCode.Create(explanationLanguageCode),
+                @event.CorrectedAtUtc),
                 ct);
         }
 

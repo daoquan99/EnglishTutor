@@ -43,11 +43,11 @@ d:\Projects\EnglishTutor\global.json (pin .NET SDK version)
 - Add initial packages: `Microsoft.EntityFrameworkCore`, `Microsoft.EntityFrameworkCore.Design`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `MediatR`, `FluentValidation`, `FluentValidation.DependencyInjectionExtensions`, `Swashbuckle.AspNetCore`, `Microsoft.AspNetCore.Authentication.JwtBearer`, `Serilog`, `Serilog.Sinks.Console`, `Serilog.AspNetCore`, `Quartz`, `NetArchTest.Rules`, `xunit`, `Moq`, `FluentAssertions`, `Microsoft.NET.Test.Sdk`
 
 **Acceptance Criteria:**
-- [ ] `dotnet new sln` creates solution
-- [ ] `Directory.Build.props` exists with shared settings
-- [ ] `Directory.Packages.props` exists with all initial package versions
-- [ ] `.gitignore` covers .NET, Rider, VS artifacts
-- [ ] No individual `.csproj` specifies `TargetFramework` or package versions
+- [x] `dotnet new sln` creates solution
+- [x] `Directory.Build.props` exists with shared settings
+- [x] `Directory.Packages.props` exists with all initial package versions
+- [x] `.gitignore` covers .NET, Rider, VS artifacts
+- [x] No individual `.csproj` specifies `TargetFramework` or package versions
 
 ---
 
@@ -100,11 +100,11 @@ src/Bootstrapper/EnglishTutor.Api/
 - Add to Serilog `LogContext`
 
 **Acceptance Criteria:**
-- [ ] `dotnet build` passes
-- [ ] `dotnet run` starts and Swagger UI is accessible at `/swagger`
-- [ ] `GET /health` returns 200
-- [ ] Correlation ID flows through request/response
-- [ ] Exceptions return ProblemDetails JSON
+- [x] `dotnet build` passes
+- [x] `dotnet run` starts and Swagger UI is accessible at `/swagger`
+- [x] `GET /health` returns 200
+- [x] Correlation ID flows through request/response
+- [x] Exceptions return ProblemDetails JSON
 
 ---
 
@@ -140,10 +140,10 @@ src/Bootstrapper/EnglishTutor.Worker/
 - Will be wired to real `IOutboxProcessor` in Phase 4
 
 **Acceptance Criteria:**
-- [ ] `dotnet build` passes
-- [ ] Worker starts and logs "Worker started"
-- [ ] Quartz scheduler initializes
-- [ ] Job placeholder runs on configured interval (every 5 seconds default)
+- [x] `dotnet build` passes
+- [x] Worker starts and logs "Worker started"
+- [x] Quartz scheduler initializes
+- [x] Job placeholder runs on configured interval (every 5 seconds default)
 
 ---
 
@@ -199,10 +199,10 @@ src/BuildingBlocks/EnglishTutor.BuildingBlocks.Domain/
 - Exposes `BrokenRule` and `Details`
 
 **Acceptance Criteria:**
-- [ ] No external dependencies except MediatR
-- [ ] All base classes are abstract
-- [ ] Value object equality works correctly
-- [ ] Domain events have unique IDs
+- [x] No external dependencies except MediatR
+- [x] All base classes are abstract
+- [x] Value object equality works correctly
+- [x] Domain events have unique IDs
 
 ---
 
@@ -277,10 +277,10 @@ src/BuildingBlocks/EnglishTutor.BuildingBlocks.Application/
 - `int TotalPages`
 
 **Acceptance Criteria:**
-- [ ] References only `BuildingBlocks.Domain`, `MediatR`, `FluentValidation`
-- [ ] Result pattern is immutable
-- [ ] Pipeline behaviors registered in correct order (validation → logging → handler)
-- [ ] PagedResult calculates TotalPages correctly
+- [x] References only `BuildingBlocks.Domain`, `MediatR`, `FluentValidation`
+- [x] Result pattern is immutable
+- [x] Pipeline behaviors registered in correct order (validation → logging → handler)
+- [x] PagedResult calculates TotalPages correctly
 
 ---
 
@@ -304,7 +304,7 @@ src/BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/
 │   ├── IFileStorageService.cs
 │   └── LocalFileStorageService.cs (dev only)
 └── Persistence/
-    └── DomainEventDispatcher.cs
+    └── AuditableEntitySaveChangesInterceptor.cs
 ```
 
 **DateTimeProvider : IDateTimeProvider:**
@@ -315,15 +315,14 @@ src/BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/
 - Extracts `UserId` from JWT `sub` claim
 - Extracts `Email` from JWT `email` claim
 
-**DomainEventDispatcher:**
-- Takes `IMediator`
-- Dispatches all domain events from aggregate root after SaveChanges
-- Pattern: `SaveChangesInterceptor` or called explicitly before `SaveChangesAsync`
+**Domain events:**
+- Domain events are mapped to integration events by module-owned outbox mappers during `SaveChangesAsync`
+- The unused `DomainEventDispatcher` helper was removed to avoid dead code
 
 **Acceptance Criteria:**
-- [ ] References `BuildingBlocks.Application`
-- [ ] CurrentUser correctly parses JWT claims
-- [ ] DomainEventDispatcher publishes all pending domain events
+- [x] References `BuildingBlocks.Application`
+- [x] CurrentUser correctly parses JWT claims
+- [x] Domain events are persisted through module-owned outbox mappings
 
 ---
 
@@ -369,10 +368,10 @@ src/BuildingBlocks/EnglishTutor.BuildingBlocks.EventBus/
 - Logs handler name + event type + duration
 
 **Acceptance Criteria:**
-- [ ] No external messaging dependencies (no RabbitMQ/Kafka)
-- [ ] Handlers resolved from DI container
-- [ ] Event type serializable to string for Outbox storage
-- [ ] Abstraction allows future RabbitMQ adapter
+- [x] No external messaging dependencies (no RabbitMQ/Kafka)
+- [x] Handlers resolved from DI container
+- [x] Event type serializable to string for Outbox storage
+- [x] Abstraction allows future RabbitMQ adapter
 
 ---
 
@@ -466,11 +465,11 @@ Status (Dead/Reprocessed)
 - Runs every 5 seconds (configurable via `OutboxOptions`)
 
 **Acceptance Criteria:**
-- [ ] OutboxMessage supports row-locking fields for horizontal Worker scaling
-- [ ] InboxMessage prevents duplicate event handling per handler
-- [ ] DeadLetterMessage captures full error context
-- [ ] Retry policy uses exponential backoff
-- [ ] OutboxBackgroundJob is Quartz-compatible
+- [x] OutboxMessage supports row-locking fields for horizontal Worker scaling
+- [x] InboxMessage prevents duplicate event handling per handler
+- [x] DeadLetterMessage captures full error context
+- [x] Retry policy uses exponential backoff
+- [x] OutboxBackgroundJob is Quartz-compatible
 
 ---
 
@@ -507,10 +506,10 @@ Vocabulary, Grammar, Pronunciation, Speaking, Listening, Reading, Writing, Conve
 ```
 
 **Acceptance Criteria:**
-- [ ] References only `BuildingBlocks.Domain`
-- [ ] LanguageCode validates format
-- [ ] No business logic — only shared value types
-- [ ] Stays small (under 100 total lines)
+- [x] References only `BuildingBlocks.Domain`
+- [x] LanguageCode validates format
+- [x] No business logic — only shared value types
+- [x] Stays small (under 100 total lines)
 
 ---
 
@@ -554,10 +553,10 @@ tests/EnglishTutor.ArchitectureTests/
 - Contracts must not expose types from Domain namespace
 
 **Acceptance Criteria:**
-- [ ] Uses NetArchTest.Rules
-- [ ] Tests pass with current empty module structure
-- [ ] Tests will fail when architecture rules are violated
-- [ ] At least 10 initial architecture rules defined
+- [x] Uses NetArchTest.Rules
+- [x] Tests pass with current empty module structure
+- [x] Tests will fail when architecture rules are violated
+- [x] At least 10 initial architecture rules defined
 
 ---
 
@@ -603,10 +602,10 @@ src/Bootstrapper/EnglishTutor.Api/Extensions/
 ```
 
 **Acceptance Criteria:**
-- [ ] All endpoints return consistent response envelope
-- [ ] Error codes map to correct HTTP status codes
-- [ ] ProblemDetails used for unhandled exceptions
-- [ ] Validation errors return field-level details
+- [x] All endpoints return consistent response envelope
+- [x] Error codes map to correct HTTP status codes
+- [x] ProblemDetails used for unhandled exceptions
+- [x] Validation errors return field-level details
 
 ---
 
@@ -642,10 +641,10 @@ Repeat for: `Users`, `StudyPlans`, `LearningContent`, `Vocabulary`, `Exercises`,
 - Not specify `TargetFramework` or package versions (inherited from `Directory.Build.props`)
 
 **Acceptance Criteria:**
-- [ ] All 65 projects created and added to solution
-- [ ] `dotnet build` passes
-- [ ] Correct project references per layer
-- [ ] No package version in any `.csproj`
+- [x] All 65 projects created and added to solution
+- [x] `dotnet build` passes
+- [x] Correct project references per layer
+- [x] No package version in any `.csproj`
 
 ---
 
@@ -680,10 +679,10 @@ docs/adr/0004-internal-messaging-outbox-inbox.md
 **ADR-0004:** Why DB-backed Outbox/Inbox over RabbitMQ, retry/dead-letter strategy
 
 **Acceptance Criteria:**
-- [ ] 4 ADR documents created
-- [ ] Each follows standard ADR format
-- [ ] Context sections reference project-specific reasoning
-- [ ] Consequences list trade-offs honestly
+- [x] 4 ADR documents created
+- [x] Each follows standard ADR format
+- [x] Context sections reference project-specific reasoning
+- [x] Consequences list trade-offs honestly
 
 ---
 
@@ -718,21 +717,21 @@ d:\Projects\EnglishTutor\.env.example
 - Health checks on postgres and redis
 
 **Acceptance Criteria:**
-- [ ] `docker compose up -d` starts postgres + redis
-- [ ] `docker compose --profile tools up -d` starts management tools
-- [ ] Data persists across restarts via volume
-- [ ] `.env.example` documents all required variables
+- [x] `docker compose up -d` starts postgres + redis
+- [x] `docker compose --profile tools up -d` starts management tools
+- [x] Data persists across restarts via volume
+- [x] `.env.example` documents all required variables
 
 ---
 
 ## Phase 1 Definition of Done
 
-- [ ] `dotnet build` passes for entire solution (65+ projects)
-- [ ] `dotnet test` passes (architecture tests)
-- [ ] API host starts → Swagger accessible → health check returns 200
-- [ ] Worker host starts → Quartz scheduler initializes
-- [ ] Docker Compose starts PostgreSQL + Redis
-- [ ] 4 ADR documents created
-- [ ] Result pattern + exception handling + correlation ID wired
-- [ ] Outbox/Inbox/DeadLetter abstractions ready
-- [ ] EventBus abstraction ready with InProcess implementation
+- [x] `dotnet build` passes for entire solution (65+ projects)
+- [x] `dotnet test` passes (architecture tests)
+- [x] API host starts → Swagger accessible → health check returns 200
+- [x] Worker host starts → Quartz scheduler initializes
+- [x] Docker Compose starts PostgreSQL + Redis
+- [x] 4 ADR documents created
+- [x] Result pattern + exception handling + correlation ID wired
+- [x] Outbox/Inbox/DeadLetter abstractions ready
+- [x] EventBus abstraction ready with InProcess implementation

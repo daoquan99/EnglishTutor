@@ -1,8 +1,8 @@
 using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Users.Application.Abstractions;
-using EnglishTutor.Modules.Users.Application.DTOs;
-using EnglishTutor.Modules.Users.Application.Errors;
+using EnglishTutor.Modules.Users.Application.Shared.DTOs;
+using EnglishTutor.Modules.Users.Application.Shared.Errors;
 
 namespace EnglishTutor.Modules.Users.Application.Queries.GetUserProfile;
 

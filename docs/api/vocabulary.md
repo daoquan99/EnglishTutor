@@ -51,19 +51,29 @@ Pronunciation attempt:
 
 - Review score and pronunciation scores are clamped/validated in the 0-100 range.
 - Target language code is required.
+- Vocabulary item/example target language must match `targetLanguageCode`.
 - Study card requires target and native language codes.
 - Recognized text and feedback are required for pronunciation attempts.
 
 ## Error Codes
 
-- `Error.Validation`: invalid score or language/input.
+- `Error.Validation`: invalid score, language/input, or target-language mismatch.
 - `Error.NotFound`: vocabulary item, example, or mastery record not found.
 
 ## Application Flow
 
 - Review creates mastery on first review, records attempt, updates spaced repetition, and writes Outbox event.
+- Today vocabulary excludes all items that already have user mastery records unless they are due for review.
 - `NextReviewAtUtc` is calculated by domain spaced repetition logic.
 - Pronunciation attempts are owned by Vocabulary and publish pronunciation events.
+- Optional seed data creates a small English vocabulary set with Vietnamese translations and example translations when `SeedData:Enabled=true`.
+
+## Seed Data
+
+- `SeedData:Enabled=false` by default.
+- When enabled, API startup seeds at least 20 English vocabulary items.
+- Seeded items include Vietnamese meanings, example sentences, and Vietnamese example translations.
+- Existing `(TargetLanguageCode, Word, PartOfSpeech)` entries are skipped.
 
 ## Related Modules
 

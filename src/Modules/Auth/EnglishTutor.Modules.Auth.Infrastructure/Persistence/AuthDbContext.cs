@@ -1,17 +1,22 @@
 using EnglishTutor.BuildingBlocks.Domain;
-using EnglishTutor.BuildingBlocks.Infrastructure.Serialization;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.BuildingBlocks.Outbox;
 using EnglishTutor.Modules.Auth.Application.Abstractions;
-using EnglishTutor.Modules.Auth.Contracts.IntegrationEvents;
-using EnglishTutor.Modules.Auth.Domain.Entities;
-using EnglishTutor.Modules.Auth.Domain.Events;
+using EnglishTutor.Modules.Auth.Domain.AuthPermission;
+using EnglishTutor.Modules.Auth.Domain.AuthRole;
+using EnglishTutor.Modules.Auth.Domain.AuthRole.Entities;
+using EnglishTutor.Modules.Auth.Domain.AuthSecurityEvent;
+using EnglishTutor.Modules.Auth.Domain.AuthSession;
+using EnglishTutor.Modules.Auth.Domain.AuthSession.Entities;
+using EnglishTutor.Modules.Auth.Domain.AuthUser;
+using EnglishTutor.Modules.Auth.Domain.AuthUser.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishTutor.Modules.Auth.Infrastructure.Persistence;
 
 public sealed class AuthDbContext(
     DbContextOptions<AuthDbContext> options,
-    JsonSerializerService serializer)
+    IAuthDomainEventToOutboxMapper outboxMapper)
     : DbContext(options), IAuthUnitOfWork
 {
     public DbSet<AuthUser> AuthUsers => Set<AuthUser>();
@@ -19,18 +24,23 @@ public sealed class AuthDbContext(
     public DbSet<AuthSession> AuthSessions => Set<AuthSession>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuthSecurityEvent> AuthSecurityEvents => Set<AuthSecurityEvent>();
+    public DbSet<AuthRole> AuthRoles => Set<AuthRole>();
+    public DbSet<AuthPermission> AuthPermissions => Set<AuthPermission>();
+    public DbSet<AuthRolePermission> AuthRolePermissions => Set<AuthRolePermission>();
+    public DbSet<AuthUserRole> AuthUserRoles => Set<AuthUserRole>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("auth");
+        modelBuilder.Ignore<DomainEvent>();
 
         modelBuilder.Entity<AuthUser>(builder =>
         {
             builder.ToTable("Users");
             builder.HasKey(user => user.Id);
             builder.Property(user => user.Email)
-                .HasConversion(email => email.Value, value => Domain.ValueObjects.Email.Create(value))
+                .HasConversion(email => email.Value, value => Domain.AuthUser.ValueObjects.Email.Create(value))
                 .HasMaxLength(256)
                 .IsRequired();
             builder.HasIndex(user => user.Email).IsUnique();
@@ -42,7 +52,7 @@ public sealed class AuthDbContext(
             builder.ToTable("UserCredentials");
             builder.HasKey(credential => credential.Id);
             builder.Property(credential => credential.HashedPassword)
-                .HasConversion(password => password.Value, value => Domain.ValueObjects.HashedPassword.Create(value))
+                .HasConversion(password => password.Value, value => Domain.AuthUser.ValueObjects.HashedPassword.Create(value))
                 .HasMaxLength(200)
                 .IsRequired();
             builder.HasIndex(credential => credential.AuthUserId).IsUnique();
@@ -85,6 +95,56 @@ public sealed class AuthDbContext(
             builder.HasIndex(securityEvent => securityEvent.SessionId);
         });
 
+        modelBuilder.Entity<AuthRole>(builder =>
+        {
+            builder.ToTable("Roles");
+            builder.HasKey(role => role.Id);
+            builder.Property(role => role.Name).HasMaxLength(100).IsRequired();
+            builder.Property(role => role.Description).HasMaxLength(300).IsRequired();
+            builder.HasIndex(role => role.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<AuthPermission>(builder =>
+        {
+            builder.ToTable("Permissions");
+            builder.HasKey(permission => permission.Id);
+            builder.Property(permission => permission.Code).HasMaxLength(150).IsRequired();
+            builder.Property(permission => permission.Description).HasMaxLength(300).IsRequired();
+            builder.HasIndex(permission => permission.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<AuthRolePermission>(builder =>
+        {
+            builder.ToTable("RolePermissions");
+            builder.HasKey(rolePermission => rolePermission.Id);
+            builder.HasOne<AuthRole>()
+                .WithMany()
+                .HasForeignKey(rolePermission => rolePermission.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne<AuthPermission>()
+                .WithMany()
+                .HasForeignKey(rolePermission => rolePermission.PermissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.HasIndex(rolePermission => new { rolePermission.RoleId, rolePermission.PermissionId }).IsUnique();
+            builder.HasIndex(rolePermission => rolePermission.PermissionId);
+        });
+
+        modelBuilder.Entity<AuthUserRole>(builder =>
+        {
+            builder.ToTable("UserRoles");
+            builder.HasKey(userRole => userRole.Id);
+            builder.HasOne<AuthUser>()
+                .WithMany()
+                .HasForeignKey(userRole => userRole.AuthUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne<AuthRole>()
+                .WithMany()
+                .HasForeignKey(userRole => userRole.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.HasIndex(userRole => new { userRole.AuthUserId, userRole.RoleId }).IsUnique();
+            builder.HasIndex(userRole => userRole.RoleId);
+        });
+
         modelBuilder.Entity<OutboxMessage>(builder =>
         {
             builder.ToTable("OutboxMessages");
@@ -95,12 +155,32 @@ public sealed class AuthDbContext(
             builder.Property(message => message.Payload).IsRequired();
             builder.HasIndex(message => new { message.Status, message.NextRetryAtUtc });
         });
+
+        modelBuilder.ApplySoftDeleteQueryFilters();
+    }
+
+    public override int SaveChanges()
+    {
+        AddOutboxMessages();
+        return base.SaveChanges();
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        AddOutboxMessages();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         AddOutboxMessages();
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        AddOutboxMessages();
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
     private void AddOutboxMessages()
@@ -115,25 +195,10 @@ public sealed class AuthDbContext(
         {
             foreach (var domainEvent in holder.DomainEvents)
             {
-                if (domainEvent is UserRegisteredDomainEvent userRegistered)
+                var outboxMessage = outboxMapper.Map(domainEvent);
+                if (outboxMessage is not null)
                 {
-                    var integrationEvent = new UserRegisteredIntegrationEvent(
-                        userRegistered.UserId,
-                        userRegistered.Email,
-                        userRegistered.DisplayName,
-                        userRegistered.OccurredOnUtc)
-                    {
-                        EventId = userRegistered.EventId,
-                        OccurredOnUtc = userRegistered.OccurredOnUtc
-                    };
-
-                    OutboxMessages.Add(new OutboxMessage
-                    {
-                        EventId = integrationEvent.EventId,
-                        EventType = integrationEvent.GetType().AssemblyQualifiedName!,
-                        Payload = serializer.Serialize(integrationEvent),
-                        SourceModule = "auth"
-                    });
+                    OutboxMessages.Add(outboxMessage);
                 }
             }
 

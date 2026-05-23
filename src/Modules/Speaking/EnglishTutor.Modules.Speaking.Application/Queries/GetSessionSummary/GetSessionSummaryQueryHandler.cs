@@ -2,8 +2,8 @@ using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.Modules.Speaking.Application.Abstractions;
 using EnglishTutor.Modules.Speaking.Application.Commands.CompleteSession;
-using EnglishTutor.Modules.Speaking.Application.DTOs;
-using EnglishTutor.Modules.Speaking.Application.Errors;
+using EnglishTutor.Modules.Speaking.Application.Shared.DTOs;
+using EnglishTutor.Modules.Speaking.Application.Shared.Errors;
 
 namespace EnglishTutor.Modules.Speaking.Application.Queries.GetSessionSummary;
 

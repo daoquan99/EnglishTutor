@@ -1,3 +1,4 @@
+using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.SharedKernel;
 using EnglishTutor.Modules.Progress.Application.Abstractions;
 using EnglishTutor.Modules.Progress.Domain.Entities;
@@ -5,7 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnglishTutor.Modules.Progress.Infrastructure.Persistence;
 
-public sealed class ProgressRepository(ProgressDbContext dbContext) : IProgressRepository
+public sealed class ProgressRepository(
+    ProgressDbContext dbContext,
+    IDateTimeProvider dateTimeProvider) : IProgressRepository
 {
     public async Task<UserExperience> GetOrCreateExperienceAsync(Guid userId, string targetLanguageCode, CancellationToken cancellationToken)
     {
@@ -19,7 +22,7 @@ public sealed class ProgressRepository(ProgressDbContext dbContext) : IProgressR
             return experience;
         }
 
-        experience = UserExperience.Create(userId, languageCode);
+        experience = UserExperience.Create(userId, languageCode, dateTimeProvider.UtcNow);
         dbContext.UserExperiences.Add(experience);
         return experience;
     }
@@ -49,7 +52,7 @@ public sealed class ProgressRepository(ProgressDbContext dbContext) : IProgressR
             return progress;
         }
 
-        progress = UserSkillProgress.Create(userId, languageCode, skill);
+        progress = UserSkillProgress.Create(userId, languageCode, skill, dateTimeProvider.UtcNow);
         dbContext.UserSkillProgresses.Add(progress);
         return progress;
     }
@@ -65,7 +68,14 @@ public sealed class ProgressRepository(ProgressDbContext dbContext) : IProgressR
             return snapshot;
         }
 
-        snapshot = UserDashboardSnapshot.Create(userId, languageCode, date);
+        var previousLevel = await dbContext.UserDashboardSnapshots
+            .AsNoTracking()
+            .Where(item => item.UserId == userId && item.TargetLanguageCode == languageCode)
+            .OrderByDescending(item => item.Date)
+            .Select(item => item.CurrentLevel)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        snapshot = UserDashboardSnapshot.Create(userId, languageCode, date, dateTimeProvider.UtcNow, previousLevel);
         dbContext.UserDashboardSnapshots.Add(snapshot);
         return snapshot;
     }

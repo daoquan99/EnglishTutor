@@ -36,10 +36,10 @@ public sealed class VocabularyReviewedEventHandler(
             @event.MasteryStatus), ct);
 
         var experience = await progressRepository.GetOrCreateExperienceAsync(@event.UserId, @event.TargetLanguageCode, ct);
-        experience.GrantExp(exp, nameof(VocabularyReviewedIntegrationEvent), @event.VocabularyItemId, "Vocabulary review");
+        experience.GrantExp(exp, nameof(VocabularyReviewedIntegrationEvent), @event.VocabularyItemId, "Vocabulary review", completedAt);
 
         var skill = await progressRepository.GetOrCreateSkillProgressAsync(@event.UserId, @event.TargetLanguageCode, LearningSkill.Vocabulary, ct);
-        skill.RecordScore(@event.Score);
+        skill.RecordScore(@event.Score, completedAt);
 
         await ProgressAggregationUpdater.RecordPeriodProgressAsync(
             progressRepository,
@@ -53,7 +53,7 @@ public sealed class VocabularyReviewedEventHandler(
         streak.RecordActivity(@event.ReviewedAtUtc);
 
         var dashboard = await progressRepository.GetOrCreateDashboardSnapshotAsync(@event.UserId, @event.TargetLanguageCode, DateOnly.FromDateTime(@event.ReviewedAtUtc), ct);
-        dashboard.Update(experience.TotalExp, "A1", streak.CurrentStreakDays, 0, 0, 0, 0, string.Empty, "Vocabulary");
+        dashboard.Update(experience.TotalExp, dashboard.CurrentLevel, streak.CurrentStreakDays, dashboard.VocabularyMastered, dashboard.TotalSpeakingSessions, dashboard.TotalExercisesCompleted, dashboard.TotalMistakes, dashboard.WeakSkills, "Vocabulary", completedAt);
 
         await inboxStore.MarkProcessedAsync(@event.EventId, @event.EventType, HandlerName, ct);
         await unitOfWork.SaveChangesAsync(ct);

@@ -8,5 +8,6 @@ public interface ISpeakingSessionRepository
 
     Task<SpeakingSession?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<SpeakingSession>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SpeakingSession>> GetByUserIdAsync(Guid userId, int skip, int take, CancellationToken cancellationToken);
 }
+

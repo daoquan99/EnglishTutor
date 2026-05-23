@@ -1,5 +1,6 @@
 using EnglishTutor.BuildingBlocks.Domain;
 using EnglishTutor.BuildingBlocks.EventBus;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.BuildingBlocks.Infrastructure.Serialization;
 using EnglishTutor.BuildingBlocks.Outbox;
 using EnglishTutor.Modules.Speaking.Application.Abstractions;
@@ -26,6 +27,7 @@ public sealed class SpeakingDbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("speaking");
+        modelBuilder.Ignore<DomainEvent>();
 
         modelBuilder.Entity<SpeakingSession>(builder =>
         {
@@ -34,6 +36,8 @@ public sealed class SpeakingDbContext(
             builder.Property(session => session.SessionType).HasConversion<string>().HasMaxLength(50);
             builder.Property(session => session.Status).HasConversion<string>().HasMaxLength(50);
             builder.Property(session => session.Topic).HasMaxLength(200);
+            builder.Property(session => session.ConversationScenarioId);
+            builder.Property(session => session.CurrentLineOrder);
             builder.OwnsOne(session => session.LanguageSnapshot, snapshot =>
             {
                 snapshot.Property(value => value.NativeLanguageCode)
@@ -100,17 +104,38 @@ public sealed class SpeakingDbContext(
         {
             builder.ToTable("OutboxMessages");
             builder.HasKey(message => message.Id);
-            builder.Property(message => message.EventType).HasMaxLength(1000);
-            builder.Property(message => message.SourceModule).HasMaxLength(100);
+            builder.Property(message => message.EventType).HasMaxLength(1000).IsRequired();
+            builder.Property(message => message.SourceModule).HasMaxLength(100).IsRequired();
             builder.Property(message => message.Status).HasConversion<string>().HasMaxLength(32);
+            builder.Property(message => message.Payload).IsRequired();
             builder.HasIndex(message => new { message.Status, message.NextRetryAtUtc });
         });
+
+        modelBuilder.ApplySoftDeleteQueryFilters();
+    }
+
+    public override int SaveChanges()
+    {
+        AddOutboxMessages();
+        return base.SaveChanges();
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        AddOutboxMessages();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         AddOutboxMessages();
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        AddOutboxMessages();
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
     private void AddOutboxMessages()
@@ -167,6 +192,7 @@ public sealed class SpeakingDbContext(
                         completed.TotalTurns,
                         completed.OverallScore,
                         completed.DurationSeconds,
+                        completed.ConversationScenarioId,
                         completed.CompletedAtUtc)
                     {
                         EventId = completed.EventId,
@@ -180,13 +206,7 @@ public sealed class SpeakingDbContext(
                     continue;
                 }
 
-                OutboxMessages.Add(new OutboxMessage
-                {
-                    EventId = integrationEvent.EventId,
-                    EventType = integrationEvent.GetType().AssemblyQualifiedName!,
-                    Payload = serializer.Serialize(integrationEvent),
-                    SourceModule = "speaking"
-                });
+                OutboxMessages.Add(OutboxMessageFactory.Create(integrationEvent, "speaking", serializer.Serialize(integrationEvent)));
             }
 
             holder.ClearDomainEvents();

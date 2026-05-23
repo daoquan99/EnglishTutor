@@ -2,15 +2,17 @@ using EnglishTutor.BuildingBlocks.Application.Abstractions;
 using EnglishTutor.BuildingBlocks.Application.Results;
 using EnglishTutor.BuildingBlocks.SharedKernel;
 using EnglishTutor.Modules.Vocabulary.Application.Abstractions;
-using EnglishTutor.Modules.Vocabulary.Application.DTOs;
-using EnglishTutor.Modules.Vocabulary.Application.Errors;
+using EnglishTutor.Modules.Vocabulary.Application.Shared.DTOs;
+using EnglishTutor.Modules.Vocabulary.Application.Shared.Errors;
 using EnglishTutor.Modules.Vocabulary.Domain.Entities;
 
 namespace EnglishTutor.Modules.Vocabulary.Application.Commands.SubmitPronunciationAttempt;
 
 public sealed class SubmitPronunciationAttemptCommandHandler(
     IVocabularyItemRepository vocabularyItemRepository,
+    IUserVocabularyMasteryRepository masteryRepository,
     IPronunciationAttemptRepository pronunciationAttemptRepository,
+    IDateTimeProvider dateTimeProvider,
     IVocabularyUnitOfWork unitOfWork)
     : ICommandHandler<SubmitPronunciationAttemptCommand, PronunciationAttemptResponse>
 {
@@ -22,6 +24,12 @@ public sealed class SubmitPronunciationAttemptCommandHandler(
             return Result.Failure<PronunciationAttemptResponse>(VocabularyErrors.VocabularyItemNotFound(request.VocabularyItemId));
         }
 
+        if (item.TargetLanguageCode.Value != request.TargetLanguageCode)
+        {
+            return Result.Failure<PronunciationAttemptResponse>(VocabularyErrors.TargetLanguageMismatch);
+        }
+
+        var utcNow = dateTimeProvider.UtcNow;
         var attempt = VocabularyPronunciationAttempt.Create(
             request.UserId,
             request.VocabularyItemId,
@@ -32,7 +40,27 @@ public sealed class SubmitPronunciationAttemptCommandHandler(
             request.AccuracyScore,
             request.FluencyScore,
             request.CompletenessScore,
-            request.Feedback);
+            request.Feedback,
+            utcNow);
+
+        var mastery = await masteryRepository.GetAsync(
+            request.UserId,
+            request.VocabularyItemId,
+            request.TargetLanguageCode,
+            cancellationToken);
+
+        if (mastery is null)
+        {
+            mastery = UserVocabularyMastery.Create(
+                request.UserId,
+                request.VocabularyItemId,
+                LanguageCode.Create(request.TargetLanguageCode),
+                utcNow);
+
+            await masteryRepository.AddAsync(mastery, cancellationToken);
+        }
+
+        mastery.RecordPronunciationScore(request.PronunciationScore, mastery.ExampleSentenceScore);
 
         await pronunciationAttemptRepository.AddVocabularyAttemptAsync(attempt, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
