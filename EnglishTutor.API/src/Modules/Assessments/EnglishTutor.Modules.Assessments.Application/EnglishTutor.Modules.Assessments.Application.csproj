@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\EnglishTutor.Modules.Assessments.Domain\EnglishTutor.Modules.Assessments.Domain.csproj" />
-    <ProjectReference Include="..\EnglishTutor.Modules.Assessments.Contracts\EnglishTutor.Modules.Assessments.Contracts.csproj" />
-    <ProjectReference Include="..\..\AI\EnglishTutor.Modules.AI.Contracts\EnglishTutor.Modules.AI.Contracts.csproj" />
-    <ProjectReference Include="..\..\Users\EnglishTutor.Modules.Users.Contracts\EnglishTutor.Modules.Users.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
-  </ItemGroup>
-</Project>

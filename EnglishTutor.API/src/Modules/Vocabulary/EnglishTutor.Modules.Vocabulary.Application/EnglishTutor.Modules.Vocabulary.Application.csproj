@@ -1,6 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\EnglishTutor.Modules.Vocabulary.Domain\EnglishTutor.Modules.Vocabulary.Domain.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
-  </ItemGroup>
-</Project>

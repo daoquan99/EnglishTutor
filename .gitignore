@@ -40,3 +40,14 @@ out/
 
 ## Claude
 .claude/
+CLAUDE.md
+
+.agents/
+.antigravitycli/
+AGENTS.md
+
+plans/
+
+docs/
+
+.env.example
