@@ -5,11 +5,14 @@ using EnglishTutor.Identity.Domain.Aggregates.Sessions.Events;
 namespace EnglishTutor.Identity.Domain.Aggregates.Sessions.Entities;
 
 /// <summary>
-/// Refresh token aggregate root. Each token belongs to a <see cref="FamilyId"/>:
+/// Refresh token entity. Each token belongs to a <see cref="FamilyId"/>:
 /// the family starts when the user logs in, and rotation produces a new
 /// token chained to the family via <see cref="ReplacedByTokenId"/>.
 /// </summary>
 /// <remarks>
+/// <para>This is a child entity of <c>RefreshTokenFamily</c> (which is a
+/// child entity of <c>UserSession</c>). It is NOT an <c>AggregateRoot</c>
+/// because its lifecycle is owned by the family/session.</para>
 /// <para>Reuse detection: if a token whose <see cref="UsedAtUtc"/> is already
 /// set is presented again, the entire family is revoked
 /// (<see cref="RevokeFamily"/>) — this protects against token-theft.</para>
@@ -23,9 +26,14 @@ public sealed class RefreshToken : AggregateRoot
     public DateTime ExpiresAtUtc { get; private set; }
     public DateTime? UsedAtUtc { get; private set; }
     public DateTime? RevokedAtUtc { get; private set; }
+    public DateTime? ReuseDetectedAtUtc { get; private set; }
     public Guid? ReplacedByTokenId { get; private set; }
     public string? CreatedByIp { get; private set; }
 
+    /// <summary>True when this token has been consumed at least once.</summary>
+    public bool IsConsumed => UsedAtUtc is not null;
+
+    // EF Core parameterless constructor.
     private RefreshToken() { }
 
     public static RefreshToken Issue(
@@ -55,37 +63,70 @@ public sealed class RefreshToken : AggregateRoot
     public bool IsActive() =>
         RevokedAtUtc is null && UsedAtUtc is null && DateTime.UtcNow < ExpiresAtUtc;
 
+    // ---- New explicit methods (Slice 2.4) ----
+
     /// <summary>
-    /// Marks this token as used and chains it to its replacement. Throws
-    /// <see cref="InvalidOperationException"/> if already used (caller should
-    /// detect reuse and call <see cref="RevokeFamily"/> instead).
+    /// Marks this token as consumed and chains it to the supplied replacement
+    /// token id. Throws <see cref="InvalidOperationException"/> if the token
+    /// has already been consumed or has been revoked.
     /// </summary>
-    public void MarkUsed(Guid replacedByTokenId, DateTime nowUtc)
+    public void Consume(Guid replacementTokenId, DateTime nowUtc)
     {
         if (UsedAtUtc is not null)
         {
-            throw new InvalidOperationException("Refresh token already used.");
+            throw new InvalidOperationException("Refresh token already consumed.");
         }
         if (RevokedAtUtc is not null)
         {
             throw new InvalidOperationException("Refresh token revoked.");
         }
         UsedAtUtc = nowUtc;
-        ReplacedByTokenId = replacedByTokenId;
+        ReplacedByTokenId = replacementTokenId;
     }
 
     /// <summary>
-    /// Revokes this token and raises a reuse-detection event.
+    /// Marks reuse detection: sets <see cref="ReuseDetectedAtUtc"/>, then
+    /// calls <see cref="RevokeFamily"/> with the supplied reason to revoke
+    /// the family. Idempotent for the timestamp but always revokes the
+    /// family once per call.
     /// </summary>
-    public void DetectReuse(string? ipAddress)
+    public void MarkReuseDetected(DateTime nowUtc, string reason)
     {
-        RevokeFamily(DateTime.UtcNow, ipAddress);
+        ReuseDetectedAtUtc ??= nowUtc;
+        RevokeFamily(nowUtc, reason);
     }
 
-    public void RevokeFamily(DateTime nowUtc, string? ipAddress)
+    /// <summary>
+    /// Revokes this token and raises a reuse-detection event. The
+    /// <paramref name="reason"/> is recorded on the family. Used by
+    /// <c>RefreshTokenFamily.Revoke</c> when the family is revoked, and
+    /// by <see cref="MarkReuseDetected"/> on detected reuse.
+    /// </summary>
+    public void RevokeFamily(DateTime nowUtc, string? reason)
     {
         RevokedAtUtc = nowUtc;
         RaiseDomainEvent(new RefreshTokenReuseDetectedDomainEvent(
-            UserId, FamilyId, ipAddress));
+            UserId, FamilyId, reason));
+    }
+
+    // ---- Compatibility wrappers (kept for current handler callers) ----
+
+    /// <summary>
+    /// Compatibility wrapper. Delegates to <see cref="Consume"/>. Existing
+    /// handlers in Slice 2.4 still call this; it will be removed in
+    /// Slice 2.6 when handlers are refactored.
+    /// </summary>
+    public void MarkUsed(Guid replacedByTokenId, DateTime nowUtc)
+    {
+        Consume(replacedByTokenId, nowUtc);
+    }
+
+    /// <summary>
+    /// Compatibility wrapper. Delegates to <see cref="MarkReuseDetected"/>
+    /// with the current UTC time and the supplied IP as the reason.
+    /// </summary>
+    public void DetectReuse(string? ipAddress)
+    {
+        MarkReuseDetected(DateTime.UtcNow, ipAddress ?? "unknown");
     }
 }

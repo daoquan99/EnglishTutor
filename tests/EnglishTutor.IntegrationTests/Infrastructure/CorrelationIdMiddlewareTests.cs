@@ -1,18 +1,21 @@
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace EnglishTutor.IntegrationTests.Infrastructure;
 
-/// <summary>
-/// Integration tests for <c>CorrelationIdMiddleware</c>: input validation,
-/// length capping, and response echo behavior.
-/// </summary>
-public class CorrelationIdMiddlewareTests : IClassFixture<WebApplicationFactory<Program>>
+// Integration tests for CorrelationIdMiddleware: input validation,
+// length capping, and response echo behavior.
+//
+// Uses IntegrationTestFactory (a custom WebApplicationFactory subclass)
+// so every test host gets a valid Jwt:SigningKey baseline. The Slice
+// 2.7 JwtBearer registration requires the key at DI build time;
+// without it the host throws IDX10703 the first time
+// AuthenticationMiddleware runs in the pipeline.
+public class CorrelationIdMiddlewareTests : IClassFixture<IntegrationTestFactory>
 {
     private const string CorrelationHeader = "X-Correlation-Id";
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly IntegrationTestFactory _factory;
 
-    public CorrelationIdMiddlewareTests(WebApplicationFactory<Program> factory)
+    public CorrelationIdMiddlewareTests(IntegrationTestFactory factory)
     {
         _factory = factory;
     }
@@ -47,7 +50,7 @@ public class CorrelationIdMiddlewareTests : IClassFixture<WebApplicationFactory<
         var client = _factory.CreateClient();
 
         using var msg = new HttpRequestMessage(HttpMethod.Get, "/health/live");
-        // 200 'a' characters — well above the 64-char cap.
+        // 200 'a' characters -- well above the 64-char cap.
         msg.Headers.Add(CorrelationHeader, new string('a', 200));
         var response = await client.SendAsync(msg);
 

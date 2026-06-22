@@ -1,15 +1,23 @@
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Abstractions.Auth;
+using EnglishTutor.Identity.Application.Abstractions.Persistence;
 using EnglishTutor.Identity.Application.Services;
+using EnglishTutor.Identity.Domain.Aggregates.Roles.Repositories;
+using EnglishTutor.Identity.Domain.Aggregates.Sessions.Repositories;
+using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using EnglishTutor.Identity.Infrastructure.Persistence;
+using EnglishTutor.Identity.Infrastructure.Persistence.Repositories;
 using EnglishTutor.Identity.Infrastructure.Persistence.Seed.Options;
 using EnglishTutor.Identity.Infrastructure.Security;
 using EnglishTutor.Identity.Infrastructure.Security.Options;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace EnglishTutor.Identity.Infrastructure;
 
@@ -36,6 +44,33 @@ public static class IdentityInfrastructureServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        // JWT bearer authentication. Required by /api/me and /api/auth/logout,
+        // both of which carry .RequireAuthorization() metadata on their routes.
+        // Signing key + issuer + audience are read from JwtOptions above.
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                var jwt = configuration
+                    .GetSection(JwtOptions.SectionName)
+                    .Get<JwtOptions>() ?? new JwtOptions();
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwt.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwt.Audience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwt.SigningKey)),
+                    ClockSkew = TimeSpan.FromSeconds(30),
+                };
+            });
+
+        // Authorization services — required by app.UseAuthorization() in Program.cs.
+        services.AddAuthorization();
+
         // Register the audit interceptor once so DbContext can resolve it.
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
 
@@ -55,6 +90,14 @@ public static class IdentityInfrastructureServiceCollectionExtensions
         services.AddScoped<IRefreshTokenLifetimeProvider, RefreshTokenLifetimeProvider>();
         services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
         services.AddScoped<IRefreshTokenHasher, RefreshTokenHasher>();
+
+        // Aggregate repositories (Application interfaces + Infrastructure impls).
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserSessionRepository, UserSessionRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+
+        // Unit of Work (Application interface + Infrastructure impl).
+        services.AddScoped<IIdentityUnitOfWork, IdentityUnitOfWork>();
 
         services.AddScoped<IIdentityModuleDbContext, IdentityModuleDbContextAdapter>();
         services.AddScoped<IdentityDataSeeder>();

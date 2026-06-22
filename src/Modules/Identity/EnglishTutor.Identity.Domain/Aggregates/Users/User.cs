@@ -2,6 +2,7 @@ using EnglishTutor.BuildingBlocks.Domain.Aggregates;
 using EnglishTutor.BuildingBlocks.Domain.DomainEvents;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Events;
 using EnglishTutor.Identity.Domain.Aggregates.Users.ValueObjects;
+using EnglishTutor.Identity.Domain.Aggregates.Sessions.Events;
 
 namespace EnglishTutor.Identity.Domain.Aggregates.Users;
 
@@ -179,6 +180,7 @@ public sealed class User : AggregateRoot
         FailedLoginAttempts = 0;
         IsLockedOut = false;
         LockoutEndUtc = null;
+        RaiseDomainEvent(new PasswordChangedDomainEvent(Id));
     }
 
     public void ChangeDisplayName(string newDisplayName)

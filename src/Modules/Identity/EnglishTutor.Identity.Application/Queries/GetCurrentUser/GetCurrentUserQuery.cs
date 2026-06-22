@@ -1,6 +1,4 @@
 using EnglishTutor.BuildingBlocks.Application.Queries;
-using EnglishTutor.BuildingBlocks.Domain.Results;
-using MediatR;
 
 namespace EnglishTutor.Identity.Application.Queries.GetCurrentUser;
 
@@ -11,5 +9,3 @@ namespace EnglishTutor.Identity.Application.Queries.GetCurrentUser;
 /// endpoint maps to <c>CurrentUserResponse</c> DTO.
 /// </summary>
 public sealed record GetCurrentUserQuery : IQuery<CurrentUserResult>;
-
-public sealed class GetCurrentUserQueryMarker { }

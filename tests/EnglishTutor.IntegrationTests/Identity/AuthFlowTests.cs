@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using EnglishTutor.BuildingBlocks.Infrastructure.Options;
 using EnglishTutor.Identity.Presentation.Endpoints.Dtos;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
@@ -10,15 +9,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace EnglishTutor.IntegrationTests.Identity;
 
-/// <summary>
-/// Integration tests for the Identity auth flow: login → /api/me → refresh
-/// → /api/me → logout. Uses Testcontainers Postgres + RabbitMQ + Redis
-/// when Docker is available; otherwise the tests are skipped via
-/// <see cref="SkipUnlessDockerFactAttribute"/> (TODO).
-/// </summary>
+// Integration tests for the Identity auth flow: login -> /api/me -> refresh
+// -> /api/me -> logout. Uses Testcontainers Postgres + RabbitMQ + Redis
+// when Docker is available; otherwise the tests are skipped via
+// SkipUnlessDockerFactAttribute (TODO).
+//
+// Uses the shared IntegrationTestFactory so the Jwt:SigningKey baseline is
+// configured once in one place. AuthFlowTests overrides SeedData:Owner:Password
+// to a known value so it can call LoginRequest with that exact password.
 public class AuthFlowTests
 {
-    private const string TestSigningKey = "integration-test-signing-key-32-bytes-min-please";
+    private const string OwnerEmail = "owner@englishtutor.local";
+    private const string OwnerPassword = "owner-test-password";
 
     [Fact]
     public async Task Login_With_Seeded_Owner_Account_Should_Return_Tokens()
@@ -33,7 +35,7 @@ public class AuthFlowTests
 
         // Act
         var response = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("owner@englishtutor.local", "owner-test-password"));
+            new LoginRequest(OwnerEmail, OwnerPassword));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -51,7 +53,7 @@ public class AuthFlowTests
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("owner@englishtutor.local", "WRONG_PASSWORD"));
+            new LoginRequest(OwnerEmail, "WRONG_PASSWORD"));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -74,23 +76,20 @@ public class AuthFlowTests
                 builder.UseEnvironment("Development");
                 builder.ConfigureAppConfiguration((_, config) =>
                 {
-                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    var settings = new Dictionary<string, string?>(
+                        IntegrationTestFactory.DefaultConfiguration())
                     {
-                        ["Jwt:SigningKey"] = TestSigningKey,
-                        ["Jwt:Issuer"] = "EnglishTutor.IntegrationTests",
-                        ["Jwt:Audience"] = "EnglishTutor.IntegrationTests",
-                        ["Jwt:AccessTokenMinutes"] = "15",
-                        ["Jwt:RefreshTokenDays"] = "7",
-                        ["SeedData:Owner:Password"] = "owner-test-password"
-                    });
+                        ["SeedData:Owner:Password"] = OwnerPassword,
+                    };
+                    config.AddInMemoryCollection(settings);
                 });
             });
     }
 
     private static async Task SeedOwnerAsync(WebApplicationFactory<Program> factory)
     {
-        // Run the seeder manually (Program.cs already ran migrate + seed on first
-        // request, but idempotency lets us call multiple times).
+        // Program.cs already ran migrate + seed on first request.
+        // Idempotency makes calling the seeder again a no-op.
         await Task.CompletedTask;
     }
 }

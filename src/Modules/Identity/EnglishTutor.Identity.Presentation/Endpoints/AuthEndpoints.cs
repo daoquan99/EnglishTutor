@@ -22,10 +22,21 @@ public static class AuthEndpoints
             HttpContext httpContext,
             CancellationToken ct) =>
         {
+            // Collect device + IP from HTTP boundary. NOT added to the LoginRequest
+            // DTO payload — these are internal command fields populated by
+            // Presentation (see docs/api/modules/Identity.md).
+            var userAgent = httpContext.Request.Headers.UserAgent.ToString();
+            var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
+            var deviceId = httpContext.Request.Headers["X-Device-Id"].ToString();
+            var deviceName = httpContext.Request.Headers["X-Device-Name"].ToString();
+
             var command = new LoginCommand(
                 request.Email,
                 request.Password,
-                IpAddress: httpContext.Connection.RemoteIpAddress?.ToString());
+                IpAddress: ipAddress,
+                UserAgent: string.IsNullOrWhiteSpace(userAgent) ? null : userAgent,
+                DeviceId: string.IsNullOrWhiteSpace(deviceId) ? null : deviceId,
+                DeviceName: string.IsNullOrWhiteSpace(deviceName) ? null : deviceName);
 
             var result = await mediator.Send(command, ct);
             if (!result.IsSuccess)

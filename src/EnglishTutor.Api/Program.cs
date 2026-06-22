@@ -49,6 +49,11 @@ using (var scope = app.Services.CreateScope())
 app.UseSerilogRequestLogging();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
+// Authentication + Authorization — required because /api/me and
+// /api/auth/logout carry .RequireAuthorization() metadata.
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Health Checks
 app.MapBaseHealthChecks();
 
