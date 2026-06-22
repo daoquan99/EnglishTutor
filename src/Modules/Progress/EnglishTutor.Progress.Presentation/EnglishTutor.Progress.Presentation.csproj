@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Progress.Application\EnglishTutor.Progress.Application.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Progress.Contracts\EnglishTutor.Progress.Contracts.csproj" />
+  </ItemGroup>
+</Project>

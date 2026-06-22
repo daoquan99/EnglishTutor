@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Feedback.Application\EnglishTutor.Feedback.Application.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Feedback.Contracts\EnglishTutor.Feedback.Contracts.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <!-- Module projects to test dependencies -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Domain\EnglishTutor.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Contracts\EnglishTutor.BuildingBlocks.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Domain\EnglishTutor.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Application\EnglishTutor.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Presentation\EnglishTutor.Identity.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Contracts\EnglishTutor.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\EnglishTutor.Api\EnglishTutor.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

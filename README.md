@@ -185,8 +185,26 @@ Follow these steps to run the complete environment locally on your development s
 
 ### Prerequisites
 - **.NET SDK 10.0** or later
-- **Docker & Docker Compose**
+- **Docker & Docker Compose** (for local infrastructure)
 - **IDE**: Visual Studio 2022, Rider, or VS Code with C# Dev Kit.
+
+### Local Infrastructure
+
+The backend depends on PostgreSQL, RabbitMQ, and Redis. The repository ships
+with a `docker-compose.yml` to bring them up locally:
+
+```bash
+docker compose up -d
+# → englishtutor-postgres (5432), englishtutor-rabbitmq (5672 + UI 15672), englishtutor-redis (6379)
+```
+
+After ~10 seconds, the API exposes:
+- `/health/live` — process alive (always 200)
+- `/health/ready` — Postgres + RabbitMQ + Redis reachable (tag `ready`)
+- `/health` — full report
+
+Full guide (port overrides, configuration, troubleshooting, optional Seq):
+**[`docs/infrastructure/local-dev.md`](docs/infrastructure/local-dev.md)**
 
 ---
 

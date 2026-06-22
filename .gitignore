@@ -49,5 +49,10 @@ AGENTS.md
 plans/
 
 docs/
+CodexReviews/
+ClaudeCodeReviews/
+ClaudeCodePlan/
+AntigravityReviews/
+FILES_INCLUDED.txt
 
 .env.example
