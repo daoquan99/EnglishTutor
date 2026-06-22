@@ -105,7 +105,7 @@ public sealed class UserSession : AggregateRoot
         // Issue the new token first (gets a new Id), then consume the old one
         // with that Id as the replacement target.
         var newToken = RefreshToken.Issue(
-            UserId, _family!.Id, newTokenHash.Hex, newExpiresAtUtc, createdByIp);
+            UserId, _family!.Id, Id, newTokenHash.Hex, newExpiresAtUtc, createdByIp);
         oldToken.Consume(newToken.Id, nowUtc);
         _family.AddToken(newToken);
 

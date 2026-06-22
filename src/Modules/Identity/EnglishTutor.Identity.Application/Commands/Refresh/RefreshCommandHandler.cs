@@ -85,10 +85,18 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
             return RefreshFailureResults.InvalidRefreshToken();
         }
 
-        // Reuse detection: if token already consumed, revoke entire family + raise event.
+        // Reuse detection: if token already consumed, mark reuse-detected
+        // (raises RefreshTokenReuseDetectedDomainEvent) and revoke the
+        // session (cascades the family revocation). The Domain event is
+        // raised in MarkReuseDetected -> RevokeFamily; the dispatcher
+        // (IdentityUnitOfWork -> IDomainEventDispatcher) then forwards the
+        // event to RefreshTokenReuseAuditHandler which records to the
+        // Audit module.
         if (existing.IsConsumed)
         {
-            session.Revoke(DateTime.UtcNow, revokedByUserId: null, reason: "refresh_token_reuse");
+            var nowUtc = DateTime.UtcNow;
+            existing.MarkReuseDetected(nowUtc, reason: "refresh_token_reuse");
+            session.Revoke(nowUtc, revokedByUserId: null, reason: "refresh_token_reuse");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return RefreshFailureResults.ReuseDetected(family.Id);
         }
@@ -99,7 +107,8 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         var newHashVo = RefreshTokenHash.FromHex(newHashHex);
         var newExpires = DateTime.UtcNow.Add(_refreshTokenLifetime.RefreshTokenLifetime);
 
-        session.RotateRefreshToken(existing, newHashVo, newExpires, request.IpAddress, DateTime.UtcNow);
+        var newToken = session.RotateRefreshToken(existing, newHashVo, newExpires, request.IpAddress, DateTime.UtcNow);
+        _userSessionRepository.Add(newToken);
 
         // Issue new access token. User lookup includes soft-deleted rows so a
         // refresh request still resolves a user who has been soft-deleted

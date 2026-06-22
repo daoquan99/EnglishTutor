@@ -20,6 +20,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             e.WithOwner();
             e.HasIndex(email => email.Value).IsUnique();
         });
+        b.Navigation(u => u.Email).HasField("_emailBacking");
 
         // PasswordHash as owned value object (never queryable in plaintext).
         b.OwnsOne(u => u.PasswordHash, p =>
@@ -27,6 +28,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             p.Property(h => h.Hash).HasColumnName("password_hash").HasMaxLength(500).IsRequired();
             p.WithOwner();
         });
+        b.Navigation(u => u.PasswordHash).HasField("_passwordHashBacking");
 
         b.Property(u => u.IsActive).IsRequired();
         b.Property(u => u.IsLockedOut).IsRequired();

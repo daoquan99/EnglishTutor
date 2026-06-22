@@ -1,17 +1,22 @@
+using EnglishTutor.Audit.Contracts;
+using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Abstractions.Auth;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
 using EnglishTutor.Identity.Application.Services;
 using EnglishTutor.Identity.Domain.Aggregates.Roles.Repositories;
+using EnglishTutor.Identity.Domain.Aggregates.Sessions.Events;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.Repositories;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
+using EnglishTutor.Identity.Infrastructure.Audit;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Identity.Infrastructure.Persistence.Repositories;
 using EnglishTutor.Identity.Infrastructure.Persistence.Seed.Options;
 using EnglishTutor.Identity.Infrastructure.Security;
 using EnglishTutor.Identity.Infrastructure.Security.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,6 +106,19 @@ public static class IdentityInfrastructureServiceCollectionExtensions
 
         services.AddScoped<IIdentityModuleDbContext, IdentityModuleDbContextAdapter>();
         services.AddScoped<IdentityDataSeeder>();
+
+        // HTTP context accessor + the per-request context accessor used by
+        // RefreshTokenReuseAuditHandler to read IP / User-Agent for the
+        // current request.
+        services.AddHttpContextAccessor();
+        services.AddScoped<IRefreshTokenReuseContextAccessor, HttpContextRefreshTokenReuseContextAccessor>();
+
+        // Domain event dispatcher. The InMemory implementation lives in
+        // BuildingBlocks.Infrastructure. Identity.Infrastructure adds the
+        // handler that bridges RefreshTokenReuseDetectedDomainEvent to the
+        // Audit.Contracts.ISecurityEventRecorder implementation.
+        services.AddDomainEventDispatcher();
+        services.AddDomainEventHandler<RefreshTokenReuseDetectedDomainEvent, RefreshTokenReuseAuditHandler>();
 
         return services;
     }

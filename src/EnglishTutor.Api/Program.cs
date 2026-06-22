@@ -1,3 +1,4 @@
+using EnglishTutor.Audit.Infrastructure;
 using EnglishTutor.BuildingBlocks.Infrastructure.Correlation;
 using EnglishTutor.BuildingBlocks.Infrastructure.HealthChecks;
 using EnglishTutor.BuildingBlocks.Infrastructure.Options;
@@ -26,6 +27,7 @@ builder.Services.AddInfrastructureHealthChecks();
 builder.Services.AddIdentityApplication(builder.Configuration);
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddIdentityPresentation();
+builder.Services.AddAudit(builder.Configuration);
 
 var app = builder.Build();
 
@@ -34,9 +36,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    var auditDb = scope.ServiceProvider.GetRequiredService<EnglishTutor.Audit.Infrastructure.Persistence.AuditDbContext>();
     try
     {
         await db.Database.MigrateAsync();
+        await auditDb.Database.MigrateAsync();
         await scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>().SeedAsync();
     }
     catch (Npgsql.NpgsqlException)

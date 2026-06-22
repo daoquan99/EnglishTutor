@@ -12,8 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\Modules\Identity\EnglishTutor.Identity.Domain\EnglishTutor.Identity.Domain.csproj" />
-    <ProjectReference Include="..\..\..\..\src\Modules\Identity\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Audit\EnglishTutor.Audit.Domain\EnglishTutor.Audit.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\src\Modules\Audit\EnglishTutor.Audit.Contracts\EnglishTutor.Audit.Contracts.csproj" />
   </ItemGroup>
 

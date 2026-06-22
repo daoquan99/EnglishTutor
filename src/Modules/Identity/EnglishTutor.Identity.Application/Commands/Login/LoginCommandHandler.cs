@@ -119,7 +119,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         var refreshTokenHashHex = _refreshTokenHasher.Hash(refreshValue);
         var refreshExpiresAt = DateTime.UtcNow.Add(_refreshTokenLifetime.RefreshTokenLifetime);
         var firstToken = RefreshToken.Issue(
-            user.Id, session.Family!.Id, refreshTokenHashHex, refreshExpiresAt, request.IpAddress);
+            user.Id, session.Family!.Id, session.Id, refreshTokenHashHex, refreshExpiresAt, request.IpAddress);
         session.Family.AddToken(firstToken);
 
         // Stage the aggregate via the repository. EF cascade tracking handles

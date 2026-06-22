@@ -89,4 +89,7 @@
   <Folder Name="/tests/Modules/Identity/">
     <Project Path="tests/Modules/Identity/Identity.UnitTests/Identity.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/tests/Modules/Audit/">
+    <Project Path="tests/Modules/Audit/EnglishTutor.Audit.UnitTests/EnglishTutor.Audit.UnitTests.csproj" />
+  </Folder>
 </Solution>
