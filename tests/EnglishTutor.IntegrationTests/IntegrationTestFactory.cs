@@ -24,7 +24,7 @@ namespace EnglishTutor.IntegrationTests;
 //   - It does not share a signing key with any real environment.
 //   - It does not apply UseEnvironment("Development") by default.
 //     Individual tests may opt in via WithWebHostBuilder.
-public sealed class IntegrationTestFactory : WebApplicationFactory<Program>
+public class IntegrationTestFactory : WebApplicationFactory<Program>
 {
     public const string TestJwtSigningKey =
         "integration-test-signing-key-32-bytes-min-please-do-not-reuse";
