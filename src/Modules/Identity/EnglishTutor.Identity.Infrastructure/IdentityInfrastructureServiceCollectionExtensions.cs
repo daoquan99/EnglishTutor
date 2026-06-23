@@ -1,5 +1,6 @@
 using EnglishTutor.Audit.Contracts;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Abstractions.Auth;

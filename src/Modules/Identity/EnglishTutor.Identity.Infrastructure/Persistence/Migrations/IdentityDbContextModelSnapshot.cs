@@ -158,9 +158,6 @@ namespace EnglishTutor.Identity.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(200)

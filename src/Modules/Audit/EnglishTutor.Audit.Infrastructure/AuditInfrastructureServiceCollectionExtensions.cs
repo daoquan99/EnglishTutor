@@ -1,11 +1,11 @@
-using EnglishTutor.Audit.Application.Abstractions;
-using EnglishTutor.Audit.Application.SecurityEvents;
+using EnglishTutor.Audit.Application.Abstractions.Persistence;
+using EnglishTutor.Audit.Application.Commands.RecordSecurityEvent;
 using EnglishTutor.Audit.Contracts;
-using EnglishTutor.Audit.Domain.SecurityEvents;
-using EnglishTutor.Audit.Infrastructure.Audit.Contracts;
+using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.Repositories;
 using EnglishTutor.Audit.Infrastructure.Persistence;
 using EnglishTutor.Audit.Infrastructure.Persistence.Repositories;
-using EnglishTutor.BuildingBlocks.Application.DomainEvents;
+using EnglishTutor.Audit.Infrastructure.SecurityEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -37,7 +37,10 @@ public static class AuditInfrastructureServiceCollectionExtensions
             options.UseNpgsql(connectionString);
         });
 
-        services.AddDomainEventDispatcher();
+        // Domain event dispatcher is registered at the API composition
+        // root or at the module's Infrastructure extension, not via
+        // reflection. This AddAudit extension does not register the
+        // dispatcher; the composition root does.
 
         return services;
     }

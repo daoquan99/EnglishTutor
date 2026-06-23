@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace EnglishTutor.Audit.Application.SecurityEvents;
+namespace EnglishTutor.Audit.Application.Commands.RecordSecurityEvent;
 
 public sealed class RecordSecurityEventCommandValidator
     : AbstractValidator<RecordSecurityEventCommand>

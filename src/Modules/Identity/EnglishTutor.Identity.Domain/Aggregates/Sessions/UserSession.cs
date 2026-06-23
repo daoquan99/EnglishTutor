@@ -5,12 +5,10 @@ using EnglishTutor.Identity.Domain.Aggregates.Sessions.ValueObjects;
 
 namespace EnglishTutor.Identity.Domain.Aggregates.Sessions;
 
-/// <summary>
-/// Aggregate root for the Sessions aggregate. Represents one server-side
-/// login session: device binding, refresh-token family, last-seen, and
-/// revocation state. Soft-delete and audit metadata come from
-/// <see cref="AggregateRoot"/>.
-/// </summary>
+// Aggregate root for the Sessions aggregate. Represents one server-side
+// login session: device binding, refresh-token family, last-seen, and
+// revocation state. Soft-delete and audit metadata come from
+// AggregateRoot.
 public sealed class UserSession : AggregateRoot
 {
     public Guid UserId { get; private set; }
@@ -26,10 +24,8 @@ public sealed class UserSession : AggregateRoot
     // EF Core parameterless constructor.
     private UserSession() { }
 
-    /// <summary>
-    /// Factory: creates a new <c>UserSession</c> and a bound
-    /// <c>RefreshTokenFamily</c>. Raises <c>UserSessionCreatedDomainEvent</c>.
-    /// </summary>
+    // Factory: creates a new UserSession and a bound
+    // RefreshTokenFamily. Raises UserSessionCreatedDomainEvent.
     public static UserSession Create(Guid userId, DeviceInfo device, DateTime nowUtc)
     {
         if (userId == Guid.Empty)
@@ -53,21 +49,17 @@ public sealed class UserSession : AggregateRoot
         return session;
     }
 
-    /// <summary>
-    /// Updates <see cref="LastSeenAtUtc"/>. No-op if the session is revoked.
-    /// </summary>
+    // Updates LastSeenAtUtc. No-op if the session is revoked.
     public void MarkSeen(DateTime nowUtc)
     {
         if (RevokedAtUtc is not null) return;
         LastSeenAtUtc = nowUtc;
     }
 
-    /// <summary>
-    /// Revokes this session. The bound refresh-token family is also revoked.
-    /// Raises both <c>UserSessionRevokedDomainEvent</c> (for any revocation
-    /// cause) and <c>UserLoggedOutDomainEvent</c> (user-initiated logout).
-    /// Idempotent: calling twice does not raise a second event.
-    /// </summary>
+    // Revokes this session. The bound refresh-token family is also revoked.
+    // Raises both UserSessionRevokedDomainEvent (for any revocation
+    // cause) and UserLoggedOutDomainEvent (user-initiated logout).
+    // Idempotent: calling twice does not raise a second event.
     public void Revoke(DateTime nowUtc, Guid? revokedByUserId, string reason)
     {
         if (RevokedAtUtc is not null) return;
@@ -83,12 +75,45 @@ public sealed class UserSession : AggregateRoot
         RaiseDomainEvent(new UserLoggedOutDomainEvent(UserId, Id));
     }
 
-    /// <summary>
-    /// Rotates the supplied old refresh token: marks it as consumed (with
-    /// the new token id as the replacement), issues a new refresh token, adds
-    /// it to the family, and raises <c>RefreshTokenRotatedDomainEvent</c>.
-    /// Throws if the session is revoked.
-    /// </summary>
+    // Detects refresh-token reuse: marks the supplied token as
+    // reuse-detected (raises RefreshTokenReuseDetectedDomainEvent with
+    // this session id as runtime context), and revokes the entire
+    // session + family. This is the new entry point used by
+    // RefreshCommandHandler for the reuse path; the handler does NOT
+    // call RefreshToken.MarkReuseDetected directly any more, so the
+    // SessionId is available at the aggregate root and can be passed
+    // through to the event without persisting it on RefreshToken.
+    public void DetectRefreshTokenReuse(
+        RefreshToken token,
+        DateTime nowUtc,
+        string reason)
+    {
+        ArgumentNullException.ThrowIfNull(token);
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Reason is required.", nameof(reason));
+
+        // Token must belong to this session's family. Otherwise we have
+        // a programming error (caller passed the wrong token).
+        if (_family is null || token.FamilyId != _family.Id)
+        {
+            throw new InvalidOperationException(
+                "Refresh token does not belong to this session's family.");
+        }
+
+        // Mark the token as reuse-detected. Pass the session id as
+        // runtime context so the raised event carries it without
+        // persisting it on the token.
+        token.MarkReuseDetected(nowUtc, reason, sessionId: Id);
+
+        // Revoke the session. The family revocation cascades inside
+        // Revoke -> _family.Revoke -> each token.Revoke.
+        Revoke(nowUtc, revokedByUserId: null, reason: reason);
+    }
+
+    // Rotates the supplied old refresh token: marks it as consumed (with
+    // the new token id as the replacement), issues a new refresh token, adds
+    // it to the family, and raises RefreshTokenRotatedDomainEvent.
+    // Throws if the session is revoked.
     public RefreshToken RotateRefreshToken(
         RefreshToken oldToken,
         RefreshTokenHash newTokenHash,
@@ -105,7 +130,7 @@ public sealed class UserSession : AggregateRoot
         // Issue the new token first (gets a new Id), then consume the old one
         // with that Id as the replacement target.
         var newToken = RefreshToken.Issue(
-            UserId, _family!.Id, Id, newTokenHash.Hex, newExpiresAtUtc, createdByIp);
+            UserId, _family!.Id, newTokenHash.Hex, newExpiresAtUtc, createdByIp);
         oldToken.Consume(newToken.Id, nowUtc);
         _family.AddToken(newToken);
 

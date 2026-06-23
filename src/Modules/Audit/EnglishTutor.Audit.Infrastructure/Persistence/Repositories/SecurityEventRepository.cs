@@ -1,4 +1,5 @@
-using EnglishTutor.Audit.Domain.SecurityEvents;
+using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents;
+using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishTutor.Audit.Infrastructure.Persistence.Repositories;

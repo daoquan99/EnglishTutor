@@ -72,15 +72,22 @@ public sealed class IdentityDataSeeder
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        // 1-3. Stage permissions, roles, and the role-permission join rows.
+        // 1-2. Stage permissions and roles.
         await SeedPermissionsAsync(cancellationToken);
         await SeedRolesAsync(cancellationToken);
+
+        // 2.5. Flush so SeedRolePermissionsAsync (which reads roles and
+        //      permissions from the DB) can find the just-staged rows.
+        //      Per .agents/rules/40-seeding-and-test-data.md the seed order
+        //      requires a flush before any later step that does a DB lookup.
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // 3. Stage role_permissions.
         await SeedRolePermissionsAsync(cancellationToken);
 
-        // 4. Persist permissions + roles + role_permissions so subsequent
-        //    queries (and FK inserts from UserRole) can resolve their Ids.
-        //    Without this flush, any query against the just-Added entities
-        //    hits the database (not the change tracker) and returns nothing.
+        // 3.5. Flush so subsequent lookups (SeedOwnerAsync reads the Owner
+        //      role; SeedOwnerUserRoleAsync reads Owner user + role) find
+        //      the role_permissions rows if they need them.
         await _db.SaveChangesAsync(cancellationToken);
 
         // 5-7. Owner user + Owner UserRole join row + final flush.

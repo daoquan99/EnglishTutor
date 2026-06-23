@@ -3,25 +3,28 @@ using EnglishTutor.Identity.Domain.Aggregates.Sessions.Events;
 
 namespace EnglishTutor.Identity.Domain.Aggregates.Sessions.Entities;
 
-/// <summary>
-/// Refresh token entity. Each token belongs to a <see cref="FamilyId"/>:
-/// the family starts when the user logs in, and rotation produces a new
-/// token chained to the family via <see cref="ReplacedByTokenId"/>.
-/// </summary>
-/// <remarks>
-/// <para>This is a child entity of <c>RefreshTokenFamily</c> (which is a
-/// child entity of <c>UserSession</c>). It is NOT an <c>AggregateRoot</c>
-/// because its lifecycle is owned by the family/session.</para>
-/// <para>Reuse detection: if a token whose <see cref="UsedAtUtc"/> is already
-/// set is presented again, the entire family is revoked
-/// (<see cref="RevokeFamily"/>) — this protects against token-theft.</para>
-/// <para>Plaintext token value is never persisted — only its SHA-256 hash.</para>
-/// </remarks>
+// Refresh token entity. Each token belongs to a FamilyId:
+// the family starts when the user logs in, and rotation produces a new
+// token chained to the family via ReplacedByTokenId.
+//
+// This is a child entity of RefreshTokenFamily (which is a
+// child entity of UserSession). It is NOT an AggregateRoot
+// because its lifecycle is owned by the family and session.
+//
+// The session id is NOT persisted on this entity. It is available
+// through RefreshTokenFamily.SessionId -> UserSession.Id.
+// When the refresh-token-reuse event is raised, the session id is
+// passed in as a method parameter (see MarkReuseDetected).
+//
+// Reuse detection: if a token whose UsedAtUtc is already
+// set is presented again, the entire family is revoked
+// (see RevokeFamily) — this protects against token-theft.
+//
+// Plaintext token value is never persisted — only its SHA-256 hash.
 public sealed class RefreshToken : AggregateRoot
 {
     public Guid UserId { get; private set; }
     public Guid FamilyId { get; private set; }
-    public Guid SessionId { get; private set; }
     public string TokenHash { get; private set; } = string.Empty;
     public DateTime ExpiresAtUtc { get; private set; }
     public DateTime? UsedAtUtc { get; private set; }
@@ -38,14 +41,12 @@ public sealed class RefreshToken : AggregateRoot
     public static RefreshToken Issue(
         Guid userId,
         Guid familyId,
-        Guid sessionId,
         string tokenHash,
         DateTime expiresAtUtc,
         string? createdByIp)
     {
         if (userId == Guid.Empty) throw new ArgumentException("UserId required.", nameof(userId));
         if (familyId == Guid.Empty) throw new ArgumentException("FamilyId required.", nameof(familyId));
-        if (sessionId == Guid.Empty) throw new ArgumentException("SessionId required.", nameof(sessionId));
         if (string.IsNullOrWhiteSpace(tokenHash))
             throw new ArgumentException("Token hash required.", nameof(tokenHash));
 
@@ -54,7 +55,6 @@ public sealed class RefreshToken : AggregateRoot
             Id = Guid.NewGuid(),
             UserId = userId,
             FamilyId = familyId,
-            SessionId = sessionId,
             TokenHash = tokenHash,
             ExpiresAtUtc = expiresAtUtc,
             CreatedByIp = createdByIp
@@ -78,13 +78,23 @@ public sealed class RefreshToken : AggregateRoot
         ReplacedByTokenId = replacementTokenId;
     }
 
-    public void MarkReuseDetected(DateTime nowUtc, string reason)
+    // Marks reuse detection: sets ReuseDetectedAtUtc, then calls
+    // RevokeFamily with the supplied reason to revoke the family.
+    // The sessionId is NOT persisted; it is passed through to the
+    // raised RefreshTokenReuseDetectedDomainEvent so the audit pipeline
+    // can record the session context without a schema change on this
+    // entity.
+    public void MarkReuseDetected(DateTime nowUtc, string reason, Guid sessionId)
     {
         ReuseDetectedAtUtc ??= nowUtc;
-        RevokeFamily(nowUtc, reason);
+        RevokeFamily(nowUtc, reason, sessionId);
     }
 
-    public void RevokeFamily(DateTime nowUtc, string? reason)
+    // Revokes this token and raises a reuse-detection event. The
+    // sessionId is the runtime context id (NOT a persisted property on
+    // this token) used for the raised event. Idempotent: if the token
+    // is already revoked, the call is a no-op.
+    public void RevokeFamily(DateTime nowUtc, string? reason, Guid sessionId)
     {
         if (RevokedAtUtc is not null)
         {
@@ -93,20 +103,17 @@ public sealed class RefreshToken : AggregateRoot
         RevokedAtUtc = nowUtc;
         RaiseDomainEvent(new RefreshTokenReuseDetectedDomainEvent(
             UserId: UserId,
-            SessionId: SessionId,
+            SessionId: sessionId,
             RefreshTokenFamilyId: FamilyId,
             RefreshTokenId: Id,
             Reason: reason ?? "unknown"));
     }
 
-    // Compatibility wrappers
+    // Compatibility wrapper. Delegates to Consume. Existing
+    // handlers in Slice 2.4 still call this; it will be removed in
+    // Slice 2.6 when handlers are refactored.
     public void MarkUsed(Guid replacedByTokenId, DateTime nowUtc)
     {
         Consume(replacedByTokenId, nowUtc);
-    }
-
-    public void DetectReuse(string? ipAddress)
-    {
-        MarkReuseDetected(DateTime.UtcNow, ipAddress ?? "unknown");
     }
 }

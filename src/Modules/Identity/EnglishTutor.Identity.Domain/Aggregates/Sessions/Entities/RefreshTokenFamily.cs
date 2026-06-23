@@ -2,17 +2,14 @@ using EnglishTutor.Identity.Domain.Aggregates.Sessions.ValueObjects;
 
 namespace EnglishTutor.Identity.Domain.Aggregates.Sessions.Entities;
 
-/// <summary>
-/// A chain of rotated refresh tokens created by one login. If any consumed
-/// token is reused, the entire family is revoked (token-theft protection).
-/// This is a child entity of <c>UserSession</c> (Sessions aggregate), not
-/// an <c>AggregateRoot</c> — its lifecycle is owned by the session.
-/// </summary>
-/// <remarks>
-/// Plain class (no audit metadata) because family rows are append-only
-/// and short-lived: they are revoked when the session ends. We do not add
-/// soft-delete per Slice 2.4 plan.
-/// </remarks>
+// A chain of rotated refresh tokens created by one login. If any consumed
+// token is reused, the entire family is revoked (token-theft protection).
+// This is a child entity of UserSession (Sessions aggregate), not
+// an AggregateRoot — its lifecycle is owned by the session.
+//
+// Plain class (no audit metadata) because family rows are append-only
+// and short-lived: they are revoked when the session ends. We do not add
+// soft-delete per Slice 2.4 plan.
 public sealed class RefreshTokenFamily
 {
     public Guid Id { get; private set; }
@@ -28,12 +25,10 @@ public sealed class RefreshTokenFamily
     // EF Core parameterless constructor.
     private RefreshTokenFamily() { }
 
-    /// <summary>
-    /// Factory: creates a new family bound to a freshly-created
-    /// <c>UserSession</c>. The family is created with no tokens — the
-    /// first refresh token is issued separately and added via
-    /// <see cref="AddToken"/>.
-    /// </summary>
+    // Factory: creates a new family bound to a freshly-created
+    // UserSession. The family is created with no tokens — the
+    // first refresh token is issued separately and added via
+    // AddToken.
     public static RefreshTokenFamily Create(Guid userId, Guid sessionId, DateTime nowUtc)
     {
         if (userId == Guid.Empty) throw new ArgumentException("UserId required.", nameof(userId));
@@ -48,17 +43,19 @@ public sealed class RefreshTokenFamily
         };
     }
 
-    /// <summary>Appends a token to the family. Used by the rotation flow.</summary>
+    // Appends a token to the family. Used by the rotation flow.
     public void AddToken(RefreshToken token)
     {
         ArgumentNullException.ThrowIfNull(token);
         _tokens.Add(token);
     }
 
-    /// <summary>
-    /// Revokes the family. All tokens in the family are also revoked. Idempotent:
-    /// calling twice does not raise a second event.
-    /// </summary>
+    // Revokes the family. All tokens in the family are also revoked. Idempotent:
+    // calling twice does not raise a second event.
+    //
+    // Passes this.SessionId through to each token's RevokeFamily so the
+    // raised RefreshTokenReuseDetectedDomainEvent carries the session id
+    // (NOT a persisted property on the token).
     public void Revoke(DateTime nowUtc, string reason)
     {
         if (RevokedAtUtc is not null)
@@ -71,7 +68,7 @@ public sealed class RefreshTokenFamily
 
         foreach (var token in _tokens)
         {
-            token.RevokeFamily(nowUtc, reason);
+            token.RevokeFamily(nowUtc, reason, sessionId: SessionId);
         }
     }
 

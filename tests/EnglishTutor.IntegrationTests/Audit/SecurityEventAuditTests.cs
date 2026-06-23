@@ -41,18 +41,18 @@ public class SecurityEventAuditTests
         using var client = factory.CreateClient();
 
         // Clean database tables from previous runs
-        using (var scope = factory.Services.CreateScope())
+        using (var setupScope = factory.Services.CreateScope())
         {
-            var auditDb = scope.ServiceProvider.GetRequiredService<AuditDbContext>();
-            var identityDb = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-            
-            auditDb.SecurityEvents.RemoveRange(auditDb.SecurityEvents);
-            await auditDb.SaveChangesAsync();
+            var setupAuditDb = setupScope.ServiceProvider.GetRequiredService<AuditDbContext>();
+            var setupIdentityDb = setupScope.ServiceProvider.GetRequiredService<IdentityDbContext>();
 
-            identityDb.RefreshTokens.RemoveRange(identityDb.RefreshTokens);
-            identityDb.RefreshTokenFamilies.RemoveRange(identityDb.RefreshTokenFamilies);
-            identityDb.UserSessions.RemoveRange(identityDb.UserSessions);
-            await identityDb.SaveChangesAsync();
+            setupAuditDb.SecurityEvents.RemoveRange(setupAuditDb.SecurityEvents);
+            await setupAuditDb.SaveChangesAsync();
+
+            setupIdentityDb.RefreshTokens.RemoveRange(setupIdentityDb.RefreshTokens);
+            setupIdentityDb.RefreshTokenFamilies.RemoveRange(setupIdentityDb.RefreshTokenFamilies);
+            setupIdentityDb.UserSessions.RemoveRange(setupIdentityDb.UserSessions);
+            await setupIdentityDb.SaveChangesAsync();
         }
 
         // 1. Login

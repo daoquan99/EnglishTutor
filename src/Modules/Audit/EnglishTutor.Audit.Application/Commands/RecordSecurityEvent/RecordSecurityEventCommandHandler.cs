@@ -1,9 +1,10 @@
 using EnglishTutor.BuildingBlocks.Application.Commands;
 using EnglishTutor.BuildingBlocks.Domain.Results;
-using EnglishTutor.Audit.Application.Abstractions;
-using EnglishTutor.Audit.Domain.SecurityEvents;
+using EnglishTutor.Audit.Application.Abstractions.Persistence;
+using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents;
+using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.Repositories;
 
-namespace EnglishTutor.Audit.Application.SecurityEvents;
+namespace EnglishTutor.Audit.Application.Commands.RecordSecurityEvent;
 
 // Handles RecordSecurityEventCommand: creates a SecurityEvent aggregate
 // and persists it through the Audit UoW. Idempotent: re-running the

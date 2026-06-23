@@ -37,6 +37,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
     var auditDb = scope.ServiceProvider.GetRequiredService<EnglishTutor.Audit.Infrastructure.Persistence.AuditDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
         await db.Database.MigrateAsync();
@@ -46,6 +47,10 @@ using (var scope = app.Services.CreateScope())
     catch (Npgsql.NpgsqlException)
     {
         // DB not reachable — skip.
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Startup seeding failed.");
     }
 }
 

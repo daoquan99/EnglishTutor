@@ -3,20 +3,17 @@ using System;
 using EnglishTutor.Audit.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace EnglishTutor.Audit.Infrastructure.Migrations
+namespace EnglishTutor.Audit.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AuditDbContext))]
-    [Migration("20260622155744_InitialAuditSchema")]
-    partial class InitialAuditSchema
+    partial class AuditDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -25,7 +22,7 @@ namespace EnglishTutor.Audit.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("EnglishTutor.Audit.Domain.SecurityEvents.SecurityEvent", b =>
+            modelBuilder.Entity("EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.SecurityEvent", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

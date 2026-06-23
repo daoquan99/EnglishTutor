@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace EnglishTutor.Audit.Infrastructure.Migrations
+namespace EnglishTutor.Audit.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class InitialAuditSchema : Migration

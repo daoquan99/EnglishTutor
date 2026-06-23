@@ -2,7 +2,7 @@ using EnglishTutor.BuildingBlocks.Application.Commands;
 using EnglishTutor.BuildingBlocks.Application.DateTime;
 using EnglishTutor.Audit.Contracts;
 
-namespace EnglishTutor.Audit.Application.SecurityEvents;
+namespace EnglishTutor.Audit.Application.Commands.RecordSecurityEvent;
 
 // Internal command used by Audit.Infrastructure.SecurityEventRecorder to
 // hand off a security-event record to the Audit write pipeline. Carries

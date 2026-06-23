@@ -1,7 +1,7 @@
 using EnglishTutor.BuildingBlocks.Domain.Aggregates;
 
 
-namespace EnglishTutor.Audit.Domain.SecurityEvents;
+namespace EnglishTutor.Audit.Domain.Aggregates.SecurityEvents;
 
 // Audit module aggregate root. One row per recorded security event. Stored
 // in the audit schema. No FK to any other module's tables.

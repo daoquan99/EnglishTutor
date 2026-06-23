@@ -1,6 +1,7 @@
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents;
 
-namespace EnglishTutor.Audit.Domain.SecurityEvents;
+namespace EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.Repositories;
 
 public interface ISecurityEventRepository
 {

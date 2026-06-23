@@ -1,5 +1,5 @@
 using EnglishTutor.Audit.Contracts;
-using EnglishTutor.Audit.Domain.SecurityEvents;
+using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents;
 using FluentAssertions;
 
 namespace EnglishTutor.Audit.UnitTests;
@@ -20,7 +20,7 @@ public class SecurityEventTests
         var e = SecurityEvent.Create(
             categoryCode: AuditCategoryCodes.IdentityRefreshTokenReuseDetected,
             sourceModule: AuditCategoryCodes.SourceModuleIdentity,
-            sourceEventType: "RefreshTokenReuseDetectedDomainEvent",
+            sourceEventType: AuditCategoryCodes.SourceEventTypes.IdentityRefreshTokenReuseDetected,
             userId: userId,
             sessionId: sessionId,
             refreshTokenFamilyId: familyId,
@@ -35,7 +35,7 @@ public class SecurityEventTests
         e.Id.Should().NotBe(Guid.Empty);
         e.CategoryCode.Should().Be("identity.refresh_token_reuse_detected");
         e.SourceModule.Should().Be("identity");
-        e.SourceEventType.Should().Be("RefreshTokenReuseDetectedDomainEvent");
+        e.SourceEventType.Should().Be(AuditCategoryCodes.SourceEventTypes.IdentityRefreshTokenReuseDetected);
         e.UserId.Should().Be(userId);
         e.SessionId.Should().Be(sessionId);
         e.RefreshTokenFamilyId.Should().Be(familyId);

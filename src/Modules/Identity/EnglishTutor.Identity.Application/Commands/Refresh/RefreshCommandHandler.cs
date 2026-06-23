@@ -85,18 +85,18 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
             return RefreshFailureResults.InvalidRefreshToken();
         }
 
-        // Reuse detection: if token already consumed, mark reuse-detected
-        // (raises RefreshTokenReuseDetectedDomainEvent) and revoke the
-        // session (cascades the family revocation). The Domain event is
-        // raised in MarkReuseDetected -> RevokeFamily; the dispatcher
-        // (IdentityUnitOfWork -> IDomainEventDispatcher) then forwards the
-        // event to RefreshTokenReuseAuditHandler which records to the
+        // Reuse detection: if token already consumed, delegate to the
+        // session aggregate root. DetectRefreshTokenReuse marks the token
+        // as reuse-detected (raising RefreshTokenReuseDetectedDomainEvent
+        // with this session id as runtime context) and revokes the
+        // session + family. The Domain event is dispatched after SaveChanges
+        // by IdentityUnitOfWork -> IDomainEventDispatcher -> the Audit
+        // bridge (RefreshTokenReuseAuditHandler) which records to the
         // Audit module.
         if (existing.IsConsumed)
         {
             var nowUtc = DateTime.UtcNow;
-            existing.MarkReuseDetected(nowUtc, reason: "refresh_token_reuse");
-            session.Revoke(nowUtc, revokedByUserId: null, reason: "refresh_token_reuse");
+            session.DetectRefreshTokenReuse(existing, nowUtc, reason: "refresh_token_reuse");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return RefreshFailureResults.ReuseDetected(family.Id);
         }

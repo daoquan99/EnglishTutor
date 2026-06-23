@@ -1,6 +1,6 @@
 using EnglishTutor.BuildingBlocks.Domain.Results;
 
-namespace EnglishTutor.Audit.Domain.Errors;
+namespace EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.Errors;
 
 public static class AuditErrors
 {

@@ -1,4 +1,4 @@
-using EnglishTutor.Audit.Application.Abstractions;
+using EnglishTutor.Audit.Application.Abstractions.Persistence;
 
 namespace EnglishTutor.Audit.Infrastructure.Persistence;
 
