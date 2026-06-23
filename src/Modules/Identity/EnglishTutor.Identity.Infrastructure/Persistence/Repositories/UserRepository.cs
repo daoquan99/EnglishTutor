@@ -33,7 +33,12 @@ internal sealed class UserRepository : IUserRepository
         {
             query = query.IgnoreQueryFilters();
         }
-        return await query.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await query.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is not null)
+        {
+            await PopulateUserRolesAsync(user, ct);
+        }
+        return user;
     }
 
     public async Task<User?> FindByEmailAsync(
@@ -48,7 +53,26 @@ internal sealed class UserRepository : IUserRepository
             query = query.IgnoreQueryFilters();
         }
 
-        return await query.FirstOrDefaultAsync(ct);
+        var user = await query.FirstOrDefaultAsync(ct);
+        if (user is not null)
+        {
+            await PopulateUserRolesAsync(user, ct);
+        }
+        return user;
+    }
+
+    private async Task PopulateUserRolesAsync(User user, CancellationToken ct)
+    {
+        var roleIds = await _db.UserRoles
+            .AsNoTracking()
+            .Where(ur => ur.UserId == user.Id)
+            .Select(ur => ur.RoleId)
+            .ToListAsync(ct);
+
+        foreach (var roleId in roleIds)
+        {
+            user.AssignRole(roleId);
+        }
     }
 
     public void Add(User user) => _db.Users.Add(user);

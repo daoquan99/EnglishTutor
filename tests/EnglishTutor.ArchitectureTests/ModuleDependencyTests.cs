@@ -86,4 +86,31 @@ public class ModuleDependencyTests
 
         result.IsSuccessful.Should().BeTrue();
     }
+
+    [Fact]
+    public void BuildingBlocks_Should_Not_Reference_ModuleDbContexts()
+    {
+        var buildingBlocksAssemblies = new[]
+        {
+            typeof(EnglishTutor.BuildingBlocks.Domain.Entities.Entity).Assembly,
+            typeof(EnglishTutor.BuildingBlocks.Application.Commands.ICommand).Assembly,
+            typeof(EnglishTutor.BuildingBlocks.Infrastructure.HealthChecks.StartupReadinessProbe).Assembly
+        };
+
+        foreach (var assembly in buildingBlocksAssemblies)
+        {
+            var result = Types.InAssembly(assembly)
+                .ShouldNot()
+                .HaveDependencyOn("EnglishTutor.Identity.Infrastructure")
+                .And()
+                .HaveDependencyOn("EnglishTutor.Audit.Infrastructure")
+                .And()
+                .HaveDependencyOn("IdentityDbContext")
+                .And()
+                .HaveDependencyOn("AuditDbContext")
+                .GetResult();
+
+            result.IsSuccessful.Should().BeTrue($"BuildingBlocks assembly {assembly.GetName().Name} must not reference Identity or Audit DbContexts/Infrastructure.");
+        }
+    }
 }

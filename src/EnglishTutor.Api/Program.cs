@@ -7,7 +7,11 @@ using EnglishTutor.Identity.Infrastructure;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Identity.Application;
 using EnglishTutor.Identity.Presentation;
+using EnglishTutor.Audit.Presentation;
+using EnglishTutor.Audit.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
+using MassTransit;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +32,23 @@ builder.Services.AddIdentityApplication(builder.Configuration);
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddIdentityPresentation(builder.Configuration);
 builder.Services.AddAudit(builder.Configuration);
+builder.Services.AddAuditPresentation(builder.Configuration);
+
+// Configure MassTransit EF outbox on API host with in-memory bus stub.
+// This supports transactional outbox writing in HTTP handlers without a broker link.
+builder.Services.AddApiOutboxMessaging(x =>
+{
+    x.AddEntityFrameworkOutbox<IdentityDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
+    x.AddEntityFrameworkOutbox<AuditDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
+});
 
 var app = builder.Build();
 
@@ -84,6 +105,7 @@ app.MapBaseHealthChecks();
 
 // Identity endpoints
 app.MapIdentityEndpoints();
+app.MapAuditEndpoints();
 
 // Minimal API root
 app.MapGet("/", () => Results.Ok(new

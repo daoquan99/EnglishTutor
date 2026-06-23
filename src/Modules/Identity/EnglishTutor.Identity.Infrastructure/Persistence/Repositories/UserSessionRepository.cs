@@ -107,4 +107,16 @@ internal sealed class UserSessionRepository : IUserSessionRepository
     public void Add(RefreshTokenFamily family) => _db.Set<RefreshTokenFamily>().Add(family);
 
     public void Add(RefreshToken token) => _db.RefreshTokens.Add(token);
+
+    public async Task<int> PurgeExpiredRefreshTokensAsync(DateTime expiredBeforeUtc, CancellationToken cancellationToken)
+    {
+        // ExecuteDeleteAsync is an EF LINQ API, not a raw SQL query.
+        // It is used here exclusively for bulk maintenance purging of expired tokens,
+        // which avoids loading thousands of stale rows into memory.
+        // It deletes only expired refresh tokens older than the threshold, is idempotent,
+        // and does not modify active or unexpired tokens.
+        return await _db.RefreshTokens
+            .Where(t => t.ExpiresAtUtc < expiredBeforeUtc)
+            .ExecuteDeleteAsync(cancellationToken);
+    }
 }

@@ -6,3 +6,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("EnglishTutor.Identity.Application")]
 [assembly: InternalsVisibleTo("EnglishTutor.Identity.Infrastructure")]
 [assembly: InternalsVisibleTo("EnglishTutor.Identity.Presentation")]
+
+
+

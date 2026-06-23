@@ -136,46 +136,46 @@ public class AuditIdentityBoundaryTests
     // ---- Audit Domain aggregate-first ----
 
     [Fact]
-    public void Audit_Domain_Types_Should_Live_Under_Aggregates_SecurityEvents()
+    public void Audit_Domain_Types_Should_Live_Under_Aggregates_Folders()
     {
         // Every public / internal type declared in the Audit.Domain
         // assembly must live under the namespace
-        // EnglishTutor.Audit.Domain.Aggregates.SecurityEvents (or one
-        // of its sub-namespaces: .Errors, .Repositories, .ValueObjects,
-        // .Events, .Rules, .Shared — none of which Audit currently
-        // uses, but the rule accommodates them).
+        // EnglishTutor.Audit.Domain.Aggregates.SecurityEvents or
+        // EnglishTutor.Audit.Domain.Aggregates.AuditLogs (or one
+        // of their sub-namespaces).
         //
         // No Audit-domain type may live at the Domain project root
         // (EnglishTutor.Audit.Domain) or in any non-Aggregates
         // top-level folder.
         var assembly = typeof(EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.SecurityEvent).Assembly;
 
-        var allowedRootNamespace = $"{AuditDomainNamespace}.Aggregates.SecurityEvents";
+        var allowedRootNamespace1 = $"{AuditDomainNamespace}.Aggregates.SecurityEvents";
+        var allowedRootNamespace2 = $"{AuditDomainNamespace}.Aggregates.AuditLogs";
 
         var offenders = Types.InAssembly(assembly)
             .That()
             .ResideInNamespaceStartingWith(AuditDomainNamespace)
             .And()
-            .DoNotResideInNamespaceStartingWith(allowedRootNamespace)
+            .DoNotResideInNamespaceStartingWith(allowedRootNamespace1)
+            .And()
+            .DoNotResideInNamespaceStartingWith(allowedRootNamespace2)
             .GetTypes()
             .Where(t => !IsCompilerGeneratedOrFramework(t))
             .Select(t => t.FullName ?? t.Name)
             .ToList();
 
         offenders.Should().BeEmpty(
-            "All Audit domain types must live under " + allowedRootNamespace + ". " +
+            "All Audit domain types must live under aggregates folders. " +
             "No Audit domain type may live at the Audit.Domain root outside Aggregates/. " +
             "Found offenders: " + string.Join(", ", offenders));
     }
 
     [Fact]
-    public void Audit_Domain_Should_Have_Exactly_One_Aggregate_Folder()
+    public void Audit_Domain_Should_Have_Exactly_Two_Aggregate_Folders()
     {
-        // Sanity check: there is exactly one aggregate folder under
+        // Sanity check: there are exactly two aggregate folders under
         // src/Modules/Audit/EnglishTutor.Audit.Domain/Aggregates/.
-        // Currently that is SecurityEvents. If a second aggregate is
-        // added later this test will fail and prompt the author to
-        // confirm the new aggregate is intentional.
+        // Those are SecurityEvents and AuditLogs.
         var assembly = typeof(EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.SecurityEvent).Assembly;
 
         var aggregateNamespaces = Types.InAssembly(assembly)
@@ -199,9 +199,11 @@ public class AuditIdentityBoundaryTests
             .Distinct()
             .ToList();
 
-        distinctTopLevelAggregates.Should().ContainSingle(
-            "Audit.Domain must have exactly one aggregate folder. " +
+        distinctTopLevelAggregates.Should().HaveCount(2,
+            "Audit.Domain must have exactly two aggregate folders: SecurityEvents and AuditLogs. " +
             "Found: " + string.Join(", ", distinctTopLevelAggregates));
+
+        distinctTopLevelAggregates.Should().Contain(new[] { "SecurityEvents", "AuditLogs" });
     }
 
     // Filter out compiler-generated types (e.g. <Module>, lambda

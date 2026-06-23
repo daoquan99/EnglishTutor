@@ -40,13 +40,15 @@ public sealed class IdentityDataSeeder
         (IdentityPermissionCodes.Manage,     IdentityModuleNames.Identity, "Manage identity (create/update/delete users)"),
         (IdentityPermissionCodes.View,       IdentityModuleNames.Identity, "View identity data (users, roles)"),
         (IdentityPermissionCodes.SelfManage, IdentityModuleNames.Identity, "Manage own account (profile, password)"),
+        (IdentityPermissionCodes.AuditRead,    IdentityModuleNames.Audit,    "Read audit logs"),
+        (IdentityPermissionCodes.SecurityRead, IdentityModuleNames.Audit,    "Read security events"),
     };
 
     // (Role name, permission codes assigned to that role).
     private static readonly (string Role, string[] Permissions)[] BaselineRolePermissions =
     {
-        (Role.WellKnownNames.Owner, new[] { IdentityPermissionCodes.Manage, IdentityPermissionCodes.View, IdentityPermissionCodes.SelfManage }),
-        (Role.WellKnownNames.Admin, new[] { IdentityPermissionCodes.Manage, IdentityPermissionCodes.View, IdentityPermissionCodes.SelfManage }),
+        (Role.WellKnownNames.Owner, new[] { IdentityPermissionCodes.Manage, IdentityPermissionCodes.View, IdentityPermissionCodes.SelfManage, IdentityPermissionCodes.AuditRead, IdentityPermissionCodes.SecurityRead }),
+        (Role.WellKnownNames.Admin, new[] { IdentityPermissionCodes.Manage, IdentityPermissionCodes.View, IdentityPermissionCodes.SelfManage, IdentityPermissionCodes.AuditRead, IdentityPermissionCodes.SecurityRead }),
         (Role.WellKnownNames.User,  new[] { IdentityPermissionCodes.SelfManage }),
     };
 

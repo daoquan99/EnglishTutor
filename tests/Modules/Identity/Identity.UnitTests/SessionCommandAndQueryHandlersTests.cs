@@ -180,6 +180,11 @@ internal class FakeUserSessionRepository : IUserSessionRepository
 
     public void Add(RefreshTokenFamily family) { }
     public void Add(RefreshToken token) { }
+
+    public Task<int> PurgeExpiredRefreshTokensAsync(DateTime expiredBeforeUtc, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(0);
+    }
 }
 
 internal class FakeIdentityUnitOfWork : IIdentityUnitOfWork

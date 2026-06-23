@@ -22,4 +22,10 @@ public static class IdentityPermissionCodes
 
     /// <summary>Manage own account (profile, password, devices).</summary>
     public const string SelfManage = "Auth:SelfManage";
+
+    /// <summary>Read audit logs.</summary>
+    public const string AuditRead = "admin.audit_read";
+
+    /// <summary>Read security events.</summary>
+    public const string SecurityRead = "admin.security_read";
 }

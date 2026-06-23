@@ -1,3 +1,4 @@
+using EnglishTutor.Audit.Domain.Aggregates.AuditLogs.Repositories;
 using EnglishTutor.Audit.Application.Abstractions.Persistence;
 using EnglishTutor.Audit.Application.Commands.RecordSecurityEvent;
 using EnglishTutor.Audit.Contracts;
@@ -28,9 +29,12 @@ public static class AuditInfrastructureServiceCollectionExtensions
             typeof(RecordSecurityEventCommand).Assembly));
 
         services.AddScoped<ISecurityEventRepository, SecurityEventRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAuditUnitOfWork, AuditUnitOfWork>();
+        services.AddScoped<IAuditQueryService, AuditQueryService>();
 
         services.AddScoped<ISecurityEventRecorder, SecurityEventRecorder>();
+        services.AddScoped<IAuditModule, AuditModule>();
 
         services.AddDbContext<AuditDbContext>(options =>
         {

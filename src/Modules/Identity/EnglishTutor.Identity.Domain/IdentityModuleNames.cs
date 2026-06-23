@@ -12,4 +12,7 @@ public static class IdentityModuleNames
 {
     /// <summary>Identity module — users, roles, permissions, sessions.</summary>
     public const string Identity = "Identity";
+
+    /// <summary>Audit module — audit logs and security events.</summary>
+    public const string Audit = "Audit";
 }

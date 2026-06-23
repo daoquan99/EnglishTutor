@@ -133,9 +133,10 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         }
 
         var roleNames = await _roleRepository.GetNamesByIdsAsync(user.RoleIds, cancellationToken);
+        var permissionCodes = await _roleRepository.GetPermissionCodesForRolesAsync(user.RoleIds, cancellationToken);
 
         var jwt = _jwtTokenService.IssueAccessToken(
-            user.Id, user.Email.Value, user.DisplayName, roleNames, Array.Empty<string>());
+            user.Id, user.Email.Value, user.DisplayName, roleNames, permissionCodes);
 
         // Build DeviceInfo (no raw PII is stored; user-agent + IP are SHA-256-hashed).
         // userAgent is required by DeviceInfo.Create — default to a sentinel when

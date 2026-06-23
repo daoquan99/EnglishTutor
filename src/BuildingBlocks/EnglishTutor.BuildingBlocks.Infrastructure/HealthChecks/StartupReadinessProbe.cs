@@ -65,6 +65,7 @@ public sealed class StartupReadinessProbe : IHostedService
                 "Startup readiness probe TIMED OUT after {Timeout}s. Aborting host startup. " +
                 "Increase probe timeout if your infrastructure is slow to accept connections.",
                 _timeout.TotalSeconds);
+            Environment.ExitCode = 1;
             _lifetime.StopApplication();
             return;
         }
@@ -90,6 +91,7 @@ public sealed class StartupReadinessProbe : IHostedService
             "Startup readiness probe FAILED. Failing checks: {Failed}. Aborting host startup.",
             string.Join(", ", failed));
 
+        Environment.ExitCode = 1;
         _lifetime.StopApplication();
     }
 

@@ -142,8 +142,9 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         }
 
         var roleNames = await _roleRepository.GetNamesByIdsAsync(user.RoleIds, cancellationToken);
+        var permissionCodes = await _roleRepository.GetPermissionCodesForRolesAsync(user.RoleIds, cancellationToken);
         var jwt = _jwtTokenService.IssueAccessToken(
-            user.Id, user.Email.Value, user.DisplayName, roleNames, Array.Empty<string>());
+            user.Id, user.Email.Value, user.DisplayName, roleNames, permissionCodes);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

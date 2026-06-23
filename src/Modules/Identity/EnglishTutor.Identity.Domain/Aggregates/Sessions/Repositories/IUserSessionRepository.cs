@@ -91,4 +91,9 @@ public interface IUserSessionRepository
 
     /// <summary>Stages a new refresh token for insertion.</summary>
     void Add(RefreshToken token);
+
+    /// <summary>
+    /// Purges all expired refresh tokens that expired before the threshold date.
+    /// </summary>
+    Task<int> PurgeExpiredRefreshTokensAsync(DateTime expiredBeforeUtc, CancellationToken cancellationToken);
 }
