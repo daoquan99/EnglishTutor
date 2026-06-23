@@ -80,6 +80,9 @@ public interface IUserSessionRepository
     /// <summary>Loads a session by id. Excludes soft-deleted by default.</summary>
     Task<UserSession?> GetByIdAsync(Guid sessionId, CancellationToken ct);
 
+    /// <summary>Loads all active (non-revoked) sessions for a user.</summary>
+    Task<IReadOnlyList<UserSession>> GetActiveSessionsByUserIdAsync(Guid userId, CancellationToken ct);
+
     /// <summary>Stages a new session for insertion.</summary>
     void Add(UserSession session);
 

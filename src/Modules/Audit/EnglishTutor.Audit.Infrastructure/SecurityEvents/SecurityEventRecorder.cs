@@ -44,4 +44,26 @@ internal sealed class SecurityEventRecorder : ISecurityEventRecorder
 
         await _sender.Send(command, cancellationToken);
     }
+
+    public async Task RecordSecurityEventAsync(
+        RecordSecurityEventRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new RecordSecurityEventCommand(
+            CategoryCode: request.CategoryCode,
+            SourceModule: request.SourceModule,
+            SourceEventType: request.SourceEventType,
+            UserId: request.UserId,
+            SessionId: request.SessionId,
+            RefreshTokenFamilyId: request.RefreshTokenFamilyId,
+            RefreshTokenId: request.RefreshTokenId,
+            ReasonCode: request.ReasonCode,
+            CorrelationId: request.CorrelationId,
+            CausationId: request.CausationId,
+            IpAddressHash: request.IpAddressHash,
+            UserAgentHash: request.UserAgentHash,
+            OccurredAtUtc: request.OccurredAtUtc);
+
+        await _sender.Send(command, cancellationToken);
+    }
 }

@@ -8,6 +8,8 @@ using EnglishTutor.Identity.Domain.Aggregates.Sessions.Entities;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.Repositories;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.ValueObjects;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace EnglishTutor.Identity.Application.Commands.Refresh;
 
@@ -23,15 +25,6 @@ namespace EnglishTutor.Identity.Application.Commands.Refresh;
 /// abstractions). It does NOT reference <c>the DbContext abstraction</c> or any
 /// other Infrastructure type.
 /// </para>
-/// <para>
-/// NOTE: A UserSession / RefreshTokenFamily is NOT yet created by
-/// <c>LoginCommandHandler</c>, so the rich session-aware rotation path
-/// (<see cref="UserSession.RotateRefreshToken"/>) is not used here. The
-/// handler instead mutates the matched token directly via
-/// <c>RefreshToken.Consume</c> — matching the pre-Slice 2.6 behavior.
-/// Once the session/family schema is introduced in Slice 2.7, this
-/// handler should switch to <see cref="UserSession.RotateRefreshToken"/>.
-/// </para>
 /// </summary>
 public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, RefreshResult>
 {
@@ -43,6 +36,7 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
     private readonly IRefreshTokenLifetimeProvider _refreshTokenLifetime;
     private readonly IRefreshTokenGenerator _refreshTokenGenerator;
     private readonly IRefreshTokenHasher _refreshTokenHasher;
+    private readonly IIdentitySecurityEventService _securityEventService;
 
     public RefreshCommandHandler(
         IUserSessionRepository userSessionRepository,
@@ -52,7 +46,8 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         IJwtTokenService jwtTokenService,
         IRefreshTokenLifetimeProvider refreshTokenLifetime,
         IRefreshTokenGenerator refreshTokenGenerator,
-        IRefreshTokenHasher refreshTokenHasher)
+        IRefreshTokenHasher refreshTokenHasher,
+        IIdentitySecurityEventService securityEventService)
     {
         _userSessionRepository = userSessionRepository;
         _userRepository = userRepository;
@@ -62,6 +57,7 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         _refreshTokenLifetime = refreshTokenLifetime;
         _refreshTokenGenerator = refreshTokenGenerator;
         _refreshTokenHasher = refreshTokenHasher;
+        _securityEventService = securityEventService;
     }
 
     public async Task<Result<RefreshResult>> Handle(
@@ -73,6 +69,15 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
 
         if (snapshot is null)
         {
+            await _securityEventService.TrackRefreshFailedAsync(
+                sessionId: null,
+                userId: null,
+                refreshTokenFamilyId: null,
+                refreshTokenId: null,
+                reasonCode: "token_not_found",
+                ipAddress: request.IpAddress,
+                cancellationToken);
+
             return RefreshFailureResults.InvalidRefreshToken();
         }
 
@@ -82,6 +87,21 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
 
         if (session.RevokedAtUtc is not null || family.IsRevoked || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= DateTime.UtcNow)
         {
+            string reason = "invalid_token";
+            if (existing.ExpiresAtUtc <= DateTime.UtcNow) reason = "token_expired";
+            else if (existing.RevokedAtUtc is not null) reason = "token_revoked";
+            else if (family.IsRevoked) reason = "family_revoked";
+            else if (session.RevokedAtUtc is not null) reason = "session_revoked";
+
+            await _securityEventService.TrackRefreshFailedAsync(
+                sessionId: session.Id,
+                userId: existing.UserId,
+                refreshTokenFamilyId: family.Id,
+                refreshTokenId: existing.Id,
+                reasonCode: reason,
+                ipAddress: request.IpAddress,
+                cancellationToken);
+
             return RefreshFailureResults.InvalidRefreshToken();
         }
 

@@ -9,6 +9,7 @@ namespace EnglishTutor.Identity.Domain.Aggregates.Sessions.Events;
 /// </summary>
 public sealed record RefreshTokenRotatedDomainEvent(
     Guid UserId,
+    Guid SessionId,
     Guid OldTokenId,
     Guid NewTokenId) : IDomainEvent
 {

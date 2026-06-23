@@ -76,23 +76,40 @@ public sealed class IdentityDataSeeder
         await SeedPermissionsAsync(cancellationToken);
         await SeedRolesAsync(cancellationToken);
 
-        // 2.5. Flush so SeedRolePermissionsAsync (which reads roles and
-        //      permissions from the DB) can find the just-staged rows.
-        //      Per .agents/rules/40-seeding-and-test-data.md the seed order
-        //      requires a flush before any later step that does a DB lookup.
+        // 3. Flush so SeedRolePermissionsAsync (which reads roles and
+        //    permissions from the DB) can find the just-staged rows.
+        //    Per .agents/rules/40-seeding-and-test-data.md the seed order
+        //    requires a flush before any later step that does a DB lookup.
         await _db.SaveChangesAsync(cancellationToken);
 
-        // 3. Stage role_permissions.
+        // 4. Stage role_permissions.
         await SeedRolePermissionsAsync(cancellationToken);
 
-        // 3.5. Flush so subsequent lookups (SeedOwnerAsync reads the Owner
-        //      role; SeedOwnerUserRoleAsync reads Owner user + role) find
-        //      the role_permissions rows if they need them.
+        // 5. Flush so subsequent lookups (SeedOwnerAsync reads the Owner
+        //    role; SeedOwnerUserRoleAsync reads Owner user + role) find
+        //    the role_permissions rows if they need them.
         await _db.SaveChangesAsync(cancellationToken);
 
-        // 5-7. Owner user + Owner UserRole join row + final flush.
+        // 6. Stage Owner user. Idempotent: short-circuits if the Owner
+        //    user already exists (second-run safety).
         await SeedOwnerAsync(cancellationToken);
+
+        // 7. Flush the Owner user BEFORE SeedOwnerUserRoleAsync runs.
+        //    SeedOwnerUserRoleAsync uses an AsNoTracking projection
+        //    against `identity.users`, which bypasses the change tracker
+        //    and reads only persisted rows. Without this flush, the
+        //    freshly-staged Owner user is invisible to that query, the
+        //    helper returns early, and `identity.user_roles` is left
+        //    empty on a first-time seed run. This flush makes the
+        //    first startup assign the Owner role to the Owner user.
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // 8. Stage the Owner user-role join row. Idempotent: short-circuits
+        //    if the join row already exists (second-run safety).
         await SeedOwnerUserRoleAsync(cancellationToken);
+
+        // 9. Final flush so the join row is persisted atomically with
+        //    the rest of the seed run.
         await _db.SaveChangesAsync(cancellationToken);
     }
 

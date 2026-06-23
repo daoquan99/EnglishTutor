@@ -19,6 +19,16 @@ namespace EnglishTutor.IntegrationTests.Infrastructure;
 // Uses a subclass of IntegrationTestFactory so the baseline Jwt:SigningKey
 // is always configured; the test-specific factory only adds
 // infrastructure overrides.
+//
+// All integration tests share the "EnglishTutorIntegrationTests" xUnit
+// collection so they run sequentially. IntegrationTestFactory uses
+// process-wide environment variables (ConnectionStrings__Default,
+// ConnectionStrings__Audit, Database__ApplyAuditMigrationsOnStartup,
+// SeedData__Owner__Password) set in its constructor. Parallel test
+// classes would race on these env vars and the factories would
+// collide on the wrong database. See IntegrationTestFactory for the
+// rationale and the env-var set.
+[Collection("EnglishTutorIntegrationTests")]
 public class HealthCheckTests
 {
     private const string UnreachableConnectionString =

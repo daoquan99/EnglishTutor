@@ -23,6 +23,10 @@
     <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Presentation\EnglishTutor.Identity.Presentation.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\EnglishTutor.Identity.Contracts\EnglishTutor.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\EnglishTutor.Audit.Domain\EnglishTutor.Audit.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\EnglishTutor.Audit.Application\EnglishTutor.Audit.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\EnglishTutor.Audit.Infrastructure\EnglishTutor.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\EnglishTutor.Audit.Contracts\EnglishTutor.Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\src\EnglishTutor.Api\EnglishTutor.Api.csproj" />
   </ItemGroup>
 

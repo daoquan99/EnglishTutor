@@ -135,7 +135,7 @@ public sealed class UserSession : AggregateRoot
         _family.AddToken(newToken);
 
         RaiseDomainEvent(new RefreshTokenRotatedDomainEvent(
-            UserId, oldToken.Id, newToken.Id));
+            UserId, Id, oldToken.Id, newToken.Id));
 
         return newToken;
     }

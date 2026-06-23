@@ -12,6 +12,8 @@ using EnglishTutor.Identity.Domain.Aggregates.Users;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Events;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using EnglishTutor.Identity.Domain.Aggregates.Users.ValueObjects;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace EnglishTutor.Identity.Application.Commands.Login;
 
@@ -39,6 +41,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
     private readonly IRefreshTokenLifetimeProvider _refreshTokenLifetime;
     private readonly IRefreshTokenGenerator _refreshTokenGenerator;
     private readonly IRefreshTokenHasher _refreshTokenHasher;
+    private readonly IIdentitySecurityEventService _securityEventService;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
@@ -49,7 +52,8 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         IJwtTokenService jwtTokenService,
         IRefreshTokenLifetimeProvider refreshTokenLifetime,
         IRefreshTokenGenerator refreshTokenGenerator,
-        IRefreshTokenHasher refreshTokenHasher)
+        IRefreshTokenHasher refreshTokenHasher,
+        IIdentitySecurityEventService securityEventService)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
@@ -60,6 +64,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         _refreshTokenLifetime = refreshTokenLifetime;
         _refreshTokenGenerator = refreshTokenGenerator;
         _refreshTokenHasher = refreshTokenHasher;
+        _securityEventService = securityEventService;
     }
 
     public async Task<Result<LoginResult>> Handle(
@@ -75,16 +80,38 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         {
             // Run a dummy verify to keep timing roughly constant — defense against email enumeration.
             _passwordHasher.VerifyPassword(request.Password, "$2a$12$" + new string('x', 53));
+
+            await _securityEventService.TrackLoginFailedAsync(
+                userId: null,
+                reasonCode: "user_not_found",
+                ipAddress: request.IpAddress,
+                userAgent: request.UserAgent,
+                cancellationToken);
+
             return LoginFailureResults.InvalidCredentials();
         }
 
         if (user.IsDeleted || !user.IsActive)
         {
+            await _securityEventService.TrackLoginFailedAsync(
+                userId: user.Id,
+                reasonCode: "account_inactive",
+                ipAddress: request.IpAddress,
+                userAgent: request.UserAgent,
+                cancellationToken);
+
             return LoginFailureResults.AccountInactive();
         }
 
         if (user.IsLockedOut && user.LockoutEndUtc > DateTime.UtcNow)
         {
+            await _securityEventService.TrackLoginFailedAsync(
+                userId: user.Id,
+                reasonCode: "account_locked",
+                ipAddress: request.IpAddress,
+                userAgent: request.UserAgent,
+                cancellationToken);
+
             return LoginFailureResults.AccountLocked(user.LockoutEndUtc.Value);
         }
 
@@ -94,6 +121,14 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         if (!ok)
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken); // persist updated FailedLoginAttempts / lockout
+
+            await _securityEventService.TrackLoginFailedAsync(
+                userId: user.Id,
+                reasonCode: "invalid_password",
+                ipAddress: request.IpAddress,
+                userAgent: request.UserAgent,
+                cancellationToken);
+
             return LoginFailureResults.InvalidCredentials();
         }
 

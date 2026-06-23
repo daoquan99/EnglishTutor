@@ -113,6 +113,7 @@ public static class IdentityInfrastructureServiceCollectionExtensions
         // current request.
         services.AddHttpContextAccessor();
         services.AddScoped<IRefreshTokenReuseContextAccessor, HttpContextRefreshTokenReuseContextAccessor>();
+        services.AddScoped<IIdentitySecurityEventService, IdentitySecurityEventService>();
 
         // Domain event dispatcher. The InMemory implementation lives in
         // BuildingBlocks.Infrastructure. Identity.Infrastructure adds the
@@ -120,6 +121,9 @@ public static class IdentityInfrastructureServiceCollectionExtensions
         // Audit.Contracts.ISecurityEventRecorder implementation.
         services.AddDomainEventDispatcher();
         services.AddDomainEventHandler<RefreshTokenReuseDetectedDomainEvent, RefreshTokenReuseAuditHandler>();
+        services.AddDomainEventHandler<UserSessionCreatedDomainEvent, UserSessionCreatedAuditHandler>();
+        services.AddDomainEventHandler<RefreshTokenRotatedDomainEvent, RefreshTokenRotatedAuditHandler>();
+        services.AddDomainEventHandler<UserSessionRevokedDomainEvent, UserSessionRevokedAuditHandler>();
 
         return services;
     }

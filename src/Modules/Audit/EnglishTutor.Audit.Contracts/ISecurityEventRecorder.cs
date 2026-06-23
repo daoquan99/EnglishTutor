@@ -19,4 +19,8 @@ public interface ISecurityEventRecorder
     Task RecordRefreshTokenReuseAsync(
         RecordRefreshTokenReuseRequest request,
         CancellationToken cancellationToken = default);
+
+    Task RecordSecurityEventAsync(
+        RecordSecurityEventRequest request,
+        CancellationToken cancellationToken = default);
 }

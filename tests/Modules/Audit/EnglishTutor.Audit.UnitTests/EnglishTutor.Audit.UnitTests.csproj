@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\src\Modules\Audit\EnglishTutor.Audit.Domain\EnglishTutor.Audit.Domain.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Audit\EnglishTutor.Audit.Application\EnglishTutor.Audit.Application.csproj" />
     <ProjectReference Include="..\..\..\..\src\Modules\Audit\EnglishTutor.Audit.Contracts\EnglishTutor.Audit.Contracts.csproj" />
   </ItemGroup>
 

@@ -12,6 +12,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace EnglishTutor.IntegrationTests.Audit;
 
+// All integration test classes share the
+// "EnglishTutorIntegrationTests" xUnit collection so they run
+// sequentially. See AuthFlowTests for the rationale (env-var race
+// avoidance in IntegrationTestFactory).
+[Collection("EnglishTutorIntegrationTests")]
 public class SecurityEventAuditTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";

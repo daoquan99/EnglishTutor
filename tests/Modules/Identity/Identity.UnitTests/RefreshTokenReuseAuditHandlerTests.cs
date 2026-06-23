@@ -71,12 +71,21 @@ public class RefreshTokenReuseAuditHandlerTests
 internal sealed class FakeSecurityEventRecorder : ISecurityEventRecorder
 {
     public List<RecordRefreshTokenReuseRequest> Calls { get; } = new();
+    public List<RecordSecurityEventRequest> SecurityEventCalls { get; } = new();
 
     public Task RecordRefreshTokenReuseAsync(
         RecordRefreshTokenReuseRequest request,
         CancellationToken cancellationToken = default)
     {
         Calls.Add(request);
+        return Task.CompletedTask;
+    }
+
+    public Task RecordSecurityEventAsync(
+        RecordSecurityEventRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        SecurityEventCalls.Add(request);
         return Task.CompletedTask;
     }
 }
