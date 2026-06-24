@@ -92,4 +92,7 @@
   <Folder Name="/tests/Modules/Audit/">
     <Project Path="tests/Modules/Audit/EnglishTutor.Audit.UnitTests/EnglishTutor.Audit.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/tests/Modules/Learning/">
+    <Project Path="tests/Modules/Learning/EnglishTutor.Learning.UnitTests/EnglishTutor.Learning.UnitTests.csproj" />
+  </Folder>
 </Solution>

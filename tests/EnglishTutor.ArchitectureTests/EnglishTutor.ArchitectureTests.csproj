@@ -28,6 +28,11 @@
     <ProjectReference Include="..\..\src\Modules\Audit\EnglishTutor.Audit.Application\EnglishTutor.Audit.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\EnglishTutor.Audit.Infrastructure\EnglishTutor.Audit.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\EnglishTutor.Audit.Contracts\EnglishTutor.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Learning\EnglishTutor.Learning.Domain\EnglishTutor.Learning.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Learning\EnglishTutor.Learning.Application\EnglishTutor.Learning.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Learning\EnglishTutor.Learning.Infrastructure\EnglishTutor.Learning.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Learning\EnglishTutor.Learning.Presentation\EnglishTutor.Learning.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Learning\EnglishTutor.Learning.Contracts\EnglishTutor.Learning.Contracts.csproj" />
     <ProjectReference Include="..\..\src\EnglishTutor.Api\EnglishTutor.Api.csproj" />
     <ProjectReference Include="..\..\src\EnglishTutor.Worker\EnglishTutor.Worker.csproj" Aliases="WorkerAssembly" />
   </ItemGroup>

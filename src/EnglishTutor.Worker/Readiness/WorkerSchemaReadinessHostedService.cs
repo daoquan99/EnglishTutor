@@ -1,5 +1,6 @@
 using EnglishTutor.Audit.Infrastructure.Persistence;
 using EnglishTutor.Identity.Infrastructure.Persistence;
+using EnglishTutor.Learning.Infrastructure.Persistence;
 using EnglishTutor.Worker.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -43,12 +44,16 @@ public sealed class WorkerSchemaReadinessHostedService : IHostedService
         {
             var identityDb = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
             var auditDb = scope.ServiceProvider.GetRequiredService<AuditDbContext>();
+            var learningDb = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
 
             var pendingIdentity = identityDb.Database.IsRelational()
                 ? (await identityDb.Database.GetPendingMigrationsAsync(cancellationToken)).ToList()
                 : new List<string>();
             var pendingAudit = auditDb.Database.IsRelational()
                 ? (await auditDb.Database.GetPendingMigrationsAsync(cancellationToken)).ToList()
+                : new List<string>();
+            var pendingLearning = learningDb.Database.IsRelational()
+                ? (await learningDb.Database.GetPendingMigrationsAsync(cancellationToken)).ToList()
                 : new List<string>();
 
             bool hasMismatch = false;
@@ -62,6 +67,12 @@ public sealed class WorkerSchemaReadinessHostedService : IHostedService
             if (pendingAudit.Any())
             {
                 _logger.LogCritical("Startup aborted: AuditDbContext has pending migrations: {Migrations}", string.Join(", ", pendingAudit));
+                hasMismatch = true;
+            }
+
+            if (pendingLearning.Any())
+            {
+                _logger.LogCritical("Startup aborted: LearningDbContext has pending migrations: {Migrations}", string.Join(", ", pendingLearning));
                 hasMismatch = true;
             }
 

@@ -9,6 +9,8 @@ using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.Worker.Jobs;
 using EnglishTutor.Worker.Options;
 using EnglishTutor.Worker.Readiness;
+using EnglishTutor.Learning.Infrastructure;
+using EnglishTutor.Learning.Infrastructure.Persistence;
 using MassTransit;
 using Serilog;
 
@@ -46,6 +48,7 @@ builder.Services.AddStartupReadinessProbe();
 builder.Services.AddIdentityApplication(builder.Configuration);
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddAudit(builder.Configuration);
+builder.Services.AddLearningInfrastructure(builder.Configuration);
 
 // Schema readiness and background jobs hosted services
 builder.Services.AddHostedService<WorkerSchemaReadinessHostedService>();
@@ -61,6 +64,12 @@ builder.Services.AddWorkerBrokerMessaging(builder.Configuration, x =>
     });
 
     x.AddEntityFrameworkOutbox<AuditDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
+
+    x.AddEntityFrameworkOutbox<LearningDbContext>(o =>
     {
         o.UsePostgres();
         o.UseBusOutbox();

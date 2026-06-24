@@ -1,6 +1,7 @@
 extern alias WorkerAssembly;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Audit.Infrastructure.Persistence;
+using EnglishTutor.Learning.Infrastructure.Persistence;
 using WorkerOptions = WorkerAssembly::EnglishTutor.Worker.Options.WorkerOptions;
 using WorkerSchemaReadinessHostedService = WorkerAssembly::EnglishTutor.Worker.Readiness.WorkerSchemaReadinessHostedService;
 using ExpiredRefreshTokensCleanupHostedService = WorkerAssembly::EnglishTutor.Worker.Jobs.ExpiredRefreshTokensCleanupHostedService;
@@ -113,9 +114,13 @@ public class WorkerTests
         var auditOptions = new DbContextOptionsBuilder<AuditDbContext>()
             .UseInMemoryDatabase("AuditTestDb_Schema")
             .Options;
+        var learningOptions = new DbContextOptionsBuilder<LearningDbContext>()
+            .UseInMemoryDatabase("LearningTestDb_Schema")
+            .Options;
 
         var identityDb = new IdentityDbContext(identityOptions);
         var auditDb = new AuditDbContext(auditOptions);
+        var learningDb = new LearningDbContext(learningOptions);
 
         var serviceProvider = Substitute.For<IServiceProvider>();
         var serviceScope = Substitute.For<IServiceScope>();
@@ -126,6 +131,7 @@ public class WorkerTests
         serviceScope.ServiceProvider.Returns(scopedProvider);
         scopedProvider.GetService(typeof(IdentityDbContext)).Returns(identityDb);
         scopedProvider.GetService(typeof(AuditDbContext)).Returns(auditDb);
+        scopedProvider.GetService(typeof(LearningDbContext)).Returns(learningDb);
 
         var lifetime = Substitute.For<IHostApplicationLifetime>();
         var workerOptions = new WorkerOptions { RequireSchemaMatchOnStartup = true };

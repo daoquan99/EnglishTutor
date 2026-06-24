@@ -19,7 +19,8 @@ public class MessagingArchitectureTests
         var assemblies = new[]
         {
             typeof(EnglishTutor.Identity.Domain.IIdentityDomainMarker).Assembly,
-            typeof(EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.SecurityEvent).Assembly
+            typeof(EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.SecurityEvent).Assembly,
+            typeof(EnglishTutor.Learning.Domain.Aggregates.Topics.Topic).Assembly
         };
 
         foreach (var assembly in assemblies)
@@ -39,7 +40,8 @@ public class MessagingArchitectureTests
         var assemblies = new[]
         {
             typeof(EnglishTutor.Identity.Application.IIdentityApplicationMarker).Assembly,
-            typeof(EnglishTutor.Audit.Application.Commands.RecordSecurityEvent.RecordSecurityEventCommand).Assembly
+            typeof(EnglishTutor.Audit.Application.Commands.RecordSecurityEvent.RecordSecurityEventCommand).Assembly,
+            typeof(EnglishTutor.Learning.Application.Abstractions.Persistence.ILearningUnitOfWork).Assembly
         };
 
         foreach (var assembly in assemblies)
@@ -66,6 +68,11 @@ public class MessagingArchitectureTests
             typeof(EnglishTutor.Audit.Application.Commands.RecordSecurityEvent.RecordSecurityEventCommand).Assembly,
             typeof(EnglishTutor.Audit.Infrastructure.AuditInfrastructureServiceCollectionExtensions).Assembly,
             typeof(EnglishTutor.Audit.Presentation.IAuditPresentationMarker).Assembly,
+            typeof(EnglishTutor.Learning.Domain.Aggregates.Topics.Topic).Assembly,
+            typeof(EnglishTutor.Learning.Application.Abstractions.Persistence.ILearningUnitOfWork).Assembly,
+            typeof(EnglishTutor.Learning.Infrastructure.Persistence.LearningDbContext).Assembly,
+            typeof(EnglishTutor.Learning.Presentation.LearningPresentationServiceCollectionExtensions).Assembly,
+            typeof(EnglishTutor.Learning.Contracts.Events.TopicCreatedIntegrationEvent).Assembly,
             typeof(Program).Assembly
         };
 
