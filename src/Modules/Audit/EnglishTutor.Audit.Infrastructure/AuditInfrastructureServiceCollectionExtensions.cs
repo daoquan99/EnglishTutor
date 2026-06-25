@@ -7,6 +7,7 @@ using EnglishTutor.Audit.Infrastructure.Persistence;
 using EnglishTutor.Audit.Infrastructure.Persistence.Repositories;
 using EnglishTutor.Audit.Infrastructure.SecurityEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -36,9 +37,13 @@ public static class AuditInfrastructureServiceCollectionExtensions
         services.AddScoped<ISecurityEventRecorder, SecurityEventRecorder>();
         services.AddScoped<IAuditModule, AuditModule>();
 
-        services.AddDbContext<AuditDbContext>(options =>
+        // Register the audit interceptor once so DbContext can resolve it.
+        services.AddScoped<AuditableEntitySaveChangesInterceptor>();
+
+        services.AddDbContext<AuditDbContext>((sp, options) =>
         {
             options.UseNpgsql(connectionString);
+            options.AddAuditableEntityInterceptor(sp);
         });
 
         // Domain event dispatcher is registered at the API composition

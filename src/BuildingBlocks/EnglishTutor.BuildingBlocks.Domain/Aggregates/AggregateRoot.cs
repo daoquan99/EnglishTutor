@@ -3,20 +3,6 @@ using EnglishTutor.BuildingBlocks.Domain.Entities;
 
 namespace EnglishTutor.BuildingBlocks.Domain.Aggregates;
 
-/// <summary>
-/// Base class for aggregate roots. Inherits identity, equality, and audit
-/// metadata from <see cref="Entity"/>, plus adds soft-delete lifecycle.
-/// </summary>
-/// <remarks>
-/// <para>Aggregates own their lifecycle: <see cref="MarkDeleted"/> and
-/// <see cref="Undelete"/> are the only valid ways to mutate the soft-delete
-/// fields. Direct setter calls from outside the class hierarchy are
-/// prevented by the <c>protected set;</c> accessibility.</para>
-/// <para>Soft-deleted aggregates are automatically filtered out by EF Core's
-/// global query filter (configured by <c>AggregateRootConventions</c> in
-/// Infrastructure). To include deleted rows for admin/internal use, call
-/// <c>IgnoreQueryFilters()</c> explicitly.</para>
-/// </remarks>
 public abstract class AggregateRoot : Entity
 {
     private readonly List<IDomainEvent> _domainEvents = [];

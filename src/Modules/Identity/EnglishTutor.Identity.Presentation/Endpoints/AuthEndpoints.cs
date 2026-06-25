@@ -1,5 +1,4 @@
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
-using EnglishTutor.BuildingBlocks.Domain.Results;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Commands.Login;
 using EnglishTutor.Identity.Application.Commands.LogoutAll;
@@ -8,13 +7,14 @@ using EnglishTutor.Identity.Application.Commands.Refresh;
 using EnglishTutor.Identity.Application.Queries.GetUserSessions;
 using EnglishTutor.Identity.Presentation.Auth;
 using EnglishTutor.Identity.Presentation.Endpoints.Dtos;
+using EnglishTutor.Identity.Presentation.RateLimiting;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,11 +26,22 @@ public static class AuthEndpoints
     {
         var group = routes.MapGroup("/api/auth").WithTags("Auth");
 
+        // ----- CSRF bootstrap (safe GET) -----
+        // Issues the double-submit CSRF cookie and returns the token value for
+        // the client to echo in the X-CSRF-TOKEN header on mutation calls.
+        group.MapGet("/csrf", (HttpContext httpContext, IOptions<CsrfOptions> csrfOptions) =>
+        {
+            var token = CsrfProtection.IssueToken(httpContext.Response, csrfOptions.Value);
+            return Results.Ok(new CsrfTokenResponse(token));
+        });
+
+        // ----- Login -----
         group.MapPost("/login", async (
             LoginRequest request,
             IMediator mediator,
             HttpContext httpContext,
             IOptions<AuthCookieOptions> cookieOptions,
+            IOptions<CsrfOptions> csrfOptions,
             CancellationToken ct) =>
         {
             var options = cookieOptions.Value;
@@ -50,43 +61,43 @@ public static class AuthEndpoints
             var result = await mediator.Send(command, ct);
             if (!result.IsSuccess)
             {
-                return MapErrorToHttp(result.Error!);
+                return AuthProblemResults.FromError(result.Error!);
             }
 
-            // Transport refresh token in secure HttpOnly cookie.
+            // Refresh token is transported ONLY via the HttpOnly cookie (H-01).
             RefreshTokenCookieHelper.SetRefreshTokenCookie(
                 httpContext.Response,
                 result.Value!.RefreshToken,
                 result.Value.ExpiresAt,
                 options);
 
-            return Results.Ok(ToLoginResponse(result.Value!));
-        });
+            // Issue a CSRF token so the client can immediately call refresh.
+            CsrfProtection.IssueToken(httpContext.Response, csrfOptions.Value);
 
+            return Results.Ok(ToLoginResponse(result.Value!));
+        }).RequireRateLimiting(AuthRateLimitPolicies.Login);
+
+        // ----- Refresh (cookie-only + CSRF) -----
         group.MapPost("/refresh", async (
-            RefreshRequest? request,
             IMediator mediator,
             HttpContext httpContext,
             IOptions<AuthCookieOptions> cookieOptions,
+            IOptions<CsrfOptions> csrfOptions,
             CancellationToken ct) =>
         {
             var options = cookieOptions.Value;
             var token = httpContext.Request.Cookies[options.RefreshTokenCookieName];
-            bool fromCookie = !string.IsNullOrWhiteSpace(token);
 
-            if (!fromCookie && request is not null)
-            {
-                token = request.RefreshToken;
-            }
-
+            // Browser-only transport: no request-body fallback (H-01/H-03).
             if (string.IsNullOrWhiteSpace(token))
             {
-                return Results.Unauthorized();
+                return AuthProblemResults.RefreshCookieMissing();
             }
 
-            if (fromCookie && !ValidateCsrf(httpContext.Request))
+            var csrfError = ValidateCsrf(httpContext, csrfOptions.Value);
+            if (csrfError is not null)
             {
-                return Results.BadRequest("CSRF validation failed.");
+                return csrfError;
             }
 
             var command = new RefreshCommand(
@@ -96,15 +107,12 @@ public static class AuthEndpoints
             var result = await mediator.Send(command, ct);
             if (!result.IsSuccess)
             {
-                // On refresh failure, clear the cookie.
-                if (fromCookie)
-                {
-                    RefreshTokenCookieHelper.ClearRefreshTokenCookie(httpContext.Response, options);
-                }
-                return MapErrorToHttp(result.Error!);
+                // On any refresh failure, clear the cookie.
+                RefreshTokenCookieHelper.ClearRefreshTokenCookie(httpContext.Response, options);
+                return AuthProblemResults.FromError(result.Error!);
             }
 
-            // Rotate: set new refresh cookie.
+            // Rotate: set the new refresh cookie.
             RefreshTokenCookieHelper.SetRefreshTokenCookie(
                 httpContext.Response,
                 result.Value!.RefreshToken,
@@ -112,72 +120,73 @@ public static class AuthEndpoints
                 options);
 
             return Results.Ok(ToRefreshResponse(result.Value!));
-        });
+        }).RequireRateLimiting(AuthRateLimitPolicies.Refresh);
 
+        // ----- Logout (cookie + CSRF) -----
         group.MapPost("/logout", async (
-            RefreshRequest? request,
             IMediator mediator,
             HttpContext httpContext,
             IOptions<AuthCookieOptions> cookieOptions,
+            IOptions<CsrfOptions> csrfOptions,
             CancellationToken ct) =>
         {
             var options = cookieOptions.Value;
             var token = httpContext.Request.Cookies[options.RefreshTokenCookieName];
-            bool fromCookie = !string.IsNullOrWhiteSpace(token);
-
-            if (!fromCookie && request is not null)
-            {
-                token = request.RefreshToken;
-            }
 
             if (string.IsNullOrWhiteSpace(token))
             {
-                // Idempotent: succeed silently if no token is found.
+                // Idempotent: nothing to revoke.
                 return Results.NoContent();
             }
 
-            if (fromCookie && !ValidateCsrf(httpContext.Request))
+            var csrfError = ValidateCsrf(httpContext, csrfOptions.Value);
+            if (csrfError is not null)
             {
-                return Results.BadRequest("CSRF validation failed.");
+                return csrfError;
             }
 
             var command = new Application.Commands.Logout.LogoutCommand(token);
             var result = await mediator.Send(command, ct);
 
-            if (fromCookie)
-            {
-                RefreshTokenCookieHelper.ClearRefreshTokenCookie(httpContext.Response, options);
-            }
+            RefreshTokenCookieHelper.ClearRefreshTokenCookie(httpContext.Response, options);
 
-            return result.IsSuccess ? Results.NoContent() : MapErrorToHttp(result.Error!);
-        }).RequireAuthorization();
+            return result.IsSuccess ? Results.NoContent() : AuthProblemResults.FromError(result.Error!);
+        }).RequireAuthorization().RequireRateLimiting(AuthRateLimitPolicies.Logout);
 
+        // ----- Logout-all (CSRF) -----
         group.MapPost("/logout-all", async (
             IMediator mediator,
             ICurrentUser currentUser,
             HttpContext httpContext,
             IOptions<AuthCookieOptions> cookieOptions,
+            IOptions<CsrfOptions> csrfOptions,
             CancellationToken ct) =>
         {
             var userId = currentUser.UserId;
             if (!userId.HasValue)
             {
-                return Results.Unauthorized();
+                return AuthProblemResults.Unauthorized();
+            }
+
+            var csrfError = ValidateCsrf(httpContext, csrfOptions.Value);
+            if (csrfError is not null)
+            {
+                return csrfError;
             }
 
             var command = new LogoutAllCommand(userId.Value);
             var result = await mediator.Send(command, ct);
             if (!result.IsSuccess)
             {
-                return MapErrorToHttp(result.Error!);
+                return AuthProblemResults.FromError(result.Error!);
             }
 
-            // Clear refresh cookie.
             RefreshTokenCookieHelper.ClearRefreshTokenCookie(httpContext.Response, cookieOptions.Value);
 
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization().RequireRateLimiting(AuthRateLimitPolicies.Logout);
 
+        // ----- Sessions list (safe GET, no CSRF) -----
         group.MapGet("/sessions", async (
             IMediator mediator,
             ICurrentUser currentUser,
@@ -186,71 +195,68 @@ public static class AuthEndpoints
             var userId = currentUser.UserId;
             if (!userId.HasValue)
             {
-                return Results.Unauthorized();
+                return AuthProblemResults.Unauthorized();
             }
 
             var query = new GetUserSessionsQuery(userId.Value);
             var result = await mediator.Send(query, ct);
             if (!result.IsSuccess)
             {
-                return MapErrorToHttp(result.Error!);
+                return AuthProblemResults.FromError(result.Error!);
             }
 
             var response = result.Value!.Select(ToUserSessionResponse).ToList();
             return Results.Ok(response);
         }).RequireAuthorization();
 
+        // ----- Session revoke (CSRF) -----
         group.MapDelete("/sessions/{sessionId:guid}", async (
             Guid sessionId,
             IMediator mediator,
             ICurrentUser currentUser,
+            HttpContext httpContext,
+            IOptions<CsrfOptions> csrfOptions,
             CancellationToken ct) =>
         {
             var userId = currentUser.UserId;
             if (!userId.HasValue)
             {
-                return Results.Unauthorized();
+                return AuthProblemResults.Unauthorized();
+            }
+
+            var csrfError = ValidateCsrf(httpContext, csrfOptions.Value);
+            if (csrfError is not null)
+            {
+                return csrfError;
             }
 
             bool isAdmin = currentUser.IsInRole("Admin") || currentUser.IsInRole("Owner");
             var command = new RevokeSessionCommand(sessionId, userId.Value, isAdmin);
             var result = await mediator.Send(command, ct);
 
-            return result.IsSuccess ? Results.NoContent() : MapErrorToHttp(result.Error!);
-        }).RequireAuthorization();
+            return result.IsSuccess ? Results.NoContent() : AuthProblemResults.FromError(result.Error!);
+        }).RequireAuthorization().RequireRateLimiting(AuthRateLimitPolicies.SessionMutation);
 
         return routes;
     }
 
-    private static bool ValidateCsrf(HttpRequest request)
-    {
-        // Require a custom CSRF request header when using cookies.
-        return request.Headers.ContainsKey("X-Requested-With") ||
-               request.Headers.ContainsKey("X-XSRF-TOKEN") ||
-               request.Headers.ContainsKey("X-XSRF-Header");
-    }
+    // Real double-submit CSRF validation. Returns null when valid; otherwise a
+    // stable ProblemDetails result. Header presence alone is NOT accepted (H-03).
+    private static IResult? ValidateCsrf(HttpContext httpContext, CsrfOptions options) =>
+        CsrfProtection.Validate(httpContext.Request, options) switch
+        {
+            CsrfValidationResult.Missing => AuthProblemResults.CsrfMissing(),
+            CsrfValidationResult.Invalid => AuthProblemResults.CsrfInvalid(),
+            _ => null
+        };
 
     // ----- Application result -> Presentation DTO mapping (HTTP boundary) -----
     private static LoginResponse ToLoginResponse(LoginResult r) =>
-        new(r.AccessToken, r.RefreshToken, r.ExpiresAt);
+        new(r.AccessToken, r.ExpiresAt);
 
     private static RefreshResponse ToRefreshResponse(RefreshResult r) =>
-        new(r.AccessToken, r.RefreshToken, r.ExpiresAt);
+        new(r.AccessToken, r.ExpiresAt);
 
     private static UserSessionResponse ToUserSessionResponse(UserSessionResult s) =>
         new(s.Id, s.DeviceId, s.DeviceName, s.UserAgentHash, s.IpAddressHash, s.CreatedAtUtc, s.LastSeenAtUtc);
-
-    private static IResult MapErrorToHttp(EnglishTutor.BuildingBlocks.Domain.Results.Error error)
-    {
-        return error.Code switch
-        {
-            "Identity.InvalidCredentials"   => Results.Unauthorized(),
-            "Identity.AccountLocked"        => Results.Unauthorized(),
-            "Identity.AccountInactive"      => Results.Unauthorized(),
-            "Identity.RefreshTokenReuse"    => Results.Unauthorized(),
-            "Identity.InvalidRefreshToken"  => Results.Unauthorized(),
-            "Identity.SessionNotFound"      => Results.NotFound(error.Message),
-            _ => Results.Problem(detail: error.Message, statusCode: 400, title: error.Code)
-        };
-    }
 }

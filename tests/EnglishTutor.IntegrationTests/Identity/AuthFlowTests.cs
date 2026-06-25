@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using EnglishTutor.Identity.Domain.Aggregates.Users;
@@ -20,22 +21,21 @@ using Xunit;
 namespace EnglishTutor.IntegrationTests.Identity;
 
 // All integration test classes share this xUnit collection so they run
-// sequentially. The collection is needed because
-// IntegrationTestFactory sets process-wide environment variables
-// (ConnectionStrings__Default, ConnectionStrings__Audit,
-// SeedData__Owner__Password, Database__ApplyAuditMigrationsOnStartup)
-// in its constructor so the per-factory temporary database override
-// reaches the DbContext registration lambdas. Running integration tests
-// in parallel would race on those env vars and the factories would
-// collide on the wrong database. The collection forces sequential
-// execution; per-class isolation still works because each factory
-// instance has its own _testDbName. See IntegrationTestFactory for the
-// rationale and the env-var set.
+// sequentially. See IntegrationTestFactory for the env-var-race rationale.
 [Collection("EnglishTutorIntegrationTests")]
 public class AuthFlowTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
     private const string OwnerPassword = "owner-test-password";
+
+    // Secure __Host- cookies are not auto-sent by the test client over http,
+    // so cookie-based flows are exercised by setting the Cookie header
+    // manually. CSRF is stateless double-submit: cookie value == header value
+    // validates, so a constant token is sufficient for the happy path.
+    private const string RefreshCookieName = "__Host-et_refresh";
+    private const string CsrfCookieName = "__Host-et_csrf";
+    private const string CsrfHeaderName = "X-CSRF-TOKEN";
+    private const string CsrfToken = "test-csrf-token-value";
 
     private sealed class AuthFlowTestFactory : IntegrationTestFactory
     {
@@ -48,39 +48,64 @@ public class AuthFlowTests
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["SeedData:Owner:Password"] = OwnerPassword,
+                    // Disable rate limiting for the shared-IP functional tests;
+                    // RateLimitingTests covers the 429 behavior explicitly.
+                    ["Auth:RateLimit:Enabled"] = "false",
                 });
             });
         }
     }
 
     [Fact]
-    public async Task Login_With_Seeded_Owner_Account_Should_Return_Tokens()
+    public async Task Login_With_Seeded_Owner_Account_Should_Not_Return_RefreshToken_In_Body()
     {
-        // Arrange: skip if infra dependencies are unreachable (unit env).
         await using var factory = new AuthFlowTestFactory();
-
         using var client = factory.CreateClient();
 
-        // Seed the Owner user before logging in.
-        await SeedOwnerAsync(factory);
-
-        // Act
         var response = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequest(OwnerEmail, OwnerPassword));
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var rawJson = await response.Content.ReadAsStringAsync();
+        // H-01: refresh token must NOT be in the JSON body.
+        rawJson.Should().NotContain("refreshToken");
+        rawJson.Should().NotContain("RefreshToken");
+
         var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
         payload.Should().NotBeNull();
         payload!.AccessToken.Should().NotBeNullOrWhiteSpace();
-        payload.RefreshToken.Should().NotBeNullOrWhiteSpace();
+
+        // H-01/H-02: refresh token is delivered only via the __Host- cookie.
+        ExtractRawSetCookie(response, RefreshCookieName).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Refresh_Cookie_Should_Have_Host_Prefix_Secure_HttpOnly_SameSiteStrict_PathRoot_NoDomain()
+    {
+        await using var factory = new AuthFlowTestFactory();
+        using var client = factory.CreateClient();
+
+        var login = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest(OwnerEmail, OwnerPassword));
+        login.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var setCookie = ExtractRawSetCookie(login, RefreshCookieName);
+        setCookie.Should().NotBeNull();
+        var lower = setCookie!.ToLowerInvariant();
+
+        setCookie.Should().StartWith("__Host-et_refresh=");
+        lower.Should().Contain("path=/");
+        lower.Should().Contain("secure");
+        lower.Should().Contain("httponly");
+        lower.Should().Contain("samesite=strict");
+        lower.Should().NotContain("domain=");
     }
 
     [Fact]
     public async Task Login_With_Wrong_Password_Should_Return_401()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/login",
@@ -113,9 +138,7 @@ public class AuthFlowTests
     public async Task GetSessions_Authenticated_Should_Return_200_With_Sessions()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
-
-        var (client, auth, _) = await LoginOwnerAsync(factory);
+        var (client, _, _) = await LoginOwnerAsync(factory);
 
         var response = await client.GetAsync("/api/auth/sessions");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -129,9 +152,7 @@ public class AuthFlowTests
     public async Task GetSessions_Should_Not_Leak_Sensitive_Token_Information()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
-
-        var (client, auth, _) = await LoginOwnerAsync(factory);
+        var (client, _, _) = await LoginOwnerAsync(factory);
 
         var response = await client.GetAsync("/api/auth/sessions");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -143,33 +164,44 @@ public class AuthFlowTests
     }
 
     [Fact]
-    public async Task RevokeSession_OwnSession_Should_Succeed()
+    public async Task RevokeSession_OwnSession_With_Csrf_Should_Succeed()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
-
-        var (client, auth, _) = await LoginOwnerAsync(factory);
+        var (client, _, _) = await LoginOwnerAsync(factory);
 
         var getResponse = await client.GetAsync("/api/auth/sessions");
         var sessions = await getResponse.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
         var targetSessionId = sessions!.First().Id;
 
-        var deleteResponse = await client.DeleteAsync($"/api/auth/sessions/{targetSessionId}");
+        var deleteResponse = await client.SendAsync(
+            Mutation(HttpMethod.Delete, $"/api/auth/sessions/{targetSessionId}"));
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // Verify session is no longer returned as active
         var getResponse2 = await client.GetAsync("/api/auth/sessions");
         var sessions2 = await getResponse2.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
         sessions2.Should().NotContain(s => s.Id == targetSessionId);
     }
 
     [Fact]
+    public async Task RevokeSession_Without_Csrf_Should_Return_403()
+    {
+        await using var factory = new AuthFlowTestFactory();
+        var (client, _, _) = await LoginOwnerAsync(factory);
+
+        var getResponse = await client.GetAsync("/api/auth/sessions");
+        var sessions = await getResponse.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
+        var targetSessionId = sessions!.First().Id;
+
+        // No CSRF cookie/header -> 403.
+        var deleteResponse = await client.DeleteAsync($"/api/auth/sessions/{targetSessionId}");
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task RevokeSession_OtherUserSession_Should_Return_404_For_StandardUser_But_Succeed_For_Admin()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
 
-        // Create standard user A and user B
         var userAEmail = "usera@test.local";
         var userBEmail = "userb@test.local";
         var userPassword = "password-123456";
@@ -177,7 +209,6 @@ public class AuthFlowTests
         await CreateAndRegisterUserAsync(factory, userAEmail, userPassword, "User A");
         await CreateAndRegisterUserAsync(factory, userBEmail, userPassword, "User B");
 
-        // Log in as user A to get a session
         var clientA = factory.CreateClient();
         var loginResponseA = await clientA.PostAsJsonAsync("/api/auth/login", new LoginRequest(userAEmail, userPassword));
         var authA = await loginResponseA.Content.ReadFromJsonAsync<LoginResponse>();
@@ -187,28 +218,26 @@ public class AuthFlowTests
         var sessionsA = await getSessionsA.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
         var userASessionId = sessionsA!.First().Id;
 
-        // Log in as user B and attempt to revoke user A's session
         var clientB = factory.CreateClient();
         var loginResponseB = await clientB.PostAsJsonAsync("/api/auth/login", new LoginRequest(userBEmail, userPassword));
         var authB = await loginResponseB.Content.ReadFromJsonAsync<LoginResponse>();
         clientB.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authB!.AccessToken);
 
-        var deleteResponseByB = await clientB.DeleteAsync($"/api/auth/sessions/{userASessionId}");
-        deleteResponseByB.StatusCode.Should().Be(HttpStatusCode.NotFound); // Returns NotFound to prevent user session enumeration
+        var deleteResponseByB = await clientB.SendAsync(
+            Mutation(HttpMethod.Delete, $"/api/auth/sessions/{userASessionId}"));
+        deleteResponseByB.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        // Log in as Owner (Admin) and revoke User A's session
         var (clientAdmin, _, _) = await LoginOwnerAsync(factory);
-        var deleteResponseByAdmin = await clientAdmin.DeleteAsync($"/api/auth/sessions/{userASessionId}");
+        var deleteResponseByAdmin = await clientAdmin.SendAsync(
+            Mutation(HttpMethod.Delete, $"/api/auth/sessions/{userASessionId}"));
         deleteResponseByAdmin.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
-    public async Task LogoutAll_Should_Revoke_All_User_Sessions()
+    public async Task LogoutAll_With_Csrf_Should_Revoke_All_User_Sessions()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
 
-        // Standard user logs in twice (simulating different devices)
         var userEmail = "multi_session@test.local";
         var userPassword = "password-123456";
         await CreateAndRegisterUserAsync(factory, userEmail, userPassword, "Multi Device User");
@@ -218,15 +247,12 @@ public class AuthFlowTests
         var auth1 = await loginRes1.Content.ReadFromJsonAsync<LoginResponse>();
 
         var client2 = factory.CreateClient();
-        var loginRes2 = await client2.PostAsJsonAsync("/api/auth/login", new LoginRequest(userEmail, userPassword));
-        var auth2 = await loginRes2.Content.ReadFromJsonAsync<LoginResponse>();
+        await client2.PostAsJsonAsync("/api/auth/login", new LoginRequest(userEmail, userPassword));
 
-        // Set Authorization header for client1 and perform logout-all
         client1.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth1!.AccessToken);
-        var logoutAllResponse = await client1.PostAsync("/api/auth/logout-all", null);
+        var logoutAllResponse = await client1.SendAsync(Mutation(HttpMethod.Post, "/api/auth/logout-all"));
         logoutAllResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // Verify sessions are now empty
         var getSessionsResponse = await client1.GetAsync("/api/auth/sessions");
         var activeSessions = await getSessionsResponse.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
         activeSessions.Should().BeEmpty();
@@ -236,80 +262,127 @@ public class AuthFlowTests
     public async Task Refresh_With_Revoked_Session_Should_Be_Blocked()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
+        var (client, _, refreshToken) = await LoginOwnerAsync(factory);
 
-        var (client, auth, _) = await LoginOwnerAsync(factory);
-
-        // Get the active session ID
         var getSessions = await client.GetAsync("/api/auth/sessions");
         var sessions = await getSessions.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
         var sessionId = sessions!.First().Id;
 
-        // Revoke the session
-        var deleteResponse = await client.DeleteAsync($"/api/auth/sessions/{sessionId}");
+        var deleteResponse = await client.SendAsync(
+            Mutation(HttpMethod.Delete, $"/api/auth/sessions/{sessionId}"));
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // Attempt to refresh using the refresh token from that session
-        var refreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(auth.RefreshToken));
+        // Refresh with the (now revoked) session's cookie + valid CSRF -> 401.
+        var refreshResponse = await client.SendAsync(
+            Mutation(HttpMethod.Post, "/api/auth/refresh", refreshToken));
         refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task Refresh_With_Cookie_Without_Csrf_Header_Should_Fail_With_400_But_Succeed_With_Csrf_Header()
+    public async Task Refresh_Without_Cookie_Should_Return_401()
     {
         await using var factory = new AuthFlowTestFactory();
-        await SeedOwnerAsync(factory);
+        using var client = factory.CreateClient();
 
-        var client = factory.CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(OwnerEmail, OwnerPassword));
-        var auth = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-
-        // 1. Missing CSRF header should return 400 Bad Request
-        var request1 = new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh");
-        request1.Headers.Add("Cookie", $"__Host-et_refresh={auth!.RefreshToken}");
-        var response1 = await client.SendAsync(request1);
-        response1.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var errorMsg = await response1.Content.ReadAsStringAsync();
-        errorMsg.Should().Contain("CSRF validation failed");
-
-        // 2. Present approved CSRF header should succeed (200 OK)
-        var request2 = new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh");
-        request2.Headers.Add("Cookie", $"__Host-et_refresh={auth.RefreshToken}");
-        request2.Headers.Add("X-Requested-With", "XMLHttpRequest");
-        var response2 = await client.SendAsync(request2);
-        response2.StatusCode.Should().Be(HttpStatusCode.OK);
+        // No refresh cookie at all.
+        var response = await client.PostAsync("/api/auth/refresh", content: null);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    private static async Task SeedOwnerAsync(WebApplicationFactory<Program> factory)
+    [Fact]
+    public async Task Refresh_With_Cookie_Missing_Csrf_Should_Return_403()
     {
-        // Program.cs already ran migrate + seed on first request.
-        // Idempotency makes calling the seeder again a no-op.
-        await Task.CompletedTask;
+        await using var factory = new AuthFlowTestFactory();
+        var (_, _, refreshToken) = await LoginOwnerAsync(factory);
+        using var client = factory.CreateClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh");
+        request.Headers.Add("Cookie", $"{RefreshCookieName}={refreshToken}");
+        // No CSRF cookie/header.
+        var response = await client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    private static async Task<(HttpClient Client, LoginResponse Auth, string RefreshCookie)> LoginOwnerAsync(
+    [Fact]
+    public async Task Refresh_With_Mismatched_Csrf_Should_Return_403()
+    {
+        await using var factory = new AuthFlowTestFactory();
+        var (_, _, refreshToken) = await LoginOwnerAsync(factory);
+        using var client = factory.CreateClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh");
+        request.Headers.Add("Cookie", $"{RefreshCookieName}={refreshToken}; {CsrfCookieName}=cookie-value");
+        request.Headers.Add(CsrfHeaderName, "different-header-value");
+        var response = await client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Refresh_With_Valid_Csrf_Should_Return_200_And_Not_Return_RefreshToken_In_Body()
+    {
+        await using var factory = new AuthFlowTestFactory();
+        var (_, _, refreshToken) = await LoginOwnerAsync(factory);
+        using var client = factory.CreateClient();
+
+        var response = await client.SendAsync(
+            Mutation(HttpMethod.Post, "/api/auth/refresh", refreshToken));
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var rawJson = await response.Content.ReadAsStringAsync();
+        rawJson.Should().NotContain("refreshToken");
+        ExtractRawSetCookie(response, RefreshCookieName).Should().NotBeNull();
+    }
+
+    // ---- helpers ----
+
+    // Builds a mutation request carrying a valid double-submit CSRF pair
+    // (cookie value == header value) plus an optional refresh cookie.
+    private static HttpRequestMessage Mutation(HttpMethod method, string url, string? refreshToken = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        var cookie = $"{CsrfCookieName}={CsrfToken}";
+        if (refreshToken is not null)
+        {
+            cookie = $"{RefreshCookieName}={refreshToken}; " + cookie;
+        }
+        request.Headers.Add("Cookie", cookie);
+        request.Headers.Add(CsrfHeaderName, CsrfToken);
+        return request;
+    }
+
+    private static string? ExtractRawSetCookie(HttpResponseMessage response, string cookieName)
+    {
+        if (!response.Headers.TryGetValues("Set-Cookie", out var cookies)) return null;
+        return cookies.FirstOrDefault(c => c.StartsWith(cookieName + "=", StringComparison.Ordinal));
+    }
+
+    private static string? ExtractCookieValue(HttpResponseMessage response, string cookieName)
+    {
+        var raw = ExtractRawSetCookie(response, cookieName);
+        if (raw is null) return null;
+        var value = raw.Substring(cookieName.Length + 1);
+        var semi = value.IndexOf(';');
+        return semi >= 0 ? value.Substring(0, semi) : value;
+    }
+
+    private static async Task<(HttpClient Client, LoginResponse Auth, string RefreshToken)> LoginOwnerAsync(
         WebApplicationFactory<Program> factory)
     {
         var client = factory.CreateClient();
         var response = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequest(OwnerEmail, OwnerPassword));
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
         payload.Should().NotBeNull();
 
-        // Retrieve the cookie header if set
-        string? refreshCookie = null;
-        if (response.Headers.TryGetValues("Set-Cookie", out var values))
-        {
-            refreshCookie = values.FirstOrDefault(v => v.StartsWith("__Host-et_refresh="));
-        }
+        var refreshToken = ExtractCookieValue(response, RefreshCookieName);
+        refreshToken.Should().NotBeNullOrWhiteSpace();
 
-        // Set the Authorization header for all future requests using this client
-        client.DefaultRequestHeaders.Authorization = 
+        client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload!.AccessToken);
 
-        return (client, payload, refreshCookie ?? "");
+        return (client, payload, refreshToken!);
     }
 
     private static async Task<string> CreateAndRegisterUserAsync(

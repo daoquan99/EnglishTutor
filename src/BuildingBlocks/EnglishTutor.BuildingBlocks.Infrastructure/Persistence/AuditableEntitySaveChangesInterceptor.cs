@@ -84,6 +84,14 @@ public sealed class AuditableEntitySaveChangesInterceptor : SaveChangesIntercept
                         entry.Entity.StampUpdated(userId, now);
                     }
                     break;
+
+                case EntityState.Deleted:
+                    if (entry.Entity is AggregateRoot aggregate)
+                    {
+                        entry.State = EntityState.Modified;
+                        aggregate.MarkDeleted(userId, now);
+                    }
+                    break;
             }
         }
     }

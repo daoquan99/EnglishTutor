@@ -39,24 +39,24 @@ out/
 .pnpm-store/
 
 ## Claude
-.claude/
-CLAUDE.md
+# .claude/
+# CLAUDE.md
 
-.agents/
-.antigravitycli/
-AGENTS.md
+# .agents/
+# .antigravitycli/
+# AGENTS.md
 
-plans/
+# plans/
 
-docs/
+# docs/
 
-CodexReviews/
-ClaudeCodeReviews/
-ClaudeCodePlan/
-AntigravityReviews/
-CodeReviews/
+# CodexReviews/
+# ClaudeCodeReviews/
+# ClaudeCodePlan/
+# AntigravityReviews/
+# CodeReviews/
 
-FILES_INCLUDED.txt
+# FILES_INCLUDED.txt
 
-.env.example
-plans.zip
+# .env.example
+# plans.zip

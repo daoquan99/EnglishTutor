@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
+using System.Linq;
+using EnglishTutor.AiGateway.Infrastructure.Persistence;
 
 namespace EnglishTutor.IntegrationTests;
 
@@ -137,6 +140,20 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
             // AuthFlowTestFactory subclass can override it via its
             // own ConfigureWebHost pass.
             config.AddInMemoryCollection(DefaultConfiguration());
+        });
+
+        builder.ConfigureServices(services =>
+        {
+            var descriptors = services.Where(d => 
+                d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) && 
+                d.ImplementationType != null &&
+                d.ImplementationType.GenericTypeArguments.FirstOrDefault()?.Name == "AiGatewayDbContext")
+                .ToList();
+
+            foreach (var descriptor in descriptors)
+            {
+                services.Remove(descriptor);
+            }
         });
     }
 

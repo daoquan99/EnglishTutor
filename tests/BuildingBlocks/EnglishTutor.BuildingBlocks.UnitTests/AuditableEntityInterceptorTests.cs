@@ -115,6 +115,85 @@ public class AuditableEntityInterceptorTests
         // a real change. The interceptor logic is covered by the first test.
     }
 
+    [Fact]
+    public async Task SavingChanges_Should_Convert_Deleted_Aggregate_Into_Soft_Delete()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var interceptor = new AuditableEntitySaveChangesInterceptor(
+            currentUser: new StaticCurrentUser(userId),
+            dateTime: new StaticDateTime(now));
+
+        var options = new DbContextOptionsBuilder<TestDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        var aggregate = new TestAggregate();
+
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            ctx.Aggregates.Add(aggregate);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Act: delete the aggregate
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            var tracked = await ctx.Aggregates.FindAsync(aggregate.Id);
+            tracked.Should().NotBeNull();
+            ctx.Aggregates.Remove(tracked!);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Assert: verify it was soft-deleted and is still in the DB
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            var inDb = await ctx.Aggregates.IgnoreQueryFilters().FirstOrDefaultAsync(a => a.Id == aggregate.Id);
+            inDb.Should().NotBeNull();
+            inDb!.IsDeleted.Should().BeTrue();
+            inDb.DeletedAtUtc.Should().Be(now);
+            inDb.DeletedByUserId.Should().Be(userId);
+        }
+    }
+
+    [Fact]
+    public async Task SavingChanges_Should_Hard_Delete_Entity_Types()
+    {
+        // Arrange
+        var interceptor = new AuditableEntitySaveChangesInterceptor(
+            currentUser: new StaticCurrentUser(null),
+            dateTime: new StaticDateTime(DateTime.UtcNow));
+
+        var options = new DbContextOptionsBuilder<TestDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        var entity = new TestEntity();
+
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            ctx.Entities.Add(entity);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Act: delete the entity
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            var tracked = await ctx.Entities.FindAsync(entity.Id);
+            tracked.Should().NotBeNull();
+            ctx.Entities.Remove(tracked!);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Assert: verify it is hard-deleted and gone from the DB
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            var inDb = await ctx.Entities.FindAsync(entity.Id);
+            inDb.Should().BeNull();
+        }
+    }
+
     // ---- Test doubles ----
 
     private sealed class StaticCurrentUser : ICurrentUser

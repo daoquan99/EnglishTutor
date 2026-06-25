@@ -198,11 +198,22 @@ public sealed class IdentityDataSeeder
             return;
         }
 
-        // Dev default: random password (logged ONCE so dev can copy it). In production
-        // the password MUST be supplied via SeedData:Owner:Password configuration.
-        var password = string.IsNullOrWhiteSpace(_options.Owner.Password)
-            ? GenerateRandomPassword()
-            : _options.Owner.Password;
+        // The Owner bootstrap password MUST come from configuration / an
+        // approved secret channel (SeedData:Owner:Password). We never generate
+        // a random password and we never log the plaintext value — in ANY
+        // environment (Batch R1, H-05 / migrations-seeding.md "Seeder
+        // Secrets"). A missing secret fails safely with a non-secret error
+        // rather than bootstrapping an account with an unknown or logged
+        // credential.
+        if (string.IsNullOrWhiteSpace(_options.Owner.Password))
+        {
+            throw new InvalidOperationException(
+                "Owner bootstrap password is not configured. Set 'SeedData:Owner:Password' " +
+                "from an approved secret/configuration source before seeding the Owner account. " +
+                "The seeder does not generate or log a password.");
+        }
+
+        var password = _options.Owner.Password;
 
         // Use FirstOrDefault + defensive create. We do NOT use FirstAsync here
         // because: (a) the Owner role is staged above and persisted before this
@@ -227,10 +238,12 @@ public sealed class IdentityDataSeeder
 
         _db.Users.Add(user);
 
-        _logger.LogWarning(
-            "Seeded Owner account. Email: {Email}. Initial password: {Password}. " +
-            "Rotate this password IMMEDIATELY in production environments.",
-            ownerEmail, password);
+        // Non-secret confirmation only. The plaintext password is NEVER logged
+        // (Batch R1, H-05).
+        _logger.LogInformation(
+            "Seeded Owner account for {Email}. The bootstrap password was supplied via " +
+            "configuration and is not logged. Rotate it after first login.",
+            ownerEmail);
     }
 
     private async Task SeedOwnerUserRoleAsync(CancellationToken ct)
@@ -277,11 +290,4 @@ public sealed class IdentityDataSeeder
             .AnyAsync(u => u.Email.Value == normalizedEmail, ct);
     }
 
-    private string GenerateRandomPassword()
-    {
-        const string chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        var bytes = new byte[24];
-        System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
-        return new string(bytes.Select(b => chars[b % chars.Length]).ToArray());
-    }
 }

@@ -1,18 +1,5 @@
 namespace EnglishTutor.BuildingBlocks.Domain.Entities;
 
-/// <summary>
-/// Base class for all domain entities. Provides identity, equality, and
-/// audit metadata inherited by every aggregate root and child entity.
-/// </summary>
-/// <remarks>
-/// <para><b>Audit fields</b> (<see cref="CreatedAtUtc"/>, <see cref="CreatedByUserId"/>,
-/// <see cref="UpdatedAtUtc"/>, <see cref="UpdatedByUserId"/>) are populated by the
-/// EF Core <c>AuditableEntitySaveChangesInterceptor</c> in Infrastructure —
-/// application code and command handlers must not set them directly.</para>
-/// <para><b>Stamp methods</b> are <c>protected internal</c>: application code
-/// cannot call them, but the Infrastructure assembly can via reflection-free
-/// direct invocation (or EF backing fields if the entity is hydrated).</para>
-/// </remarks>
 public abstract class Entity : IEquatable<Entity>
 {
     public Guid Id { get; protected set; }

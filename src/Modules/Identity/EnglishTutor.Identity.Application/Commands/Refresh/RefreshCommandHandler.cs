@@ -115,31 +115,54 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         // Audit module.
         if (existing.IsConsumed)
         {
-            var nowUtc = DateTime.UtcNow;
-            session.DetectRefreshTokenReuse(existing, nowUtc, reason: "refresh_token_reuse");
+            var reuseNowUtc = DateTime.UtcNow;
+            session.DetectRefreshTokenReuse(existing, reuseNowUtc, reason: "refresh_token_reuse");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return RefreshFailureResults.ReuseDetected(family.Id);
+        }
+
+        // Load the user BEFORE any rotation. Lookup includes soft-deleted rows
+        // so a user who was soft-deleted between login and refresh is detected
+        // and rejected here rather than silently issued a new access token.
+        var nowUtc = DateTime.UtcNow;
+        var user = await _userRepository.GetByIdAsync(existing.UserId, includeDeleted: true, cancellationToken);
+
+        // Reject deleted / inactive / locked users BEFORE rotation or JWT
+        // issuance. No token is rotated and no partial rotated state is added
+        // for these failures (Batch R1, H-04 / security-identity.md). The
+        // external result is a generic invalid-token error so the caller
+        // cannot distinguish user-state from token-state (no enumeration).
+        if (user is null || !user.CanRefreshCredentials(nowUtc))
+        {
+            string reason =
+                user is null ? "user_not_found"
+                : user.IsDeleted ? "user_deleted"
+                : !user.IsActive ? "user_inactive"
+                : "user_locked";
+
+            await _securityEventService.TrackRefreshFailedAsync(
+                sessionId: session.Id,
+                userId: user?.Id ?? existing.UserId,
+                refreshTokenFamilyId: family.Id,
+                refreshTokenId: existing.Id,
+                reasonCode: reason,
+                ipAddress: request.IpAddress,
+                cancellationToken);
+
+            // Persist the durable security event WITHOUT rotating the token.
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return RefreshFailureResults.InvalidRefreshToken();
         }
 
         // Rotate via the UserSession aggregate (atomic: consume old + add new to family).
         var newValue = _refreshTokenGenerator.Generate();
         var newHashHex = _refreshTokenHasher.Hash(newValue);
         var newHashVo = RefreshTokenHash.FromHex(newHashHex);
-        var newExpires = DateTime.UtcNow.Add(_refreshTokenLifetime.RefreshTokenLifetime);
+        var newExpires = nowUtc.Add(_refreshTokenLifetime.RefreshTokenLifetime);
 
-        var newToken = session.RotateRefreshToken(existing, newHashVo, newExpires, request.IpAddress, DateTime.UtcNow);
+        var newToken = session.RotateRefreshToken(existing, newHashVo, newExpires, request.IpAddress, nowUtc);
         _userSessionRepository.Add(newToken);
-
-        // Issue new access token. User lookup includes soft-deleted rows so a
-        // refresh request still resolves a user who has been soft-deleted
-        // between login and refresh.
-        var user = await _userRepository.GetByIdAsync(existing.UserId, includeDeleted: true, cancellationToken);
-        if (user is null)
-        {
-            return Result.Failure<RefreshResult>(new Error(
-                "Identity.UserNotFound",
-                "User associated with refresh token no longer exists."));
-        }
 
         var roleNames = await _roleRepository.GetNamesByIdsAsync(user.RoleIds, cancellationToken);
         var permissionCodes = await _roleRepository.GetPermissionCodesForRolesAsync(user.RoleIds, cancellationToken);

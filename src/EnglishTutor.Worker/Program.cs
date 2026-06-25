@@ -11,6 +11,10 @@ using EnglishTutor.Worker.Options;
 using EnglishTutor.Worker.Readiness;
 using EnglishTutor.Learning.Infrastructure;
 using EnglishTutor.Learning.Infrastructure.Persistence;
+using EnglishTutor.Quota.Infrastructure.Extensions;
+using EnglishTutor.AiGateway.Infrastructure.Extensions;
+using EnglishTutor.AiGateway.Infrastructure.Persistence;
+using EnglishTutor.Worker.HostedServices;
 using MassTransit;
 using Serilog;
 
@@ -49,10 +53,13 @@ builder.Services.AddIdentityApplication(builder.Configuration);
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddAudit(builder.Configuration);
 builder.Services.AddLearningInfrastructure(builder.Configuration);
+builder.Services.AddQuotaModule(builder.Configuration);
+builder.Services.AddAiGatewayModule(builder.Configuration);
 
 // Schema readiness and background jobs hosted services
 builder.Services.AddHostedService<WorkerSchemaReadinessHostedService>();
 builder.Services.AddHostedService<ExpiredRefreshTokensCleanupHostedService>();
+builder.Services.AddHostedService<QuotaExpiredReservationCleanupHostedService>();
 
 // Configure MassTransit on Worker with RabbitMQ and EF outboxes
 builder.Services.AddWorkerBrokerMessaging(builder.Configuration, x =>
@@ -64,6 +71,12 @@ builder.Services.AddWorkerBrokerMessaging(builder.Configuration, x =>
     });
 
     x.AddEntityFrameworkOutbox<AuditDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
+
+    x.AddEntityFrameworkOutbox<AiGatewayDbContext>(o =>
     {
         o.UsePostgres();
         o.UseBusOutbox();

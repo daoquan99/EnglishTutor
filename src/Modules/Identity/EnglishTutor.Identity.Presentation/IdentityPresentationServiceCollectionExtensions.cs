@@ -1,4 +1,5 @@
 using EnglishTutor.Identity.Presentation.Endpoints;
+using EnglishTutor.Identity.Presentation.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,14 @@ public static class IdentityPresentationServiceCollectionExtensions
             .AddOptions<Auth.AuthCookieOptions>()
             .Bind(configuration.GetSection(Auth.AuthCookieOptions.SectionName))
             .ValidateOnStart();
+
+        services
+            .AddOptions<Auth.CsrfOptions>()
+            .Bind(configuration.GetSection(Auth.CsrfOptions.SectionName))
+            .ValidateOnStart();
+
+        // In-process auth rate-limiter policies + 429 ProblemDetails (H-06).
+        services.AddIdentityRateLimiting(configuration);
 
         return services;
     }

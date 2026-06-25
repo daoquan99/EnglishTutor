@@ -19,7 +19,7 @@ public sealed class IdentityModuleService : Contracts.IIdentityModule
         ICurrentUser currentUser,
         ILogger<IdentityModuleService> logger)
     {
-        _db = db;
+        _db = db;   
         _currentUser = currentUser;
         _logger = logger;
     }

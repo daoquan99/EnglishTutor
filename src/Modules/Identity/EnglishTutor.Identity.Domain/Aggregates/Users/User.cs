@@ -150,6 +150,24 @@ public sealed class User : AggregateRoot
         return false;
     }
 
+    /// <summary>
+    /// Returns true only when this user is currently allowed to exchange a
+    /// refresh token for new credentials. A deleted, deactivated, or actively
+    /// locked-out account must never be issued a new access token even if it
+    /// still holds a valid refresh token (Batch R1, H-04 /
+    /// <c>security-identity.md</c>: "Deleted, disabled, locked, or inactive
+    /// users must not refresh").
+    /// </summary>
+    /// <param name="nowUtc">Caller-supplied UTC time (keeps the aggregate
+    /// deterministic and free of ambient clock reads).</param>
+    public bool CanRefreshCredentials(DateTime nowUtc)
+    {
+        if (IsDeleted) return false;
+        if (!IsActive) return false;
+        if (IsLockedOut && (LockoutEndUtc is null || LockoutEndUtc > nowUtc)) return false;
+        return true;
+    }
+
     public void RecordFailedLogin()
     {
         FailedLoginAttempts++;

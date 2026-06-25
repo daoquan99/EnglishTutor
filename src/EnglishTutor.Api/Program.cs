@@ -13,6 +13,9 @@ using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.Learning.Infrastructure;
 using EnglishTutor.Learning.Infrastructure.Persistence;
 using EnglishTutor.Learning.Presentation;
+using EnglishTutor.Quota.Infrastructure.Extensions;
+using EnglishTutor.AiGateway.Infrastructure.Extensions;
+using EnglishTutor.AiGateway.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using MassTransit;
 using Serilog;
@@ -38,6 +41,8 @@ builder.Services.AddAudit(builder.Configuration);
 builder.Services.AddAuditPresentation(builder.Configuration);
 builder.Services.AddLearningInfrastructure(builder.Configuration);
 builder.Services.AddLearningPresentation(builder.Configuration);
+builder.Services.AddQuotaModule(builder.Configuration);
+builder.Services.AddAiGatewayModule(builder.Configuration);
 
 // Configure MassTransit EF outbox on API host with in-memory bus stub.
 // This supports transactional outbox writing in HTTP handlers without a broker link.
@@ -53,6 +58,11 @@ builder.Services.AddApiOutboxMessaging(x =>
         o.UsePostgres();
         o.UseBusOutbox();
     });
+    x.AddEntityFrameworkOutbox<AiGatewayDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
     x.AddEntityFrameworkOutbox<LearningDbContext>(o =>
     {
         o.UsePostgres();
@@ -62,13 +72,6 @@ builder.Services.AddApiOutboxMessaging(x =>
 
 var app = builder.Build();
 
-// Apply EF Core migrations + seed Owner on startup.
-// Identity migration/seeding runs unconditionally (established in Task 23).
-// Audit migration is GATED by `Database:ApplyAuditMigrationsOnStartup`
-// (default false) so it must be applied explicitly via
-// `dotnet ef database update --context AuditDbContext` after approval,
-// not as a side-effect of API startup.
-// Skipped silently if the database is unreachable (dev/CI without Docker).
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
@@ -109,6 +112,8 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 // /api/auth/logout carry .RequireAuthorization() metadata.
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 // Health Checks
 app.MapBaseHealthChecks();

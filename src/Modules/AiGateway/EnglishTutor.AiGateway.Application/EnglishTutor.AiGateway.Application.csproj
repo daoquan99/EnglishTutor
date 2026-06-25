@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.AiGateway.Domain\EnglishTutor.AiGateway.Domain.csproj" />
+    <ProjectReference Include="..\EnglishTutor.AiGateway.Contracts\EnglishTutor.AiGateway.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
   </ItemGroup>
 </Project>
