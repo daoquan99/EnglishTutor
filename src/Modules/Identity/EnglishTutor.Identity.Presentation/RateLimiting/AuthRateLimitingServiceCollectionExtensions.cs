@@ -48,14 +48,15 @@ public static class AuthRateLimitingServiceCollectionExtensions
                 }
 
                 response.ContentType = "application/problem+json";
-                await response.WriteAsJsonAsync(new
+                var problem = System.Text.Json.JsonSerializer.Serialize(new
                 {
                     type = "https://tools.ietf.org/html/rfc9110#section-15.5.29",
                     title = "Too many requests",
                     status = StatusCodes.Status429TooManyRequests,
                     detail = "Rate limit exceeded. Please retry later.",
                     errorCode = AuthErrorCodes.RateLimited
-                }, token);
+                });
+                await response.WriteAsync(problem, token);
             };
         });
 

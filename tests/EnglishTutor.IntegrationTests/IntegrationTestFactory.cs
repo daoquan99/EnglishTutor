@@ -1,54 +1,12 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Npgsql;
-using System.Linq;
-using EnglishTutor.AiGateway.Infrastructure.Persistence;
+
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace EnglishTutor.IntegrationTests;
 
-// Custom WebApplicationFactory pre-configured with a valid Jwt:SigningKey
-// and other test-only defaults. Use this everywhere instead of
-// `new WebApplicationFactory<Program>()` so the Slice 2.7 JwtBearer
-// registration does not throw IDX10703 at host startup.
-//
-// Why this exists. The Slice 2.7 JwtBearer registration in
-// IdentityInfrastructureServiceCollectionExtensions reads
-// Jwt:SigningKey at DI build time and constructs a
-// SymmetricSecurityKey. A missing or empty key throws IDX10703 the
-// moment the host starts. Without this factory, every test that
-// instantiates a fresh WebApplicationFactory<Program> (including
-// xUnit IClassFixture-based tests like CorrelationIdMiddlewareTests)
-// would fail with that exception before any test code runs.
-//
-// What this factory does NOT do:
-//   - It does not weaken the production JwtBearer registration.
-//   - It does not share a signing key with any real environment.
-//   - It does not apply UseEnvironment("Development") by default.
-//     Individual tests may opt in via WithWebHostBuilder.
-//
-// Test isolation. Each factory instance creates a UNIQUE temporary
-// PostgreSQL database (`english_tutor_test_<guid>`) and overrides
-// `ConnectionStrings:Default` + `ConnectionStrings:Audit` to point to
-// it. Program.cs runs `Database.MigrateAsync()` on startup, which
-// creates the database and applies all pending migrations
-// (Identity + Audit, since this factory sets
-// `Database:ApplyAuditMigrationsOnStartup=true`). The Identity seeder
-// then runs with the deterministic `SeedData:Owner:Password`
-// configured below.
-//
-// On Dispose the factory drops the temporary database. Best-effort —
-// teardown errors are swallowed so a failed teardown never hides a
-// failed assertion.
-//
-// The factory does NOT touch the developer's main local DB
-// (`english_tutor_db`). It does NOT use destructive Docker volume
-// commands. It does NOT call `dotnet ef database drop --force`.
-// Dropping the per-factory temporary database is the only DDL/DML it
-// performs against the local Postgres instance, and it is targeted at
-// the database name it generated itself.
 public class IntegrationTestFactory : WebApplicationFactory<Program>
 {
     public const string TestJwtSigningKey =
@@ -68,30 +26,13 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
 
     public IntegrationTestFactory()
     {
-        // ASP.NET Core's default configuration sources read environment
-        // variables with `__` as the section separator
-        // (`ConnectionStrings__Default` => `ConnectionStrings:Default`).
-        // Env vars are layered AFTER appsettings.json by the default
-        // host builder, so this override is guaranteed to win over the
-        // checked-in appsettings.json. Using env vars instead of
-        // ConfigureAppConfiguration ensures the connection string is
-        // picked up by the DbContext registration lambdas, which
-        // capture `IConfiguration` references at registration time and
-        // read them lazily at resolution time.
         Environment.SetEnvironmentVariable("ConnectionStrings__Default", TestConnectionString);
         Environment.SetEnvironmentVariable("ConnectionStrings__Audit", TestConnectionString);
         Environment.SetEnvironmentVariable("Database__ApplyAuditMigrationsOnStartup", "true");
         Environment.SetEnvironmentVariable("SeedData__Owner__Password", TestSeedOwnerPassword);
 
-        // Pre-create the per-factory test database with TEMPLATE template0.
-        // The local dev postgres image has a collation-version mismatch
-        // on template1 which causes plain CREATE DATABASE to fail with
-        // "template database template1 has a collation version, but no
-        // actual collation version could be determined". template0 has
-        // no per-collation metadata and is the standard escape hatch for
-        // a fresh database that needs no template data. EF Core's
-        // MigrateAsync later sees the database exists and applies
-        // migrations on top.
+        Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", "false");
+
         TryCreateTestDatabaseWithTemplate0();
     }
 
@@ -132,30 +73,50 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
         base.ConfigureWebHost(builder);
         builder.ConfigureAppConfiguration((_, config) =>
         {
-            // Base test configuration (JWT, seed password, etc.).
-            // The connection strings, audit-migration flag, and seed
-            // password are also set as environment variables in the
-            // constructor above so they take effect at registration
-            // time. We still set the seed password here so the
-            // AuthFlowTestFactory subclass can override it via its
-            // own ConfigureWebHost pass.
             config.AddInMemoryCollection(DefaultConfiguration());
         });
 
         builder.ConfigureServices(services =>
         {
-            var descriptors = services.Where(d => 
-                d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) && 
+            var toRemove = services.Where(d =>
+                d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) &&
                 d.ImplementationType != null &&
-                d.ImplementationType.GenericTypeArguments.FirstOrDefault()?.Name == "AiGatewayDbContext")
+                IsRemovableMessagingHostedService(d.ImplementationType))
                 .ToList();
 
-            foreach (var descriptor in descriptors)
+            foreach (var descriptor in toRemove)
             {
                 services.Remove(descriptor);
             }
         });
     }
+
+    private bool IsRemovableMessagingHostedService(Type implementationType)
+    {
+        var isDelivery = implementationType.Name.StartsWith("BusOutboxDeliveryService");
+        var isCleanup = implementationType.Name.StartsWith("InboxCleanupService");
+        if (!isDelivery && !isCleanup)
+        {
+            return false;
+        }
+
+        if (!KeepMessagingHostedServices)
+        {
+            return true;
+        }
+
+        // Keep Identity/Audit services; remove any others (like Learning) whose schema is not migrated on startup.
+        var hasIdentityOrAudit = implementationType.GenericTypeArguments.Any(t =>
+            t.Name.Contains("Identity") || t.Name.Contains("Audit"));
+        return !hasIdentityOrAudit;
+    }
+
+    /// <summary>
+    /// When true, the Identity/Audit MassTransit outbox delivery + inbox-cleanup
+    /// hosted services are left running so the durable security-event flow
+    /// (outbox → in-process delivery → Audit consumer) completes. Default false.
+    /// </summary>
+    protected virtual bool KeepMessagingHostedServices => false;
 
     protected override void Dispose(bool disposing)
     {

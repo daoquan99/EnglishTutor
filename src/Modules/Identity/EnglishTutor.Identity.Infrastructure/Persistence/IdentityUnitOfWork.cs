@@ -3,23 +3,10 @@ using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using EnglishTutor.BuildingBlocks.Domain.Aggregates;
 using EnglishTutor.BuildingBlocks.Domain.DomainEvents;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace EnglishTutor.Identity.Infrastructure.Persistence;
 
-/// <summary>
-/// Infrastructure implementation of <see cref="IIdentityUnitOfWork"/>.
-/// Wraps the <c>IdentityDbContext.SaveChangesAsync</c> call AND
-/// dispatches any domain events collected on the tracked aggregates AFTER
-/// the SaveChanges commits. Registered as scoped so it shares the same
-/// <c>IdentityDbContext</c> instance as the request handlers.
-///
-/// <para><b>Dispatch timing:</b> AFTER SaveChanges. The Identity row is
-/// committed before any handler runs. Audit handlers (and any future
-/// handler) are BEST-EFFORT in-process. NOT outbox-level reliability. A
-/// failed Audit recording does NOT roll back the Identity change. See
-/// Task 22A design for the explicit "not outbox-level reliability"
-/// caveat.</para>
-/// </summary>
 internal sealed class IdentityUnitOfWork : IIdentityUnitOfWork
 {
     private static readonly MethodInfo ClearDomainEventsMethod =
@@ -37,7 +24,6 @@ internal sealed class IdentityUnitOfWork : IIdentityUnitOfWork
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
     {
-        // Collect events from all tracked aggregates BEFORE SaveChanges.
         var aggregates = _db.ChangeTracker.Entries<AggregateRoot>()
             .Select(e => e.Entity)
             .Where(a => a.DomainEvents.Count > 0)
@@ -47,23 +33,22 @@ internal sealed class IdentityUnitOfWork : IIdentityUnitOfWork
             .SelectMany(a => a.DomainEvents)
             .ToList();
 
+        if (events.Count == 0)
+        {
+            return await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        await _dispatcher.DispatchAsync(events, cancellationToken);
+
         var result = await _db.SaveChangesAsync(cancellationToken);
 
-        // Dispatch AFTER SaveChanges. Best-effort, fail-soft. See type doc.
-        if (events.Count > 0)
+        await transaction.CommitAsync(cancellationToken);
+
+        foreach (var aggregate in aggregates)
         {
-            try
-            {
-                await _dispatcher.DispatchAsync(events, cancellationToken);
-            }
-            finally
-            {
-                // Always clear events to prevent re-dispatch on the next SaveChanges.
-                foreach (var aggregate in aggregates)
-                {
-                    ClearDomainEventsMethod.Invoke(aggregate, null);
-                }
-            }
+            ClearDomainEventsMethod.Invoke(aggregate, null);
         }
 
         return result;

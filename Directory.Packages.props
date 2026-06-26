@@ -26,9 +26,9 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9" />
 
     <!-- Messaging (MassTransit + RabbitMQ) -->
-    <PackageVersion Include="MassTransit" Version="8.5.7" />
-    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.7" />
-    <PackageVersion Include="MassTransit.EntityFrameworkCore" Version="8.5.7" />
+    <PackageVersion Include="MassTransit" Version="9.1.2" />
+    <PackageVersion Include="MassTransit.RabbitMQ" Version="9.1.2" />
+    <PackageVersion Include="MassTransit.EntityFrameworkCore" Version="9.1.2" />
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.1" />
 
     <!-- MediatR -->

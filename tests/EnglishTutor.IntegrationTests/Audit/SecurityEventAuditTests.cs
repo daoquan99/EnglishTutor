@@ -30,6 +30,15 @@ public class SecurityEventAuditTests
 
     private sealed class AuditTestFactory : IntegrationTestFactory
     {
+        // Batch R1, H-07: run the durable pipeline in-process so the reuse
+        // event flows Identity outbox -> delivery -> Audit consumer -> store.
+        public AuditTestFactory()
+        {
+            Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", "true");
+        }
+
+        protected override bool KeepMessagingHostedServices => true;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             base.ConfigureWebHost(builder);
@@ -40,8 +49,18 @@ public class SecurityEventAuditTests
                 {
                     ["SeedData:Owner:Password"] = OwnerPassword,
                     ["Auth:RateLimit:Enabled"] = "false",
+                    ["Messaging:InProcessAuditConsumer"] = "true",
                 });
             });
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", null);
+            }
+            base.Dispose(disposing);
         }
     }
 
@@ -85,14 +104,20 @@ public class SecurityEventAuditTests
             RefreshRequest(firstRefreshToken!));
         secondRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-        // 4. The reuse security event is recorded in the Audit store.
-        using var scope = factory.Services.CreateScope();
-        var auditDb = scope.ServiceProvider.GetRequiredService<AuditDbContext>();
-
-        var securityEvents = await auditDb.SecurityEvents
-            .AsNoTracking()
-            .Where(e => e.CategoryCode == AuditCategoryCodes.IdentityRefreshTokenReuseDetected)
-            .ToListAsync();
+        // 4. The reuse security event is recorded durably in the Audit store.
+        //    Delivery is async (outbox -> consumer), so poll with a bound.
+        List<EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.SecurityEvent> securityEvents = new();
+        for (var i = 0; i < 60; i++)
+        {
+            using var pollScope = factory.Services.CreateScope();
+            var pollDb = pollScope.ServiceProvider.GetRequiredService<AuditDbContext>();
+            securityEvents = await pollDb.SecurityEvents
+                .AsNoTracking()
+                .Where(e => e.CategoryCode == AuditCategoryCodes.IdentityRefreshTokenReuseDetected)
+                .ToListAsync();
+            if (securityEvents.Count >= 1) break;
+            await Task.Delay(250);
+        }
 
         securityEvents.Should().ContainSingle();
 

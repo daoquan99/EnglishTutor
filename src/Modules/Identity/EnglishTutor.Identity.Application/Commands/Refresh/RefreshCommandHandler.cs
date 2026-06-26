@@ -78,6 +78,11 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
                 ipAddress: request.IpAddress,
                 cancellationToken);
 
+            // Flush the staged security-event outbox row (H-07). No Identity
+            // state is mutated in this branch; SaveChanges persists only the
+            // outbox message so the failed-refresh event is durable.
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
             return RefreshFailureResults.InvalidRefreshToken();
         }
 
@@ -101,6 +106,9 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
                 reasonCode: reason,
                 ipAddress: request.IpAddress,
                 cancellationToken);
+
+            // Flush the staged security-event outbox row (H-07).
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return RefreshFailureResults.InvalidRefreshToken();
         }

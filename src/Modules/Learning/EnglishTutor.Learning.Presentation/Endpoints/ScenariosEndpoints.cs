@@ -27,7 +27,7 @@ public static class ScenariosEndpoints
         // Admin endpoints group - requires Owner or Admin roles
         var adminGroup = routes.MapGroup("/api/admin/learning/scenarios")
             .WithTags("Admin Scenarios")
-            .RequireAuthorization(policy => policy.RequireRole("Owner", "Admin"));
+            .RequireAuthorization(policy => policy.RequireRole(LearningEndpointAuthorization.AdminRoles));
 
         adminGroup.MapPost("/", async (
             CreateScenarioRequest request,

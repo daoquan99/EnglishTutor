@@ -1,30 +1,30 @@
 using EnglishTutor.Audit.Contracts;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
+using EnglishTutor.Identity.Application.Abstractions.Auth;
+using EnglishTutor.Identity.Contracts.Events;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.Events;
 using Microsoft.Extensions.Logging;
 
 namespace EnglishTutor.Identity.Infrastructure.Audit;
 
-// Identity.Infrastructure handler that bridges
-// RefreshTokenReuseDetectedDomainEvent to EnglishTutor.Audit.Contracts.ISecurityEventRecorder.
-//
-// This handler lives in Identity.Infrastructure (NOT Audit.Infrastructure) so
-// that Audit.Infrastructure does NOT need to reference Identity.Domain.
-// Identity.Infrastructure references Audit.Contracts (the only Audit
-// assembly Identity may depend on).
+// Bridges RefreshTokenReuseDetectedDomainEvent to a DURABLE security
+// integration event (Batch R1, H-07). The event is staged in the Identity
+// transactional outbox and committed atomically with the Identity state change;
+// the Audit module consumes it idempotently. Replaces the prior best-effort
+// in-process ISecurityEventRecorder call.
 internal sealed class RefreshTokenReuseAuditHandler
     : IDomainEventHandler<RefreshTokenReuseDetectedDomainEvent>
 {
-    private readonly ISecurityEventRecorder _recorder;
+    private readonly IIdentitySecurityEventPublisher _publisher;
     private readonly IRefreshTokenReuseContextAccessor _contextAccessor;
     private readonly ILogger<RefreshTokenReuseAuditHandler> _logger;
 
     public RefreshTokenReuseAuditHandler(
-        ISecurityEventRecorder recorder,
+        IIdentitySecurityEventPublisher publisher,
         IRefreshTokenReuseContextAccessor contextAccessor,
         ILogger<RefreshTokenReuseAuditHandler> logger)
     {
-        _recorder = recorder;
+        _publisher = publisher;
         _contextAccessor = contextAccessor;
         _logger = logger;
     }
@@ -33,17 +33,19 @@ internal sealed class RefreshTokenReuseAuditHandler
         RefreshTokenReuseDetectedDomainEvent domainEvent,
         CancellationToken cancellationToken)
     {
-        // SECURITY: do not log the raw refresh token (it is not in scope of
-        // this event anyway). Log only the ids + the category code.
+        // SECURITY: ids + category only — never the raw refresh token.
         _logger.LogWarning(
-            "RefreshTokenReuseDetected recorded for audit. Category={Category} UserId={UserId} FamilyId={FamilyId} TokenId={TokenId} SessionId={SessionId}.",
+            "RefreshTokenReuseDetected staged for durable audit. Category={Category} UserId={UserId} FamilyId={FamilyId} TokenId={TokenId} SessionId={SessionId}.",
             AuditCategoryCodes.IdentityRefreshTokenReuseDetected,
             domainEvent.UserId,
             domainEvent.RefreshTokenFamilyId,
             domainEvent.RefreshTokenId,
             domainEvent.SessionId);
 
-        var request = new RecordRefreshTokenReuseRequest(
+        await _publisher.PublishAsync(new IdentitySecurityEventData(
+            EventType: IdentitySecurityEventTypes.RefreshTokenReuseDetected,
+            CategoryCode: AuditCategoryCodes.IdentityRefreshTokenReuseDetected,
+            SourceEventType: AuditCategoryCodes.SourceEventTypes.IdentityRefreshTokenReuseDetected,
             UserId: domainEvent.UserId,
             SessionId: domainEvent.SessionId,
             RefreshTokenFamilyId: domainEvent.RefreshTokenFamilyId,
@@ -53,8 +55,7 @@ internal sealed class RefreshTokenReuseAuditHandler
             UserAgentHash: _contextAccessor.UserAgentHash,
             CorrelationId: _contextAccessor.CorrelationId,
             CausationId: null,
-            OccurredAtUtc: domainEvent.OccurredAtUtc);
-
-        await _recorder.RecordRefreshTokenReuseAsync(request, cancellationToken);
+            OccurredAtUtc: domainEvent.OccurredAtUtc),
+            cancellationToken);
     }
 }

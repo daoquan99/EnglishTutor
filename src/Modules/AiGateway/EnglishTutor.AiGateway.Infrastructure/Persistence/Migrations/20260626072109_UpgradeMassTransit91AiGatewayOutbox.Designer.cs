@@ -3,6 +3,7 @@ using System;
 using EnglishTutor.AiGateway.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EnglishTutor.AiGateway.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AiGatewayDbContext))]
-    partial class AiGatewayDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260626072109_UpgradeMassTransit91AiGatewayOutbox")]
+    partial class UpgradeMassTransit91AiGatewayOutbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

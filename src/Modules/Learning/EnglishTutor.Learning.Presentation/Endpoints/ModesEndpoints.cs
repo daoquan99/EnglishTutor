@@ -26,7 +26,7 @@ public static class ModesEndpoints
         // Admin endpoints group - requires Owner or Admin roles
         var adminGroup = routes.MapGroup("/api/admin/learning/modes")
             .WithTags("Admin Modes")
-            .RequireAuthorization(policy => policy.RequireRole("Owner", "Admin"));
+            .RequireAuthorization(policy => policy.RequireRole(LearningEndpointAuthorization.AdminRoles));
 
         adminGroup.MapPost("/", async (
             CreateModeDefinitionRequest request,

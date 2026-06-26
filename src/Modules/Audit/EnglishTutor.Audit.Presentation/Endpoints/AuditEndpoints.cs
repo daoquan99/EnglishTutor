@@ -29,8 +29,8 @@ public static class AuditEndpoints
             CancellationToken ct) =>
         {
             var query = new SearchAuditLogsQuery(
-                PageNumber: pageNumber ?? 1,
-                PageSize: pageSize ?? 10,
+                PageNumber: pageNumber ?? AuditEndpointDefaults.DefaultPageNumber,
+                PageSize: pageSize ?? AuditEndpointDefaults.DefaultPageSize,
                 UserId: userId,
                 Action: action,
                 EntityType: entityType,
@@ -45,7 +45,9 @@ public static class AuditEndpoints
             }
             return Results.Ok(result.Value);
         })
-        .RequireAuthorization(policy => policy.RequireClaim("permission", "admin.audit_read"));
+        .RequireAuthorization(policy => policy.RequireClaim(
+            AuditEndpointAuthorization.PermissionClaimType,
+            AuditEndpointAuthorization.AuditReadPermission));
 
         group.MapGet("/security-events", async (
             IMediator mediator,
@@ -58,8 +60,8 @@ public static class AuditEndpoints
             CancellationToken ct) =>
         {
             var query = new SearchSecurityEventsQuery(
-                PageNumber: pageNumber ?? 1,
-                PageSize: pageSize ?? 10,
+                PageNumber: pageNumber ?? AuditEndpointDefaults.DefaultPageNumber,
+                PageSize: pageSize ?? AuditEndpointDefaults.DefaultPageSize,
                 UserId: userId,
                 CategoryCode: categoryCode,
                 StartDate: startDate,
@@ -72,7 +74,9 @@ public static class AuditEndpoints
             }
             return Results.Ok(result.Value);
         })
-        .RequireAuthorization(policy => policy.RequireClaim("permission", "admin.security_read"));
+        .RequireAuthorization(policy => policy.RequireClaim(
+            AuditEndpointAuthorization.PermissionClaimType,
+            AuditEndpointAuthorization.SecurityReadPermission));
 
         return routes;
     }

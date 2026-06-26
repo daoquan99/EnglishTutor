@@ -47,8 +47,8 @@ public static class AuthEndpoints
             var options = cookieOptions.Value;
             var userAgent = httpContext.Request.Headers.UserAgent.ToString();
             var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
-            var deviceId = httpContext.Request.Headers["X-Device-Id"].ToString();
-            var deviceName = httpContext.Request.Headers["X-Device-Name"].ToString();
+            var deviceId = httpContext.Request.Headers[IdentityEndpointHeaders.DeviceId].ToString();
+            var deviceName = httpContext.Request.Headers[IdentityEndpointHeaders.DeviceName].ToString();
 
             var command = new LoginCommand(
                 request.Email,
@@ -230,7 +230,9 @@ public static class AuthEndpoints
                 return csrfError;
             }
 
-            bool isAdmin = currentUser.IsInRole("Admin") || currentUser.IsInRole("Owner");
+            bool isAdmin =
+                currentUser.IsInRole(IdentityEndpointAuthorization.AdminRole) ||
+                currentUser.IsInRole(IdentityEndpointAuthorization.OwnerRole);
             var command = new RevokeSessionCommand(sessionId, userId.Value, isAdmin);
             var result = await mediator.Send(command, ct);
 

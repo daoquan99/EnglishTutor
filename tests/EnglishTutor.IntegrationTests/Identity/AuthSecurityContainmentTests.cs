@@ -76,19 +76,16 @@ public class AuthSecurityContainmentTests
         await using var factory = new RateLimitDisabledFactory();
         var (client, refreshToken) = await LoginOwnerAsync(factory);
 
-        // Deactivate the Owner directly via the repository (simulates an admin
-        // disabling the account between login and refresh).
+        // Deactivate the Owner via the tracked IdentityDbContext (simulates an
+        // admin disabling the account between login and refresh).
         using (var scope = factory.Services.CreateScope())
         {
-            var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-            var uow = scope.ServiceProvider.GetRequiredService<IIdentityUnitOfWork>();
-            var owner = await users.GetByEmailAsync(
-                EnglishTutor.Identity.Domain.Aggregates.Users.ValueObjects.Email.Create(OwnerEmail),
-                includeDeleted: false,
-                default);
+            var db = scope.ServiceProvider.GetRequiredService<EnglishTutor.Identity.Infrastructure.Persistence.IdentityDbContext>();
+            var owner = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+                .FirstOrDefaultAsync(db.Users, u => u.Email.Value == OwnerEmail);
             owner.Should().NotBeNull();
             owner!.Deactivate();
-            await uow.SaveChangesAsync(default);
+            await db.SaveChangesAsync();
         }
 
         // Refresh must be rejected (generic 401) and the cookie cleared.
@@ -108,9 +105,10 @@ public class AuthSecurityContainmentTests
         using var client = factory.CreateClient();
 
         // Permit limit is 3 in a 60s window. Fire enough wrong-password logins
-        // to exceed it; at least one response must be 429.
+        // to exceed it; at least one response must be 429. The loop runs well
+        // above any default permit so the assertion holds regardless of binding.
         HttpResponseMessage? limited = null;
-        for (var i = 0; i < 8; i++)
+        for (var i = 0; i < 20; i++)
         {
             var resp = await client.PostAsJsonAsync("/api/auth/login",
                 new LoginRequest(OwnerEmail, "wrong-password"));

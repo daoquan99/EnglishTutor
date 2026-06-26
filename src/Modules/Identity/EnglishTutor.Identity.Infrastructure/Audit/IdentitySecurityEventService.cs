@@ -1,5 +1,6 @@
 using EnglishTutor.Audit.Contracts;
 using EnglishTutor.Identity.Application.Abstractions.Auth;
+using EnglishTutor.Identity.Contracts.Events;
 using System;
 using System.Security.Cryptography;
 using System.Text;
@@ -8,16 +9,24 @@ using System.Threading.Tasks;
 
 namespace EnglishTutor.Identity.Infrastructure.Audit;
 
+// Tracks login-failed and refresh-failed/rejected security events DURABLY
+// (Batch R1, H-07). Each call stages an IdentitySecurityEventRecordedV1 into
+// the Identity transactional outbox via the publisher; the event is committed
+// atomically with the Identity state change on the handler's SaveChanges, and
+// the Audit module consumes it idempotently.
+//
+// SECURITY: only hashed IP/UA, ids, and stable reason codes are emitted —
+// never raw tokens/hashes/passwords/cookies/raw IP/raw UA/headers.
 internal sealed class IdentitySecurityEventService : IIdentitySecurityEventService
 {
-    private readonly ISecurityEventRecorder _recorder;
+    private readonly IIdentitySecurityEventPublisher _publisher;
     private readonly IRefreshTokenReuseContextAccessor _contextAccessor;
 
     public IdentitySecurityEventService(
-        ISecurityEventRecorder recorder,
+        IIdentitySecurityEventPublisher publisher,
         IRefreshTokenReuseContextAccessor contextAccessor)
     {
-        _recorder = recorder;
+        _publisher = publisher;
         _contextAccessor = contextAccessor;
     }
 
@@ -28,9 +37,9 @@ internal sealed class IdentitySecurityEventService : IIdentitySecurityEventServi
         string? userAgent,
         CancellationToken cancellationToken = default)
     {
-        var request = new RecordSecurityEventRequest(
+        await _publisher.PublishAsync(new IdentitySecurityEventData(
+            EventType: IdentitySecurityEventTypes.LoginFailed,
             CategoryCode: AuditCategoryCodes.IdentityLoginFailed,
-            SourceModule: AuditCategoryCodes.SourceModuleIdentity,
             SourceEventType: AuditCategoryCodes.SourceEventTypes.IdentityLoginFailed,
             UserId: userId,
             SessionId: null,
@@ -41,9 +50,8 @@ internal sealed class IdentitySecurityEventService : IIdentitySecurityEventServi
             UserAgentHash: Hash(userAgent) ?? _contextAccessor.UserAgentHash,
             CorrelationId: _contextAccessor.CorrelationId,
             CausationId: null,
-            OccurredAtUtc: DateTime.UtcNow);
-
-        await _recorder.RecordSecurityEventAsync(request, cancellationToken);
+            OccurredAtUtc: DateTime.UtcNow),
+            cancellationToken);
     }
 
     public async Task TrackRefreshFailedAsync(
@@ -55,9 +63,9 @@ internal sealed class IdentitySecurityEventService : IIdentitySecurityEventServi
         string? ipAddress,
         CancellationToken cancellationToken = default)
     {
-        var request = new RecordSecurityEventRequest(
+        await _publisher.PublishAsync(new IdentitySecurityEventData(
+            EventType: IdentitySecurityEventTypes.RefreshRejected,
             CategoryCode: AuditCategoryCodes.IdentityRefreshFailed,
-            SourceModule: AuditCategoryCodes.SourceModuleIdentity,
             SourceEventType: AuditCategoryCodes.SourceEventTypes.IdentityRefreshFailed,
             UserId: userId,
             SessionId: sessionId,
@@ -68,9 +76,8 @@ internal sealed class IdentitySecurityEventService : IIdentitySecurityEventServi
             UserAgentHash: _contextAccessor.UserAgentHash,
             CorrelationId: _contextAccessor.CorrelationId,
             CausationId: null,
-            OccurredAtUtc: DateTime.UtcNow);
-
-        await _recorder.RecordSecurityEventAsync(request, cancellationToken);
+            OccurredAtUtc: DateTime.UtcNow),
+            cancellationToken);
     }
 
     private static string? Hash(string? value)

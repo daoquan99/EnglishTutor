@@ -26,7 +26,7 @@ public static class PhrasesEndpoints
         // Admin endpoints — requires Owner or Admin roles
         var adminGroup = routes.MapGroup("/api/admin/learning/topics/{topicId:guid}/phrases")
             .WithTags("Admin Phrases")
-            .RequireAuthorization(policy => policy.RequireRole("Owner", "Admin"));
+            .RequireAuthorization(policy => policy.RequireRole(LearningEndpointAuthorization.AdminRoles));
 
         adminGroup.MapPost("/", async (
             Guid topicId,

@@ -88,6 +88,9 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
                 userAgent: request.UserAgent,
                 cancellationToken);
 
+            // Flush the staged security-event outbox row (H-07).
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
             return LoginFailureResults.InvalidCredentials();
         }
 
@@ -99,6 +102,8 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 cancellationToken);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return LoginFailureResults.AccountInactive();
         }
@@ -112,6 +117,8 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
                 userAgent: request.UserAgent,
                 cancellationToken);
 
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
             return LoginFailureResults.AccountLocked(user.LockoutEndUtc.Value);
         }
 
@@ -120,14 +127,17 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
 
         if (!ok)
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken); // persist updated FailedLoginAttempts / lockout
-
+            // Stage the failed-login event BEFORE the single SaveChanges so the
+            // updated FailedLoginAttempts / lockout state AND the durable
+            // security-event outbox row commit atomically (H-07).
             await _securityEventService.TrackLoginFailedAsync(
                 userId: user.Id,
                 reasonCode: "invalid_password",
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 cancellationToken);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return LoginFailureResults.InvalidCredentials();
         }

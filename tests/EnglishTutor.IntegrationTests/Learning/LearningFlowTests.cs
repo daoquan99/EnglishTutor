@@ -5,11 +5,12 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using EnglishTutor.Identity.Domain.Aggregates.Users;
-using EnglishTutor.Identity.Domain.Aggregates.Users.ValueObjects;
-using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
+using EnglishTutor.Identity.Domain.Aggregates.Users;
+using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
+using EnglishTutor.Identity.Domain.Aggregates.Users.ValueObjects;
+using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Identity.Presentation.Endpoints.Dtos;
 using EnglishTutor.Learning.Infrastructure.Persistence;
 using EnglishTutor.Learning.Presentation.Dtos;
@@ -46,8 +47,8 @@ public class LearningFlowTests
 
             builder.ConfigureServices(services =>
             {
-                var descriptor = services.FirstOrDefault(d => 
-                    d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) && 
+                var descriptor = services.FirstOrDefault(d =>
+                    d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) &&
                     d.ImplementationType != null &&
                     d.ImplementationType.Name.StartsWith("BusOutboxDeliveryService") &&
                     d.ImplementationType.GenericTypeArguments.FirstOrDefault() == typeof(LearningDbContext));
@@ -138,9 +139,9 @@ public class LearningFlowTests
         var modeCode = "shadowing";
         var createModeRes = await adminClient.PostAsJsonAsync("/api/admin/learning/modes",
             new CreateModeDefinitionRequest(modeCode, "Shadowing Mode", "Repeat after prompt"));
-        
+
         createModeRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        
+
         var modeCreatedPayload = await createModeRes.Content.ReadFromJsonAsync<CreatedResponse>();
         var modeId = modeCreatedPayload!.Id;
 
@@ -155,7 +156,7 @@ public class LearningFlowTests
         // 3. Enable the Mode for the Topic via Admin API
         var enableModeRes = await adminClient.PostAsJsonAsync($"/api/admin/learning/topics/{topicId}/modes",
             new EnableTopicModeRequest(modeId, "{\"voice\": \"en-US-Neural\"}"));
-        
+
         enableModeRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // 4. Create a Scenario via Admin API
@@ -187,7 +188,7 @@ public class LearningFlowTests
         scenarios.Should().ContainSingle(s => s.Id == scenarioId);
 
         // 6.5. Security and Catalog Filtering assertions (authenticated public vs admin users)
-        
+
         // Create a second set of resources that we will disable
         var modeCodeB = "free-talk";
         var createModeBRes = await adminClient.PostAsJsonAsync("/api/admin/learning/modes",
@@ -282,9 +283,15 @@ public class LearningFlowTests
         // 7. Verify Outbox Message Persistence
         using var scope = factory.Services.CreateScope();
         var learningDb = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
+        var identityDb = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
         var outboxMessages = await learningDb.Set<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>().ToListAsync();
         outboxMessages.Should().NotBeEmpty("Outbox messages should be saved to the outbox table upon commit");
         outboxMessages.Any(o => o.MessageType.Contains("TopicCreatedIntegrationEvent")).Should().BeTrue();
+
+        var identityTopicMessages = await identityDb.Set<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>()
+            .Where(o => o.MessageType.Contains("TopicCreatedIntegrationEvent"))
+            .ToListAsync();
+        identityTopicMessages.Should().BeEmpty();
     }
 
     [Fact]
@@ -303,7 +310,7 @@ public class LearningFlowTests
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'learning'";
         using var reader = await cmd.ExecuteReaderAsync();
-        
+
         var tables = new List<string>();
         while (await reader.ReadAsync())
         {
@@ -418,11 +425,11 @@ public class LearningFlowTests
         var response = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequest(OwnerEmail, OwnerPassword));
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
         payload.Should().NotBeNull();
 
-        client.DefaultRequestHeaders.Authorization = 
+        client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload!.AccessToken);
 
         return (client, payload);

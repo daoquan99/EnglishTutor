@@ -1,20 +1,24 @@
 using EnglishTutor.Audit.Contracts;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
+using EnglishTutor.Identity.Application.Abstractions.Auth;
+using EnglishTutor.Identity.Contracts.Events;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.Events;
 
 namespace EnglishTutor.Identity.Infrastructure.Audit;
 
+// Session created on successful login -> durable LoginSucceeded security event
+// (Batch R1, H-07). Staged in the Identity outbox, consumed idempotently by Audit.
 internal sealed class UserSessionCreatedAuditHandler
     : IDomainEventHandler<UserSessionCreatedDomainEvent>
 {
-    private readonly ISecurityEventRecorder _recorder;
+    private readonly IIdentitySecurityEventPublisher _publisher;
     private readonly IRefreshTokenReuseContextAccessor _contextAccessor;
 
     public UserSessionCreatedAuditHandler(
-        ISecurityEventRecorder recorder,
+        IIdentitySecurityEventPublisher publisher,
         IRefreshTokenReuseContextAccessor contextAccessor)
     {
-        _recorder = recorder;
+        _publisher = publisher;
         _contextAccessor = contextAccessor;
     }
 
@@ -22,9 +26,9 @@ internal sealed class UserSessionCreatedAuditHandler
         UserSessionCreatedDomainEvent domainEvent,
         CancellationToken cancellationToken)
     {
-        var request = new RecordSecurityEventRequest(
+        await _publisher.PublishAsync(new IdentitySecurityEventData(
+            EventType: IdentitySecurityEventTypes.LoginSucceeded,
             CategoryCode: AuditCategoryCodes.IdentityLoginSucceeded,
-            SourceModule: AuditCategoryCodes.SourceModuleIdentity,
             SourceEventType: AuditCategoryCodes.SourceEventTypes.IdentityLoginSucceeded,
             UserId: domainEvent.UserId,
             SessionId: domainEvent.SessionId,
@@ -35,8 +39,7 @@ internal sealed class UserSessionCreatedAuditHandler
             UserAgentHash: _contextAccessor.UserAgentHash,
             CorrelationId: _contextAccessor.CorrelationId,
             CausationId: null,
-            OccurredAtUtc: domainEvent.OccurredAtUtc);
-
-        await _recorder.RecordSecurityEventAsync(request, cancellationToken);
+            OccurredAtUtc: domainEvent.OccurredAtUtc),
+            cancellationToken);
     }
 }

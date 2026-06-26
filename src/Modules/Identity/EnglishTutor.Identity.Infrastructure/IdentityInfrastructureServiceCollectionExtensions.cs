@@ -1,3 +1,4 @@
+using System.Text;
 using EnglishTutor.Audit.Contracts;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
@@ -23,7 +24,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace EnglishTutor.Identity.Infrastructure;
 
@@ -113,6 +113,7 @@ public static class IdentityInfrastructureServiceCollectionExtensions
         // current request.
         services.AddHttpContextAccessor();
         services.AddScoped<IRefreshTokenReuseContextAccessor, HttpContextRefreshTokenReuseContextAccessor>();
+        services.AddScoped<IIdentitySecurityEventPublisher, OutboxIdentitySecurityEventPublisher>();
         services.AddScoped<IIdentitySecurityEventService, IdentitySecurityEventService>();
 
         // Domain event dispatcher. The InMemory implementation lives in

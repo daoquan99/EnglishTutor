@@ -1,20 +1,22 @@
+using EnglishTutor.AiGateway.Infrastructure.Extensions;
+using EnglishTutor.AiGateway.Infrastructure.Persistence;
+using EnglishTutor.Audit.Infrastructure;
+using EnglishTutor.Audit.Infrastructure.Messaging;
+using EnglishTutor.Audit.Infrastructure.Persistence;
 using EnglishTutor.BuildingBlocks.Infrastructure.HealthChecks;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Infrastructure.Options;
 using EnglishTutor.Identity.Application;
 using EnglishTutor.Identity.Infrastructure;
+using EnglishTutor.Identity.Infrastructure.Messaging;
 using EnglishTutor.Identity.Infrastructure.Persistence;
-using EnglishTutor.Audit.Infrastructure;
-using EnglishTutor.Audit.Infrastructure.Persistence;
-using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
-using EnglishTutor.Worker.Jobs;
-using EnglishTutor.Worker.Options;
-using EnglishTutor.Worker.Readiness;
 using EnglishTutor.Learning.Infrastructure;
 using EnglishTutor.Learning.Infrastructure.Persistence;
 using EnglishTutor.Quota.Infrastructure.Extensions;
-using EnglishTutor.AiGateway.Infrastructure.Extensions;
-using EnglishTutor.AiGateway.Infrastructure.Persistence;
 using EnglishTutor.Worker.HostedServices;
+using EnglishTutor.Worker.Jobs;
+using EnglishTutor.Worker.Options;
+using EnglishTutor.Worker.Readiness;
 using MassTransit;
 using Serilog;
 
@@ -31,9 +33,9 @@ builder.Services
     .AddOptions<WorkerOptions>()
     .Bind(builder.Configuration.GetSection(WorkerOptions.SectionName))
     .ValidateDataAnnotations()
-    .Validate(o => o.RefreshTokenCleanupInterval > TimeSpan.Zero, 
+    .Validate(o => o.RefreshTokenCleanupInterval > TimeSpan.Zero,
         "Worker:RefreshTokenCleanupInterval must be greater than zero.")
-    .Validate(o => o.RefreshTokenRetentionDays >= 1 && o.RefreshTokenRetentionDays <= 365, 
+    .Validate(o => o.RefreshTokenRetentionDays >= 1 && o.RefreshTokenRetentionDays <= 365,
         "Worker:RefreshTokenRetentionDays must be between 1 and 365 days.")
     .Validate(o => o.ShutdownTimeout > TimeSpan.Zero,
         "Worker:ShutdownTimeout must be greater than zero.")
@@ -61,33 +63,31 @@ builder.Services.AddHostedService<WorkerSchemaReadinessHostedService>();
 builder.Services.AddHostedService<ExpiredRefreshTokensCleanupHostedService>();
 builder.Services.AddHostedService<QuotaExpiredReservationCleanupHostedService>();
 
-// Configure MassTransit on Worker with RabbitMQ and EF outboxes
-builder.Services.AddWorkerBrokerMessaging(builder.Configuration, x =>
-{
-    x.AddEntityFrameworkOutbox<IdentityDbContext>(o =>
+builder.Services.AddWorkerBrokerMessaging<IIdentityBus>(
+    builder.Configuration,
+    x =>
     {
-        o.UsePostgres();
-        o.UseBusOutbox();
-    });
+        x.AddEntityFrameworkOutbox<AuditDbContext>(o =>
+        {
+            o.UsePostgres();
+            o.UseBusOutbox();
+        });
+        x.AddEntityFrameworkOutbox<LearningDbContext>(o =>
+        {
+            o.UsePostgres();
+            o.UseBusOutbox();
+        });
+    },
+    x =>
+    {
+        x.AddEntityFrameworkOutbox<IIdentityBus, IdentityDbContext>(o =>
+        {
+            o.UsePostgres();
+            o.UseBusOutbox();
+        });
 
-    x.AddEntityFrameworkOutbox<AuditDbContext>(o =>
-    {
-        o.UsePostgres();
-        o.UseBusOutbox();
+        x.AddAuditSecurityEventConsumers();
     });
-
-    x.AddEntityFrameworkOutbox<AiGatewayDbContext>(o =>
-    {
-        o.UsePostgres();
-        o.UseBusOutbox();
-    });
-
-    x.AddEntityFrameworkOutbox<LearningDbContext>(o =>
-    {
-        o.UsePostgres();
-        o.UseBusOutbox();
-    });
-});
 
 var host = builder.Build();
 
