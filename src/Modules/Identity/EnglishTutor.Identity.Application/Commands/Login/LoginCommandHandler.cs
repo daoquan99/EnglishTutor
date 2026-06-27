@@ -14,6 +14,7 @@ using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using EnglishTutor.Identity.Domain.Aggregates.Users.ValueObjects;
 using System.Security.Cryptography;
 using System.Text;
+using EnglishTutor.BuildingBlocks.Application.DateTime;
 
 namespace EnglishTutor.Identity.Application.Commands.Login;
 
@@ -42,6 +43,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
     private readonly IRefreshTokenGenerator _refreshTokenGenerator;
     private readonly IRefreshTokenHasher _refreshTokenHasher;
     private readonly IIdentitySecurityEventService _securityEventService;
+    private readonly IDateTimeProvider _clock;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
@@ -53,7 +55,8 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         IRefreshTokenLifetimeProvider refreshTokenLifetime,
         IRefreshTokenGenerator refreshTokenGenerator,
         IRefreshTokenHasher refreshTokenHasher,
-        IIdentitySecurityEventService securityEventService)
+        IIdentitySecurityEventService securityEventService,
+        IDateTimeProvider clock)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
@@ -65,6 +68,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         _refreshTokenGenerator = refreshTokenGenerator;
         _refreshTokenHasher = refreshTokenHasher;
         _securityEventService = securityEventService;
+        _clock = clock;
     }
 
     public async Task<Result<LoginResult>> Handle(
@@ -108,7 +112,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
             return LoginFailureResults.AccountInactive();
         }
 
-        if (user.IsLockedOut && user.LockoutEndUtc > DateTime.UtcNow)
+        if (user.IsLockedOut && user.LockoutEndUtc > _clock.UtcNow)
         {
             await _securityEventService.TrackLoginFailedAsync(
                 userId: user.Id,
@@ -157,13 +161,13 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         var deviceInfo = DeviceInfo.Create(deviceId, deviceName, userAgent, request.IpAddress);
 
         // Create the UserSession (which internally creates a bound RefreshTokenFamily).
-        var session = UserSession.Create(user.Id, deviceInfo, DateTime.UtcNow);
+        var session = UserSession.Create(user.Id, deviceInfo, _clock.UtcNow);
 
         // Issue the first refresh token (raw + hash + lifetime via Application abstractions)
         // and bind it to the newly-created family.
         var refreshValue = _refreshTokenGenerator.Generate();
         var refreshTokenHashHex = _refreshTokenHasher.Hash(refreshValue);
-        var refreshExpiresAt = DateTime.UtcNow.Add(_refreshTokenLifetime.RefreshTokenLifetime);
+        var refreshExpiresAt = _clock.UtcNow.Add(_refreshTokenLifetime.RefreshTokenLifetime);
         var firstToken = RefreshToken.Issue(
             user.Id, session.Family!.Id, refreshTokenHashHex, refreshExpiresAt, request.IpAddress);
         session.Family.AddToken(firstToken);

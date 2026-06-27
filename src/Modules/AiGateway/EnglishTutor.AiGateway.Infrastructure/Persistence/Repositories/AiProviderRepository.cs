@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiProvider;
@@ -25,6 +26,14 @@ public class AiProviderRepository : IAiProviderRepository
     {
         var codeNormalized = code.ToLowerInvariant().Trim();
         return await _context.Providers.FirstOrDefaultAsync(p => p.Code == codeNormalized, ct);
+    }
+
+    public async Task<IReadOnlyList<AiProvider>> ListAsync(CancellationToken ct = default)
+    {
+        return await _context.Providers
+            .AsNoTracking()
+            .OrderBy(p => p.Name).ThenBy(p => p.Id)
+            .ToListAsync(ct);
     }
 
     public async Task AddAsync(AiProvider provider, CancellationToken ct = default)

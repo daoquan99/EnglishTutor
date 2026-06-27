@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRoutingRule;
@@ -19,6 +20,33 @@ public class AiRoutingRuleRepository : IAiRoutingRuleRepository
     public async Task<AiRoutingRule?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.RoutingRules.FirstOrDefaultAsync(r => r.Id == id, ct);
+    }
+
+    public async Task<AiRoutingRule?> FindActiveMatchAsync(
+        string activityType,
+        string topicCode,
+        string scenarioCode,
+        CancellationToken ct = default)
+    {
+        var activity = activityType.ToLowerInvariant().Trim();
+        var topic = topicCode.ToLowerInvariant().Trim();
+        var scenario = scenarioCode.ToLowerInvariant().Trim();
+
+        return await _context.RoutingRules
+            .Where(r => r.IsActive
+                && r.ActivityType == activity
+                && r.TopicCode == topic
+                && r.ScenarioCode == scenario)
+            .OrderBy(r => r.Id)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<AiRoutingRule>> ListAsync(CancellationToken ct = default)
+    {
+        return await _context.RoutingRules
+            .AsNoTracking()
+            .OrderBy(r => r.Name).ThenBy(r => r.Id)
+            .ToListAsync(ct);
     }
 
     public async Task AddAsync(AiRoutingRule rule, CancellationToken ct = default)

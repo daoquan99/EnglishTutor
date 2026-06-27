@@ -1,14 +1,22 @@
 using System;
 using EnglishTutor.AiGateway.Application;
+using EnglishTutor.AiGateway.Application.Abstractions;
+using EnglishTutor.AiGateway.Application.Abstractions.Audit;
 using EnglishTutor.AiGateway.Application.Abstractions.Persistence;
+using EnglishTutor.AiGateway.Application.Abstractions.Providers;
+using EnglishTutor.AiGateway.Application.Abstractions.Security;
 using EnglishTutor.AiGateway.Contracts;
+using FluentValidation;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiModel.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiProvider.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiProviderKey.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRouteLease.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRoutingRule.Repositories;
+using EnglishTutor.AiGateway.Infrastructure.Audit;
 using EnglishTutor.AiGateway.Infrastructure.Persistence;
 using EnglishTutor.AiGateway.Infrastructure.Persistence.Repositories;
+using EnglishTutor.AiGateway.Infrastructure.Providers;
+using EnglishTutor.AiGateway.Infrastructure.Security;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -37,25 +45,37 @@ public static class ServiceCollectionExtensions
             ?? throw new InvalidOperationException(
                 "ConnectionStrings:Default must be configured for AI Gateway.");
 
-        // Register AiGatewayDbContext with the AuditableEntitySaveChangesInterceptor resolved from service provider
+        services
+            .AddOptions<AiGatewayOptions>()
+            .Bind(configuration.GetSection(AiGatewayOptions.SectionName));
+
         services.AddDbContext<AiGatewayDbContext>((sp, options) =>
         {
             options.UseNpgsql(connectionString);
             options.AddAuditableEntityInterceptor(sp);
         });
 
-        // Add the application service contract
         services.AddScoped<IAiGatewayModule, AiGatewayService>();
+        services.AddValidatorsFromAssembly(typeof(AiGatewayService).Assembly);
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AiGatewayService).Assembly));
 
-        // Add the infrastructure repositories
         services.AddScoped<IAiProviderRepository, AiProviderRepository>();
         services.AddScoped<IAiModelRepository, AiModelRepository>();
         services.AddScoped<IAiProviderKeyRepository, AiProviderKeyRepository>();
         services.AddScoped<IAiRoutingRuleRepository, AiRoutingRuleRepository>();
         services.AddScoped<IAiRouteLeaseRepository, AiRouteLeaseRepository>();
 
-        // Add the unit of work
         services.AddScoped<IAiGatewayUnitOfWork, AiGatewayUnitOfWork>();
+
+        // Provider key protection (AES-GCM at rest) + audit forwarding.
+        services.AddSingleton<IAiKeyProtector, AesGcmAiKeyProtector>();
+        services.AddScoped<IAiGatewayAuditPort, AuditModuleAiGatewayAuditPort>();
+
+        // Provider adapters + execution gateway. The mock adapter is the safe
+        // in-process baseline; real provider adapters register the same interface.
+        services.AddSingleton<IAiProviderAdapter, MockProviderAdapter>();
+        services.AddSingleton<IAiProviderAdapterRegistry, AiProviderAdapterRegistry>();
+        services.AddScoped<IAiProviderExecutionGateway, AiProviderExecutionGateway>();
 
         return services;
     }

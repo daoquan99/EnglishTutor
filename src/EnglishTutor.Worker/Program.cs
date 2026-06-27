@@ -39,6 +39,18 @@ builder.Services
         "Worker:RefreshTokenRetentionDays must be between 1 and 365 days.")
     .Validate(o => o.ShutdownTimeout > TimeSpan.Zero,
         "Worker:ShutdownTimeout must be greater than zero.")
+    .Validate(o => o.QuotaReservationExpiryInterval > TimeSpan.Zero,
+        "Worker:QuotaReservationExpiryInterval must be greater than zero.")
+    .Validate(o => o.QuotaReservationExpiryBatchSize > 0,
+        "Worker:QuotaReservationExpiryBatchSize must be greater than zero.")
+    .Validate(o => o.AiRouteLeaseExpiryInterval > TimeSpan.Zero,
+        "Worker:AiRouteLeaseExpiryInterval must be greater than zero.")
+    .Validate(o => o.AiRouteLeaseExpiryBatchSize > 0,
+        "Worker:AiRouteLeaseExpiryBatchSize must be greater than zero.")
+    .Validate(o => o.UsageAggregationInterval > TimeSpan.Zero,
+        "Worker:UsageAggregationInterval must be greater than zero.")
+    .Validate(o => o.KeyCooldownReleaseInterval > TimeSpan.Zero,
+        "Worker:KeyCooldownReleaseInterval must be greater than zero.")
     .ValidateOnStart();
 
 // Health checks
@@ -62,6 +74,7 @@ builder.Services.AddAiGatewayModule(builder.Configuration);
 builder.Services.AddHostedService<WorkerSchemaReadinessHostedService>();
 builder.Services.AddHostedService<ExpiredRefreshTokensCleanupHostedService>();
 builder.Services.AddHostedService<QuotaExpiredReservationCleanupHostedService>();
+builder.Services.AddHostedService<ExpireAiRouteLeasesHostedService>();
 
 builder.Services.AddWorkerBrokerMessaging<IIdentityBus>(
     builder.Configuration,

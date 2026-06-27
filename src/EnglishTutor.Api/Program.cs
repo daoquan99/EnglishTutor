@@ -1,5 +1,10 @@
 using EnglishTutor.AiGateway.Infrastructure.Extensions;
 using EnglishTutor.AiGateway.Infrastructure.Persistence;
+using EnglishTutor.AiGateway.Presentation;
+using EnglishTutor.Practice.Infrastructure.Extensions;
+using EnglishTutor.Practice.Presentation;
+using EnglishTutor.Realtime.Infrastructure.Extensions;
+using EnglishTutor.Realtime.Presentation;
 using EnglishTutor.Audit.Infrastructure;
 using EnglishTutor.Audit.Infrastructure.Messaging;
 using EnglishTutor.Audit.Infrastructure.Persistence;
@@ -45,6 +50,9 @@ builder.Services.AddLearningInfrastructure(builder.Configuration);
 builder.Services.AddLearningPresentation(builder.Configuration);
 builder.Services.AddQuotaModule(builder.Configuration);
 builder.Services.AddAiGatewayModule(builder.Configuration);
+builder.Services.AddPracticeModule(builder.Configuration);
+builder.Services.AddRealtimeInfrastructure(builder.Configuration);
+builder.Services.AddRealtimePresentation(builder.Configuration);
 
 var inProcessAuditConsumer = builder.Configuration.GetValue<bool>("Messaging:InProcessAuditConsumer");
 
@@ -132,6 +140,9 @@ app.MapBaseHealthChecks();
 app.MapIdentityEndpoints();
 app.MapAuditEndpoints();
 app.MapLearningEndpoints();
+app.MapAiGatewayEndpoints();
+app.MapPracticeModuleEndpoints();
+app.MapRealtimeHubs();
 
 // Minimal API root
 app.MapGet("/", () => Results.Ok(new

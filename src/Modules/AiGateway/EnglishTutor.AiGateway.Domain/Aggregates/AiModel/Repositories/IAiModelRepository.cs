@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,6 +12,8 @@ public interface IAiModelRepository
 {
     Task<AiModel?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<AiModel?> GetByCodeAsync(string code, CancellationToken ct = default);
+    Task<IReadOnlyList<AiModel>> ListAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<AiModel>> ListByProviderAsync(Guid providerId, CancellationToken ct = default);
     Task AddAsync(AiModel model, CancellationToken ct = default);
     void Update(AiModel model);
 }

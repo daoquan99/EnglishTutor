@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRouteLease;
@@ -37,5 +39,14 @@ public class AiRouteLeaseRepository : IAiRouteLeaseRepository
     public void Update(AiRouteLease lease)
     {
         _context.RouteLeases.Update(lease);
+    }
+
+    public async Task<List<AiRouteLease>> GetExpiredActiveLeasesAsync(DateTime now, int batchSize, CancellationToken ct = default)
+    {
+        return await _context.RouteLeases
+            .Where(l => l.Status == AiRouteLeaseStatus.Reserved && l.ExpiryAtUtc < now)
+            .OrderBy(l => l.ExpiryAtUtc)
+            .Take(batchSize)
+            .ToListAsync(ct);
     }
 }

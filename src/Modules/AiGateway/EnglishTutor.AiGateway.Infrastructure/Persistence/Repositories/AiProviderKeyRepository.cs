@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiProviderKey;
@@ -19,6 +20,23 @@ public class AiProviderKeyRepository : IAiProviderKeyRepository
     public async Task<AiProviderKey?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.ProviderKeys.FirstOrDefaultAsync(k => k.Id == id, ct);
+    }
+
+    public async Task<IReadOnlyList<AiProviderKey>> ListByProviderAsync(Guid providerId, CancellationToken ct = default)
+    {
+        return await _context.ProviderKeys
+            .AsNoTracking()
+            .Where(k => k.ProviderId == providerId)
+            .OrderBy(k => k.Priority).ThenBy(k => k.Id)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<AiProviderKey>> ListActiveByProviderByPriorityAsync(Guid providerId, CancellationToken ct = default)
+    {
+        return await _context.ProviderKeys
+            .Where(k => k.ProviderId == providerId && k.IsActive)
+            .OrderBy(k => k.Priority).ThenBy(k => k.Id)
+            .ToListAsync(ct);
     }
 
     public async Task AddAsync(AiProviderKey key, CancellationToken ct = default)

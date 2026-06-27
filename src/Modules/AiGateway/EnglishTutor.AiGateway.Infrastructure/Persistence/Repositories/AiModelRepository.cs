@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiModel;
@@ -25,6 +26,23 @@ public class AiModelRepository : IAiModelRepository
     {
         var codeNormalized = code.ToLowerInvariant().Trim();
         return await _context.Models.FirstOrDefaultAsync(m => m.Code == codeNormalized, ct);
+    }
+
+    public async Task<IReadOnlyList<AiModel>> ListAsync(CancellationToken ct = default)
+    {
+        return await _context.Models
+            .AsNoTracking()
+            .OrderBy(m => m.Name).ThenBy(m => m.Id)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<AiModel>> ListByProviderAsync(Guid providerId, CancellationToken ct = default)
+    {
+        return await _context.Models
+            .AsNoTracking()
+            .Where(m => m.ProviderId == providerId)
+            .OrderBy(m => m.Name).ThenBy(m => m.Id)
+            .ToListAsync(ct);
     }
 
     public async Task AddAsync(AiModel model, CancellationToken ct = default)

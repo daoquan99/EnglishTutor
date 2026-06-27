@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,4 +14,5 @@ public interface IAiRouteLeaseRepository
     Task<AiRouteLease?> GetByIdempotencyKeyAsync(Guid userId, string idempotencyKey, CancellationToken ct = default);
     Task AddAsync(AiRouteLease lease, CancellationToken ct = default);
     void Update(AiRouteLease lease);
+    Task<List<AiRouteLease>> GetExpiredActiveLeasesAsync(DateTime now, int batchSize, CancellationToken ct = default);
 }

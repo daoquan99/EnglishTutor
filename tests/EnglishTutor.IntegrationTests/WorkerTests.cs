@@ -5,6 +5,8 @@ using EnglishTutor.Learning.Infrastructure.Persistence;
 using WorkerOptions = WorkerAssembly::EnglishTutor.Worker.Options.WorkerOptions;
 using WorkerSchemaReadinessHostedService = WorkerAssembly::EnglishTutor.Worker.Readiness.WorkerSchemaReadinessHostedService;
 using ExpiredRefreshTokensCleanupHostedService = WorkerAssembly::EnglishTutor.Worker.Jobs.ExpiredRefreshTokensCleanupHostedService;
+using ExpireAiRouteLeasesHostedService = WorkerAssembly::EnglishTutor.Worker.HostedServices.ExpireAiRouteLeasesHostedService;
+using ExpireAiRouteLeasesCommand = EnglishTutor.AiGateway.Application.RouteLeases.Commands.ExpireAiRouteLeases.ExpireAiRouteLeasesCommand;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,7 +38,13 @@ public class WorkerTests
                 ["Worker:JobsEnabled"] = "true",
                 ["Worker:RefreshTokenCleanupInterval"] = "00:00:00", // Invalid: must be > TimeSpan.Zero
                 ["Worker:RefreshTokenRetentionDays"] = "0", // Invalid: must be >= 1
-                ["Worker:ShutdownTimeout"] = "-00:00:10" // Invalid: must be > TimeSpan.Zero
+                ["Worker:ShutdownTimeout"] = "-00:00:10", // Invalid: must be > TimeSpan.Zero
+                ["Worker:QuotaReservationExpiryInterval"] = "00:00:00", // Invalid
+                ["Worker:QuotaReservationExpiryBatchSize"] = "0", // Invalid
+                ["Worker:AiRouteLeaseExpiryInterval"] = "00:00:00", // Invalid
+                ["Worker:AiRouteLeaseExpiryBatchSize"] = "0", // Invalid
+                ["Worker:UsageAggregationInterval"] = "00:00:00", // Invalid
+                ["Worker:KeyCooldownReleaseInterval"] = "00:00:00" // Invalid
             })
             .Build();
 
@@ -49,6 +57,18 @@ public class WorkerTests
                 "Worker:RefreshTokenRetentionDays must be between 1 and 365 days.")
             .Validate(o => o.ShutdownTimeout > TimeSpan.Zero,
                 "Worker:ShutdownTimeout must be greater than zero.")
+            .Validate(o => o.QuotaReservationExpiryInterval > TimeSpan.Zero,
+                "Worker:QuotaReservationExpiryInterval must be greater than zero.")
+            .Validate(o => o.QuotaReservationExpiryBatchSize > 0,
+                "Worker:QuotaReservationExpiryBatchSize must be greater than zero.")
+            .Validate(o => o.AiRouteLeaseExpiryInterval > TimeSpan.Zero,
+                "Worker:AiRouteLeaseExpiryInterval must be greater than zero.")
+            .Validate(o => o.AiRouteLeaseExpiryBatchSize > 0,
+                "Worker:AiRouteLeaseExpiryBatchSize must be greater than zero.")
+            .Validate(o => o.UsageAggregationInterval > TimeSpan.Zero,
+                "Worker:UsageAggregationInterval must be greater than zero.")
+            .Validate(o => o.KeyCooldownReleaseInterval > TimeSpan.Zero,
+                "Worker:KeyCooldownReleaseInterval must be greater than zero.")
             .ValidateOnStart();
 
         var provider = services.BuildServiceProvider();
@@ -61,7 +81,13 @@ public class WorkerTests
             .And.Message.Should().ContainAll(
                 "Worker:RefreshTokenCleanupInterval must be greater than zero.",
                 "Worker:RefreshTokenRetentionDays must be between 1 and 365 days.",
-                "Worker:ShutdownTimeout must be greater than zero.");
+                "Worker:ShutdownTimeout must be greater than zero.",
+                "Worker:QuotaReservationExpiryInterval must be greater than zero.",
+                "Worker:QuotaReservationExpiryBatchSize must be greater than zero.",
+                "Worker:AiRouteLeaseExpiryInterval must be greater than zero.",
+                "Worker:AiRouteLeaseExpiryBatchSize must be greater than zero.",
+                "Worker:UsageAggregationInterval must be greater than zero.",
+                "Worker:KeyCooldownReleaseInterval must be greater than zero.");
     }
 
     [Fact]
@@ -75,7 +101,13 @@ public class WorkerTests
                 ["Worker:JobsEnabled"] = "true",
                 ["Worker:RefreshTokenCleanupInterval"] = "12:00:00",
                 ["Worker:RefreshTokenRetentionDays"] = "30",
-                ["Worker:ShutdownTimeout"] = "00:00:30"
+                ["Worker:ShutdownTimeout"] = "00:00:30",
+                ["Worker:QuotaReservationExpiryInterval"] = "00:05:00",
+                ["Worker:QuotaReservationExpiryBatchSize"] = "100",
+                ["Worker:AiRouteLeaseExpiryInterval"] = "00:05:00",
+                ["Worker:AiRouteLeaseExpiryBatchSize"] = "100",
+                ["Worker:UsageAggregationInterval"] = "01:00:00",
+                ["Worker:KeyCooldownReleaseInterval"] = "00:05:00"
             })
             .Build();
 
@@ -88,6 +120,18 @@ public class WorkerTests
                 "Worker:RefreshTokenRetentionDays must be between 1 and 365 days.")
             .Validate(o => o.ShutdownTimeout > TimeSpan.Zero,
                 "Worker:ShutdownTimeout must be greater than zero.")
+            .Validate(o => o.QuotaReservationExpiryInterval > TimeSpan.Zero,
+                "Worker:QuotaReservationExpiryInterval must be greater than zero.")
+            .Validate(o => o.QuotaReservationExpiryBatchSize > 0,
+                "Worker:QuotaReservationExpiryBatchSize must be greater than zero.")
+            .Validate(o => o.AiRouteLeaseExpiryInterval > TimeSpan.Zero,
+                "Worker:AiRouteLeaseExpiryInterval must be greater than zero.")
+            .Validate(o => o.AiRouteLeaseExpiryBatchSize > 0,
+                "Worker:AiRouteLeaseExpiryBatchSize must be greater than zero.")
+            .Validate(o => o.UsageAggregationInterval > TimeSpan.Zero,
+                "Worker:UsageAggregationInterval must be greater than zero.")
+            .Validate(o => o.KeyCooldownReleaseInterval > TimeSpan.Zero,
+                "Worker:KeyCooldownReleaseInterval must be greater than zero.")
             .ValidateOnStart();
 
         var provider = services.BuildServiceProvider();
@@ -100,6 +144,12 @@ public class WorkerTests
         options.RefreshTokenCleanupInterval.Should().Be(TimeSpan.FromHours(12));
         options.RefreshTokenRetentionDays.Should().Be(30);
         options.ShutdownTimeout.Should().Be(TimeSpan.FromSeconds(30));
+        options.QuotaReservationExpiryInterval.Should().Be(TimeSpan.FromMinutes(5));
+        options.QuotaReservationExpiryBatchSize.Should().Be(100);
+        options.AiRouteLeaseExpiryInterval.Should().Be(TimeSpan.FromMinutes(5));
+        options.AiRouteLeaseExpiryBatchSize.Should().Be(100);
+        options.UsageAggregationInterval.Should().Be(TimeSpan.FromHours(1));
+        options.KeyCooldownReleaseInterval.Should().Be(TimeSpan.FromMinutes(5));
     }
 
     [Fact]
@@ -195,6 +245,44 @@ public class WorkerTests
             // Clean up: reset ExitCode to 0 so it doesn't affect other tests/test runners.
             Environment.ExitCode = 0;
         }
+    }
+
+    [Fact]
+    public async Task ExpireAiRouteLeasesHostedService_Should_Dispatch_Command()
+    {
+        // Arrange
+        var scopeFactory = Substitute.For<IServiceScopeFactory>();
+        var scope = Substitute.For<IServiceScope>();
+        var serviceProvider = Substitute.For<IServiceProvider>();
+        var sender = Substitute.For<ISender>();
+        var logger = NullLogger<ExpireAiRouteLeasesHostedService>.Instance;
+
+        scopeFactory.CreateScope().Returns(scope);
+        scope.ServiceProvider.Returns(serviceProvider);
+        serviceProvider.GetService(typeof(ISender)).Returns(sender);
+        serviceProvider.GetRequiredService<ISender>().Returns(sender);
+
+        var workerOptions = new WorkerOptions
+        {
+            JobsEnabled = true,
+            EnableAiRouteLeaseExpiry = true,
+            AiRouteLeaseExpiryInterval = TimeSpan.FromSeconds(1),
+            AiRouteLeaseExpiryBatchSize = 10
+        };
+        var optionsWrapper = Microsoft.Extensions.Options.Options.Create(workerOptions);
+
+        var service = new ExpireAiRouteLeasesHostedService(scopeFactory, logger, optionsWrapper);
+
+        // Act
+        var method = typeof(ExpireAiRouteLeasesHostedService)
+            .GetMethod("ProcessExpiredLeasesAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        await (Task)method!.Invoke(service, new object[] { CancellationToken.None })!;
+
+        // Assert
+        await sender.Received(1).Send(
+            Arg.Is<ExpireAiRouteLeasesCommand>(c => c.BatchSize == 10),
+            Arg.Any<CancellationToken>());
     }
 }
 

@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace EnglishTutor.Worker.Options;
@@ -40,4 +41,20 @@ public sealed class WorkerOptions
     /// Default is 30 seconds.
     /// </summary>
     public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public bool EnableQuotaReservationExpiry { get; set; } = true;
+    public TimeSpan QuotaReservationExpiryInterval { get; set; } = TimeSpan.FromMinutes(5);
+    public int QuotaReservationExpiryBatchSize { get; set; } = 100;
+
+    public bool EnableAiRouteLeaseExpiry { get; set; } = true;
+    public TimeSpan AiRouteLeaseExpiryInterval { get; set; } = TimeSpan.FromMinutes(5);
+    public int AiRouteLeaseExpiryBatchSize { get; set; } = 100;
+
+    public bool EnableExpiredRefreshTokenCleanup { get; set; } = true;
+
+    public bool EnableUsageAggregation { get; set; } = false;
+    public TimeSpan UsageAggregationInterval { get; set; } = TimeSpan.FromHours(1);
+
+    public bool EnableKeyCooldownRelease { get; set; } = false;
+    public TimeSpan KeyCooldownReleaseInterval { get; set; } = TimeSpan.FromMinutes(5);
 }

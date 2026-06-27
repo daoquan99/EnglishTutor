@@ -22,6 +22,12 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 
+using EnglishTutor.BuildingBlocks.Application.DateTime;
+using EnglishTutor.Quota.Application.Reservations.Commands.ReserveQuota;
+using EnglishTutor.Quota.Application.Reservations.Commands.ConfirmSessionUsage;
+using EnglishTutor.Quota.Application.Reservations.Commands.CancelReservation;
+using MediatR;
+
 namespace EnglishTutor.IntegrationTests.Quota;
 
 public class QuotaServiceTests
@@ -34,6 +40,7 @@ public class QuotaServiceTests
     private readonly IRateLimitEventRepository _rateLimitEventRepository;
     private readonly QuotaService _quotaService;
     private readonly QuotaOptions _options;
+    private readonly IDateTimeProvider _clock;
 
     public QuotaServiceTests()
     {
@@ -43,6 +50,8 @@ public class QuotaServiceTests
         _reservationRepository = Substitute.For<IQuotaReservationRepository>();
         _usageLogRepository = Substitute.For<IUsageLogRepository>();
         _rateLimitEventRepository = Substitute.For<IRateLimitEventRepository>();
+        _clock = Substitute.For<IDateTimeProvider>();
+        _clock.UtcNow.Returns(DateTime.UtcNow);
 
         _unitOfWork.UserQuotaRules.Returns(_ruleRepository);
         _unitOfWork.UserQuotaStates.Returns(_stateRepository);
@@ -62,7 +71,20 @@ public class QuotaServiceTests
         };
 
         var optionsWrapper = Options.Create(_options);
-        _quotaService = new QuotaService(_unitOfWork, optionsWrapper);
+        var sender = Substitute.For<ISender>();
+
+        var reserveHandler = new ReserveQuotaCommandHandler(_unitOfWork, optionsWrapper, _clock);
+        var confirmHandler = new ConfirmSessionUsageCommandHandler(_unitOfWork, optionsWrapper, _clock);
+        var cancelHandler = new CancelReservationCommandHandler(_unitOfWork, optionsWrapper, _clock);
+
+        sender.Send(Arg.Any<ReserveQuotaCommand>(), Arg.Any<CancellationToken>())
+            .Returns(async call => await reserveHandler.Handle((ReserveQuotaCommand)call[0], (CancellationToken)call[1]));
+        sender.Send(Arg.Any<ConfirmSessionUsageCommand>(), Arg.Any<CancellationToken>())
+            .Returns(async call => await confirmHandler.Handle((ConfirmSessionUsageCommand)call[0], (CancellationToken)call[1]));
+        sender.Send(Arg.Any<CancelReservationCommand>(), Arg.Any<CancellationToken>())
+            .Returns(async call => await cancelHandler.Handle((CancelReservationCommand)call[0], (CancellationToken)call[1]));
+
+        _quotaService = new QuotaService(sender);
     }
 
     [Fact]

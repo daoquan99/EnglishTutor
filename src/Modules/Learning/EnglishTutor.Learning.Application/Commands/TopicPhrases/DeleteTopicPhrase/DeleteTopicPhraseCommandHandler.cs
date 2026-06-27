@@ -6,6 +6,7 @@ using EnglishTutor.BuildingBlocks.Domain.Results;
 using EnglishTutor.Learning.Application.Abstractions.Persistence;
 using EnglishTutor.Learning.Domain.Aggregates.TopicPhrases.Errors;
 using EnglishTutor.Learning.Domain.Aggregates.TopicPhrases.Repositories;
+using EnglishTutor.BuildingBlocks.Application.DateTime;
 
 namespace EnglishTutor.Learning.Application.Commands.TopicPhrases.DeleteTopicPhrase;
 
@@ -13,13 +14,16 @@ public sealed class DeleteTopicPhraseCommandHandler : ICommandHandler<DeleteTopi
 {
     private readonly ITopicPhraseRepository _phraseRepository;
     private readonly ILearningUnitOfWork _unitOfWork;
+    private readonly IDateTimeProvider _clock;
 
     public DeleteTopicPhraseCommandHandler(
         ITopicPhraseRepository phraseRepository,
-        ILearningUnitOfWork unitOfWork)
+        ILearningUnitOfWork unitOfWork,
+        IDateTimeProvider clock)
     {
         _phraseRepository = phraseRepository;
         _unitOfWork = unitOfWork;
+        _clock = clock;
     }
 
     public async Task<Result> Handle(DeleteTopicPhraseCommand request, CancellationToken cancellationToken)
@@ -35,7 +39,7 @@ public sealed class DeleteTopicPhraseCommandHandler : ICommandHandler<DeleteTopi
             return Result.Failure(TopicPhraseErrors.NotFound(request.Id));
         }
 
-        phrase.MarkDeleted(request.UserId, DateTime.UtcNow);
+        phrase.MarkDeleted(request.UserId, _clock.UtcNow);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

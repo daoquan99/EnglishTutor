@@ -4,6 +4,7 @@ using EnglishTutor.Identity.Application.Abstractions.Auth;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.Repositories;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.ValueObjects;
+using EnglishTutor.BuildingBlocks.Application.DateTime;
 
 namespace EnglishTutor.Identity.Application.Commands.Logout;
 
@@ -32,15 +33,18 @@ public sealed class LogoutCommandHandler : ICommandHandler<LogoutCommand>
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly IIdentityUnitOfWork _unitOfWork;
     private readonly IRefreshTokenHasher _refreshTokenHasher;
+    private readonly IDateTimeProvider _clock;
 
     public LogoutCommandHandler(
         IUserSessionRepository userSessionRepository,
         IIdentityUnitOfWork unitOfWork,
-        IRefreshTokenHasher refreshTokenHasher)
+        IRefreshTokenHasher refreshTokenHasher,
+        IDateTimeProvider clock)
     {
         _userSessionRepository = userSessionRepository;
         _unitOfWork = unitOfWork;
         _refreshTokenHasher = refreshTokenHasher;
+        _clock = clock;
     }
 
     public async Task<Result> Handle(
@@ -58,7 +62,7 @@ public sealed class LogoutCommandHandler : ICommandHandler<LogoutCommand>
         }
 
         // Revoke via the UserSession aggregate (cascades the family revocation).
-        snapshot.Session.Revoke(DateTime.UtcNow, revokedByUserId: null, reason: "user_logout");
+        snapshot.Session.Revoke(_clock.UtcNow, revokedByUserId: null, reason: "user_logout");
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();

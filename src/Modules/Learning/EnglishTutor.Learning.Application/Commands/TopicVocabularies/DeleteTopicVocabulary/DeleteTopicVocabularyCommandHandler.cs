@@ -6,6 +6,7 @@ using EnglishTutor.BuildingBlocks.Domain.Results;
 using EnglishTutor.Learning.Application.Abstractions.Persistence;
 using EnglishTutor.Learning.Domain.Aggregates.TopicVocabularies.Errors;
 using EnglishTutor.Learning.Domain.Aggregates.TopicVocabularies.Repositories;
+using EnglishTutor.BuildingBlocks.Application.DateTime;
 
 namespace EnglishTutor.Learning.Application.Commands.TopicVocabularies.DeleteTopicVocabulary;
 
@@ -13,13 +14,16 @@ public sealed class DeleteTopicVocabularyCommandHandler : ICommandHandler<Delete
 {
     private readonly ITopicVocabularyRepository _vocabularyRepository;
     private readonly ILearningUnitOfWork _unitOfWork;
+    private readonly IDateTimeProvider _clock;
 
     public DeleteTopicVocabularyCommandHandler(
         ITopicVocabularyRepository vocabularyRepository,
-        ILearningUnitOfWork unitOfWork)
+        ILearningUnitOfWork unitOfWork,
+        IDateTimeProvider clock)
     {
         _vocabularyRepository = vocabularyRepository;
         _unitOfWork = unitOfWork;
+        _clock = clock;
     }
 
     public async Task<Result> Handle(DeleteTopicVocabularyCommand request, CancellationToken cancellationToken)
@@ -35,7 +39,7 @@ public sealed class DeleteTopicVocabularyCommandHandler : ICommandHandler<Delete
             return Result.Failure(TopicVocabularyErrors.NotFound(request.Id));
         }
 
-        vocabulary.MarkDeleted(request.UserId, DateTime.UtcNow);
+        vocabulary.MarkDeleted(request.UserId, _clock.UtcNow);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

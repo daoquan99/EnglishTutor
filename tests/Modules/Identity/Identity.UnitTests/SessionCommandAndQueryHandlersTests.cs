@@ -21,11 +21,13 @@ public class SessionCommandAndQueryHandlersTests
 {
     private readonly FakeUserSessionRepository _repository;
     private readonly FakeIdentityUnitOfWork _unitOfWork;
+    private readonly FakeDateTimeProvider _clock;
 
     public SessionCommandAndQueryHandlersTests()
     {
         _repository = new FakeUserSessionRepository();
         _unitOfWork = new FakeIdentityUnitOfWork();
+        _clock = new FakeDateTimeProvider(DateTime.UtcNow);
     }
 
     [Fact]
@@ -66,7 +68,7 @@ public class SessionCommandAndQueryHandlersTests
         _repository.Sessions.Add(session2);
 
         var command = new LogoutAllCommand(userId);
-        var handler = new LogoutAllCommandHandler(_repository, _unitOfWork);
+        var handler = new LogoutAllCommandHandler(_repository, _unitOfWork, _clock);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -89,7 +91,7 @@ public class SessionCommandAndQueryHandlersTests
         _repository.Sessions.Add(session);
 
         var command = new RevokeSessionCommand(session.Id, userId, IsAdmin: false);
-        var handler = new RevokeSessionCommandHandler(_repository, _unitOfWork);
+        var handler = new RevokeSessionCommandHandler(_repository, _unitOfWork, _clock);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -111,7 +113,7 @@ public class SessionCommandAndQueryHandlersTests
         _repository.Sessions.Add(session);
 
         var command = new RevokeSessionCommand(session.Id, adminUserId, IsAdmin: true);
-        var handler = new RevokeSessionCommandHandler(_repository, _unitOfWork);
+        var handler = new RevokeSessionCommandHandler(_repository, _unitOfWork, _clock);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -132,7 +134,7 @@ public class SessionCommandAndQueryHandlersTests
         _repository.Sessions.Add(session);
 
         var command = new RevokeSessionCommand(session.Id, otherUserId, IsAdmin: false);
-        var handler = new RevokeSessionCommandHandler(_repository, _unitOfWork);
+        var handler = new RevokeSessionCommandHandler(_repository, _unitOfWork, _clock);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);

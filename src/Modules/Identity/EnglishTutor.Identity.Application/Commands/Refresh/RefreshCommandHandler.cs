@@ -10,6 +10,7 @@ using EnglishTutor.Identity.Domain.Aggregates.Sessions.ValueObjects;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using System.Security.Cryptography;
 using System.Text;
+using EnglishTutor.BuildingBlocks.Application.DateTime;
 
 namespace EnglishTutor.Identity.Application.Commands.Refresh;
 
@@ -37,6 +38,7 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
     private readonly IRefreshTokenGenerator _refreshTokenGenerator;
     private readonly IRefreshTokenHasher _refreshTokenHasher;
     private readonly IIdentitySecurityEventService _securityEventService;
+    private readonly IDateTimeProvider _clock;
 
     public RefreshCommandHandler(
         IUserSessionRepository userSessionRepository,
@@ -47,7 +49,8 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         IRefreshTokenLifetimeProvider refreshTokenLifetime,
         IRefreshTokenGenerator refreshTokenGenerator,
         IRefreshTokenHasher refreshTokenHasher,
-        IIdentitySecurityEventService securityEventService)
+        IIdentitySecurityEventService securityEventService,
+        IDateTimeProvider clock)
     {
         _userSessionRepository = userSessionRepository;
         _userRepository = userRepository;
@@ -58,6 +61,7 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         _refreshTokenGenerator = refreshTokenGenerator;
         _refreshTokenHasher = refreshTokenHasher;
         _securityEventService = securityEventService;
+        _clock = clock;
     }
 
     public async Task<Result<RefreshResult>> Handle(
@@ -90,10 +94,10 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         var family = snapshot.Family;
         var existing = snapshot.ActiveToken;
 
-        if (session.RevokedAtUtc is not null || family.IsRevoked || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= DateTime.UtcNow)
+        if (session.RevokedAtUtc is not null || family.IsRevoked || existing.RevokedAtUtc is not null || existing.ExpiresAtUtc <= _clock.UtcNow)
         {
             string reason = "invalid_token";
-            if (existing.ExpiresAtUtc <= DateTime.UtcNow) reason = "token_expired";
+            if (existing.ExpiresAtUtc <= _clock.UtcNow) reason = "token_expired";
             else if (existing.RevokedAtUtc is not null) reason = "token_revoked";
             else if (family.IsRevoked) reason = "family_revoked";
             else if (session.RevokedAtUtc is not null) reason = "session_revoked";
@@ -123,7 +127,7 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         // Audit module.
         if (existing.IsConsumed)
         {
-            var reuseNowUtc = DateTime.UtcNow;
+            var reuseNowUtc = _clock.UtcNow;
             session.DetectRefreshTokenReuse(existing, reuseNowUtc, reason: "refresh_token_reuse");
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return RefreshFailureResults.ReuseDetected(family.Id);
@@ -132,7 +136,7 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
         // Load the user BEFORE any rotation. Lookup includes soft-deleted rows
         // so a user who was soft-deleted between login and refresh is detected
         // and rejected here rather than silently issued a new access token.
-        var nowUtc = DateTime.UtcNow;
+        var nowUtc = _clock.UtcNow;
         var user = await _userRepository.GetByIdAsync(existing.UserId, includeDeleted: true, cancellationToken);
 
         // Reject deleted / inactive / locked users BEFORE rotation or JWT

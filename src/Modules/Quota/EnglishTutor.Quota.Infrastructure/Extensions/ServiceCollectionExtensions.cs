@@ -13,6 +13,7 @@ using EnglishTutor.Quota.Infrastructure.Persistence;
 using EnglishTutor.Quota.Infrastructure.Persistence.Repositories;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using System;
+using FluentValidation;
 
 namespace EnglishTutor.Quota.Infrastructure.Extensions;
 
@@ -46,6 +47,10 @@ public static class ServiceCollectionExtensions
             options.UseNpgsql(connectionString);
             options.AddAuditableEntityInterceptor(sp);
         });
+
+        // Add MediatR handlers from the Quota Application assembly
+        services.AddValidatorsFromAssembly(typeof(QuotaService).Assembly);
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(QuotaService).Assembly));
 
         // Add the application service (the use case handler)
         services.AddScoped<IQuotaModule, QuotaService>();

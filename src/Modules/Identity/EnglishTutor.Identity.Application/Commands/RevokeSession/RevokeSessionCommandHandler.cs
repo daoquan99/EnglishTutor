@@ -3,6 +3,7 @@ using EnglishTutor.BuildingBlocks.Domain.Results;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.Errors;
 using EnglishTutor.Identity.Domain.Aggregates.Sessions.Repositories;
+using EnglishTutor.BuildingBlocks.Application.DateTime;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,13 +14,16 @@ public sealed class RevokeSessionCommandHandler : ICommandHandler<RevokeSessionC
 {
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly IIdentityUnitOfWork _unitOfWork;
+    private readonly IDateTimeProvider _clock;
 
     public RevokeSessionCommandHandler(
         IUserSessionRepository userSessionRepository,
-        IIdentityUnitOfWork unitOfWork)
+        IIdentityUnitOfWork unitOfWork,
+        IDateTimeProvider clock)
     {
         _userSessionRepository = userSessionRepository;
         _unitOfWork = unitOfWork;
+        _clock = clock;
     }
 
     public async Task<Result> Handle(
@@ -35,7 +39,7 @@ public sealed class RevokeSessionCommandHandler : ICommandHandler<RevokeSessionC
             return Result.Failure(SessionErrors.NotFound(request.SessionId));
         }
 
-        session.Revoke(DateTime.UtcNow, revokedByUserId: request.UserId, reason: "session_revocation");
+        session.Revoke(_clock.UtcNow, revokedByUserId: request.UserId, reason: "session_revocation");
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();

@@ -7,5 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.AiGateway.Application\EnglishTutor.AiGateway.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <!-- AiGateway audit forwards to the Audit module via its public contract only. -->
+    <ProjectReference Include="..\..\Audit\EnglishTutor.Audit.Contracts\EnglishTutor.Audit.Contracts.csproj" />
   </ItemGroup>
 </Project>

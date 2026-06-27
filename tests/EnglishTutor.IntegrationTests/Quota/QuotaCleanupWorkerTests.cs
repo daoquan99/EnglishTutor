@@ -17,6 +17,10 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 
+using MediatR;
+using EnglishTutor.BuildingBlocks.Application.DateTime;
+using EnglishTutor.Quota.Application.Reservations.Commands.ExpireQuotaReservations;
+
 namespace EnglishTutor.IntegrationTests.Quota;
 
 public class QuotaCleanupWorkerTests
@@ -57,7 +61,27 @@ public class QuotaCleanupWorkerTests
         };
 
         var optionsWrapper = Options.Create(_options);
-        _worker = new QuotaExpiredReservationCleanupHostedService(_scopeFactory, _logger, optionsWrapper);
+        var sender = Substitute.For<ISender>();
+        var clock = Substitute.For<IDateTimeProvider>();
+        clock.UtcNow.Returns(DateTime.UtcNow);
+        var handlerLogger = Substitute.For<ILogger<ExpireQuotaReservationsCommandHandler>>();
+        var handler = new ExpireQuotaReservationsCommandHandler(_unitOfWork, optionsWrapper, clock, handlerLogger);
+
+        sender.Send(Arg.Any<ExpireQuotaReservationsCommand>(), Arg.Any<CancellationToken>())
+            .Returns(async call => await handler.Handle((ExpireQuotaReservationsCommand)call[0], (CancellationToken)call[1]));
+
+        _serviceProvider.GetService(typeof(ISender)).Returns(sender);
+        _serviceProvider.GetRequiredService<ISender>().Returns(sender);
+
+        var workerOptions = new WorkerAssembly::EnglishTutor.Worker.Options.WorkerOptions
+        {
+            JobsEnabled = true,
+            EnableQuotaReservationExpiry = true,
+            QuotaReservationExpiryInterval = TimeSpan.FromSeconds(1),
+            QuotaReservationExpiryBatchSize = 5
+        };
+        var workerOptionsWrapper = Options.Create(workerOptions);
+        _worker = new QuotaExpiredReservationCleanupHostedService(_scopeFactory, _logger, workerOptionsWrapper);
     }
 
     [Fact]

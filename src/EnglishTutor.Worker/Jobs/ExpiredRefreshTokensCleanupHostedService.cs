@@ -27,9 +27,9 @@ public sealed class ExpiredRefreshTokensCleanupHostedService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_options.JobsEnabled)
+        if (!_options.JobsEnabled || !_options.EnableExpiredRefreshTokenCleanup)
         {
-            _logger.LogInformation("Expired refresh token cleanup background job is disabled (Worker:JobsEnabled = false).");
+            _logger.LogInformation("Expired refresh token cleanup background job is disabled.");
             return;
         }
 

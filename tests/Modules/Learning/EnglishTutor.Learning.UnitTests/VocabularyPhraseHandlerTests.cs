@@ -38,6 +38,7 @@ public class VocabularyPhraseHandlerTests
     private readonly FakeVocabularyRepository _vocabularyRepository;
     private readonly FakePhraseRepository _phraseRepository;
     private readonly FakeLearningUnitOfWork _unitOfWork;
+    private readonly FakeDateTimeProvider _clock;
 
     public VocabularyPhraseHandlerTests()
     {
@@ -45,6 +46,7 @@ public class VocabularyPhraseHandlerTests
         _vocabularyRepository = new FakeVocabularyRepository();
         _phraseRepository = new FakePhraseRepository();
         _unitOfWork = new FakeLearningUnitOfWork();
+        _clock = new FakeDateTimeProvider(DateTime.UtcNow);
     }
 
     [Theory]
@@ -174,7 +176,7 @@ public class VocabularyPhraseHandlerTests
         _vocabularyRepository.Vocabularies.Add(existing);
 
         var command = new DeleteTopicVocabularyCommand(existing.Id, topic.Id, Guid.NewGuid());
-        var handler = new DeleteTopicVocabularyCommandHandler(_vocabularyRepository, _unitOfWork);
+        var handler = new DeleteTopicVocabularyCommandHandler(_vocabularyRepository, _unitOfWork, _clock);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -452,7 +454,7 @@ public class VocabularyPhraseHandlerTests
         _vocabularyRepository.Vocabularies.Add(existing);
 
         var command = new DeleteTopicVocabularyCommand(existing.Id, topic2, Guid.NewGuid());
-        var handler = new DeleteTopicVocabularyCommandHandler(_vocabularyRepository, _unitOfWork);
+        var handler = new DeleteTopicVocabularyCommandHandler(_vocabularyRepository, _unitOfWork, _clock);
         var result = await handler.Handle(command, CancellationToken.None);
         result.IsSuccess.Should().BeFalse();
     }
@@ -602,6 +604,15 @@ internal class FakePhraseRepository : ITopicPhraseRepository
     public void Add(TopicPhrase phrase)
     {
         Phrases.Add(phrase);
+    }
+}
+
+internal class FakeDateTimeProvider : EnglishTutor.BuildingBlocks.Application.DateTime.IDateTimeProvider
+{
+    public DateTime UtcNow { get; }
+    public FakeDateTimeProvider(DateTime utcNow)
+    {
+        UtcNow = utcNow;
     }
 }
 
