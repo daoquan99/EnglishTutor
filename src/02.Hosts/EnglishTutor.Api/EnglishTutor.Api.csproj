@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <!-- BuildingBlocks -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\01.Orchestration\EnglishTutor.ServiceDefaults\EnglishTutor.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- Module Presentations -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\03.Modules\Identity\EnglishTutor.Identity.Presentation\EnglishTutor.Identity.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Learning\EnglishTutor.Learning.Presentation\EnglishTutor.Learning.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Practice\EnglishTutor.Practice.Presentation\EnglishTutor.Practice.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\AiGateway\EnglishTutor.AiGateway.Presentation\EnglishTutor.AiGateway.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Feedback\EnglishTutor.Feedback.Presentation\EnglishTutor.Feedback.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Audit\EnglishTutor.Audit.Presentation\EnglishTutor.Audit.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Quota\EnglishTutor.Quota.Presentation\EnglishTutor.Quota.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Realtime\EnglishTutor.Realtime.Presentation\EnglishTutor.Realtime.Presentation.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Progress\EnglishTutor.Progress.Presentation\EnglishTutor.Progress.Presentation.csproj" />
+  </ItemGroup>
+
+  <!-- Module Infrastructures (for DI registration) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\03.Modules\Identity\EnglishTutor.Identity.Application\EnglishTutor.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Identity\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Learning\EnglishTutor.Learning.Infrastructure\EnglishTutor.Learning.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Practice\EnglishTutor.Practice.Infrastructure\EnglishTutor.Practice.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Realtime\EnglishTutor.Realtime.Infrastructure\EnglishTutor.Realtime.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\AiGateway\EnglishTutor.AiGateway.Infrastructure\EnglishTutor.AiGateway.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Quota\EnglishTutor.Quota.Infrastructure\EnglishTutor.Quota.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Feedback\EnglishTutor.Feedback.Infrastructure\EnglishTutor.Feedback.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Progress\EnglishTutor.Progress.Infrastructure\EnglishTutor.Progress.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Audit\EnglishTutor.Audit.Infrastructure\EnglishTutor.Audit.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

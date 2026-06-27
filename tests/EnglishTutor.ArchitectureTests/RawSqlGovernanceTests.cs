@@ -23,7 +23,7 @@ namespace EnglishTutor.ArchitectureTests;
 // Allowlist strategy:
 //   - The allowlist is **minimal**. Initial entries are the two sites
 //     identified by the Phase 0 audit:
-//     1. `src/BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/HealthChecks/InfrastructureHealthChecks.cs`
+//     1. `src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/HealthChecks/InfrastructureHealthChecks.cs`
 //        — infrastructure health-check database reachability probe.
 //     2. `tests/EnglishTutor.IntegrationTests/IntegrationTestFactory.cs`
 //        — test-only temporary DB create/drop/terminate.
@@ -51,7 +51,7 @@ public class RawSqlGovernanceTests
         new AllowlistEntry[]
         {
             new AllowlistEntry(
-                RelativePath: "src/BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/HealthChecks/InfrastructureHealthChecks.cs",
+                RelativePath: "src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/HealthChecks/InfrastructureHealthChecks.cs",
                 Reason: "Infrastructure health-check database reachability probe only. "
                       + "The file opens a Npgsql.NpgsqlConnection and runs `SELECT 1` for "
                       + "a TCP-level readiness probe. Documented in "
@@ -267,7 +267,7 @@ public class RawSqlGovernanceTests
     }
 
     /// <summary>
-    /// Scan only migration .cs files under src/Modules/**/Persistence/Migrations/.
+    /// Scan only migration .cs files under src/03.Modules/**/Persistence/Migrations/.
     /// Excludes *.Designer.cs and *ModelSnapshot.cs.
     /// </summary>
     private static List<SourceHit> ScanMigrations(Regex regex)

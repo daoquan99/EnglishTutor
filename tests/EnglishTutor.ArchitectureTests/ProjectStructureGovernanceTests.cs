@@ -12,12 +12,12 @@ public sealed class ProjectStructureGovernanceTests
         ProjectReferenceBaseline = new Dictionary<string, BaselineMetadata>
         {
             [ProjectReferenceKey(
-                "src/EnglishTutor.Api/EnglishTutor.Api.csproj",
+                "src/02.Hosts/EnglishTutor.Api/EnglishTutor.Api.csproj",
                 "EnglishTutor.Identity.Application")] = new(
                 "API directly references Identity.Application.",
                 "Remove after Identity exposes a complete module registration boundary."),
             [ProjectReferenceKey(
-                "src/Modules/Identity/EnglishTutor.Identity.Presentation/EnglishTutor.Identity.Presentation.csproj",
+                "src/03.Modules/Identity/EnglishTutor.Identity.Presentation/EnglishTutor.Identity.Presentation.csproj",
                 "EnglishTutor.Identity.Infrastructure")] = new(
                 "Identity.Presentation directly references Identity.Infrastructure.",
                 "Remove after cookie/infrastructure services are exposed through an allowed boundary.")
@@ -27,7 +27,7 @@ public sealed class ProjectStructureGovernanceTests
         PackageReferenceBaseline = new Dictionary<string, BaselineMetadata>
         {
             [PackageReferenceKey(
-                "src/Modules/Quota/EnglishTutor.Quota.Application/EnglishTutor.Quota.Application.csproj",
+                "src/03.Modules/Quota/EnglishTutor.Quota.Application/EnglishTutor.Quota.Application.csproj",
                 "Microsoft.EntityFrameworkCore")] = new(
                 "Quota.Application catches DbUpdateConcurrencyException.",
                 "Remove after Infrastructure translates provider concurrency failures.")
@@ -36,8 +36,8 @@ public sealed class ProjectStructureGovernanceTests
     private static readonly HashSet<string> AllowedDomainRootFiles = new(
         StringComparer.OrdinalIgnoreCase)
     {
-        "src/Modules/Identity/EnglishTutor.Identity.Domain/IIdentityDomainMarker.cs",
-        "src/Modules/Identity/EnglishTutor.Identity.Domain/IdentityModuleNames.cs"
+        "src/03.Modules/Identity/EnglishTutor.Identity.Domain/IIdentityDomainMarker.cs",
+        "src/03.Modules/Identity/EnglishTutor.Identity.Domain/IdentityModuleNames.cs"
     };
 
     private static readonly IReadOnlyDictionary<string, BaselineMetadata>
@@ -79,6 +79,17 @@ public sealed class ProjectStructureGovernanceTests
             actualViolations,
             DomainPlacementBaseline,
             "domain-placement");
+    }
+
+    [Fact]
+    public void Module_DbContexts_Should_Apply_AggregateRoot_SoftDelete_Conventions()
+    {
+        var violations = DiscoverDbContextsMissingAggregateRootConventions();
+
+        violations.Should().BeEmpty(
+            "module DbContexts must apply the shared AggregateRoot soft-delete query filter convention."
+            + Environment.NewLine
+            + FormatEntries(violations));
     }
 
     private static HashSet<ProjectReferenceViolation> DiscoverProjectReferenceViolations()
@@ -199,6 +210,36 @@ public sealed class ProjectStructureGovernanceTests
         return violations;
     }
 
+    private static HashSet<DbContextConventionViolation> DiscoverDbContextsMissingAggregateRootConventions()
+    {
+        var violations = new HashSet<DbContextConventionViolation>();
+
+        foreach (var file in Directory.EnumerateFiles(SourceRoot, "*DbContext.cs", SearchOption.AllDirectories)
+            .Where(path => path.Contains($"{Path.DirectorySeparatorChar}03.Modules{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            .Where(path => !IsBuildOutput(path))
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)))
+        {
+            var source = File.ReadAllText(file);
+            if (!source.Contains(": DbContext", StringComparison.Ordinal)
+                || !source.Contains("DbSet<", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (source.Contains("ApplyAggregateRootConventions()", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            violations.Add(new DbContextConventionViolation(
+                ToRelativePath(file),
+                "DbContext does not apply AggregateRoot soft-delete conventions.",
+                "Call modelBuilder.ApplyAggregateRootConventions() in OnModelCreating after entity mappings are registered."));
+        }
+
+        return violations;
+    }
+
     private static bool IsAllowedReference(ProjectIdentity source, ProjectIdentity target)
     {
         if (source.IsBuildingBlocks)
@@ -220,14 +261,16 @@ public sealed class ProjectStructureGovernanceTests
 
         if (source.Kind == ProjectKind.ApiHost)
         {
-            return target.IsBuildingBlocks && target.Kind == ProjectKind.Infrastructure
+            return target.Kind == ProjectKind.ServiceDefaults
+                   || target.IsBuildingBlocks && target.Kind == ProjectKind.Infrastructure
                    || target.IsModule
                    && target.Kind is ProjectKind.Presentation or ProjectKind.Infrastructure;
         }
 
         if (source.Kind == ProjectKind.WorkerHost)
         {
-            return target.IsBuildingBlocks && target.Kind == ProjectKind.Infrastructure
+            return target.Kind == ProjectKind.ServiceDefaults
+                   || target.IsBuildingBlocks && target.Kind == ProjectKind.Infrastructure
                    || target.IsModule && target.Kind == ProjectKind.Infrastructure;
         }
 
@@ -386,7 +429,8 @@ public sealed class ProjectStructureGovernanceTests
         Presentation,
         Contracts,
         ApiHost,
-        WorkerHost
+        WorkerHost,
+        ServiceDefaults
     }
 
     private sealed record ProjectIdentity(
@@ -408,6 +452,11 @@ public sealed class ProjectStructureGovernanceTests
             if (name == "EnglishTutor.Worker")
             {
                 return new(name, ProjectKind.WorkerHost, null, false, false);
+            }
+
+            if (name == "EnglishTutor.ServiceDefaults")
+            {
+                return new(name, ProjectKind.ServiceDefaults, null, false, false);
             }
 
             const string buildingBlocksPrefix = "EnglishTutor.BuildingBlocks.";
@@ -456,6 +505,14 @@ public sealed class ProjectStructureGovernanceTests
     }
 
     private sealed record DomainPlacementViolation(
+        string File,
+        string Reason,
+        string RemovalTarget)
+    {
+        public string Key => File;
+    }
+
+    private sealed record DbContextConventionViolation(
         string File,
         string Reason,
         string RemovalTarget)

@@ -12,10 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\Modules\Learning\EnglishTutor.Learning.Domain\EnglishTutor.Learning.Domain.csproj" />
-    <ProjectReference Include="..\..\..\..\src\Modules\Learning\EnglishTutor.Learning.Application\EnglishTutor.Learning.Application.csproj" />
-    <ProjectReference Include="..\..\..\..\src\Modules\Learning\EnglishTutor.Learning.Infrastructure\EnglishTutor.Learning.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\..\src\Modules\Learning\EnglishTutor.Learning.Contracts\EnglishTutor.Learning.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\src\03.Modules\Learning\EnglishTutor.Learning.Application\EnglishTutor.Learning.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\src\03.Modules\Learning\EnglishTutor.Learning.Domain\EnglishTutor.Learning.Domain.csproj" />
+    <ProjectReference Include="..\..\..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

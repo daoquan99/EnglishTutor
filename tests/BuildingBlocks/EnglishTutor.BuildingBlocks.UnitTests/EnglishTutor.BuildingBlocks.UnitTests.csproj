@@ -17,9 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Domain\EnglishTutor.BuildingBlocks.Domain.csproj" />
-    <ProjectReference Include="..\..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
-    <ProjectReference Include="..\..\..\src\BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Domain\EnglishTutor.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

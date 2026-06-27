@@ -153,7 +153,7 @@ Intelligence Node
 Each module implements **Clean Architecture** and tactical **Domain-Driven Design (DDD)** divided into five individual projects.
 
 ```text
-src/Modules/{ModuleName}/
+src/03.Modules/{ModuleName}/
   ├── {ModuleName}.Domain/          - Core entities, value objects, domain exceptions, and business rules.
   ├── {ModuleName}.Application/     - Commands, Queries, Handlers, DTOs, and event publishers.
   ├── {ModuleName}.Infrastructure/  - Module DbContext, EF Configurations, Migrations, and API clients.
@@ -218,12 +218,12 @@ The easiest way to boot the complete environment (PostgreSQL, Redis, API, and ba
    ```
 2. Configure local AppHost secrets:
    ```bash
-   dotnet user-secrets set "Parameters:jwt-secret" "replace-with-at-least-32-byte-local-secret" --project src/Bootstrapper/EnglishTutor.AppHost
-   dotnet user-secrets set "Parameters:seed-admin-password" "replace-with-local-admin-password" --project src/Bootstrapper/EnglishTutor.AppHost
+   dotnet user-secrets set "Parameters:jwt-secret" "replace-with-at-least-32-byte-local-secret" --project src/01.Orchestration/EnglishTutor.AppHost
+   dotnet user-secrets set "Parameters:seed-admin-password" "replace-with-local-admin-password" --project src/01.Orchestration/EnglishTutor.AppHost
    ```
 3. Run the AppHost bootstrapper directly:
    ```bash
-   dotnet run --project src/Bootstrapper/EnglishTutor.AppHost/EnglishTutor.AppHost.csproj
+   dotnet run --project src/01.Orchestration/EnglishTutor.AppHost/EnglishTutor.AppHost.csproj
    ```
 4. Open the **Aspire Dashboard** at the URI printed in your console log (e.g., `http://localhost:18888`) to view active logs, trace spans, metrics, and manage your API/Worker processes.
 
@@ -242,19 +242,19 @@ If you prefer using standard Docker containers and running the .NET projects dir
 2. **Trigger Database Migrations**:
    Set `Database__AutoMigrate=true` in your `.env` or configuration file to automatically apply migrations on startup, or execute standard EF commands:
    ```bash
-   dotnet ef database update --project src/Modules/Auth/EnglishTutor.Modules.Auth.Infrastructure --startup-project src/Bootstrapper/EnglishTutor.Api
+   dotnet ef database update --project src/03.Modules/Auth/EnglishTutor.Modules.Auth.Infrastructure --startup-project src/02.Hosts/EnglishTutor.Api
    ```
 
 3. **Launch the API**:
    Configure `Jwt__Secret` in the shell environment or `dotnet user-secrets` first. If `SeedData__Enabled=true`, also configure `SeedData__Admin__Password`.
    ```bash
-   dotnet run --project src/Bootstrapper/EnglishTutor.Api/EnglishTutor.Api.csproj
+   dotnet run --project src/02.Hosts/EnglishTutor.Api/EnglishTutor.Api.csproj
    ```
    *The Swagger API documentation will be available at:* `https://localhost:5001/swagger` (or `http://localhost:5000/swagger`)
 
 4. **Launch the Worker Host**:
    ```bash
-   dotnet run --project src/Bootstrapper/EnglishTutor.Worker/EnglishTutor.Worker.csproj
+   dotnet run --project src/02.Hosts/EnglishTutor.Worker/EnglishTutor.Worker.csproj
    ```
    *The background worker processes the outbox and triggers Quartz jobs.*
 
@@ -303,7 +303,7 @@ To enforce strict modular boundaries, **EnglishTutor** uses a single physical da
 ### Generating a New Migration
 When making changes to entities in a specific module (e.g. `Vocabulary`), execute the migration CLI from the root workspace directory, pointing specifically to the infrastructure assembly:
 ```bash
-dotnet ef migrations add AddVocabularyMasteryTable --project src/Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Infrastructure --startup-project src/Bootstrapper/EnglishTutor.Api --output-dir Migrations --context VocabularyDbContext
+dotnet ef migrations add AddVocabularyMasteryTable --project src/03.Modules/Vocabulary/EnglishTutor.Modules.Vocabulary.Infrastructure --startup-project src/02.Hosts/EnglishTutor.Api --output-dir Migrations --context VocabularyDbContext
 ```
 
 ---

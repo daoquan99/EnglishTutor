@@ -1,0 +1,60 @@
+using System;
+using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.Feedback.Application.Abstractions.Persistence;
+using EnglishTutor.Feedback.Domain.Aggregates.SessionFeedback.Repositories;
+using EnglishTutor.Feedback.Infrastructure.Persistence;
+using EnglishTutor.Feedback.Infrastructure.Persistence.Repositories;
+using FluentValidation;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+using EnglishTutor.Feedback.Application.Abstractions.Messaging;
+using EnglishTutor.Feedback.Infrastructure.Messaging;
+using EnglishTutor.BuildingBlocks.Application.DomainEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
+using EnglishTutor.Feedback.Domain.Aggregates.SessionFeedback.Events;
+using EnglishTutor.Feedback.Application.Messaging.DomainEventHandlers;
+
+namespace EnglishTutor.Feedback.Infrastructure.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddFeedbackModule(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var connectionString = configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException(
+                "ConnectionStrings:Default must be configured for Feedback.");
+
+        services.AddDbContext<FeedbackDbContext>((sp, options) =>
+        {
+            options.UseNpgsql(connectionString);
+            options.AddAuditableEntityInterceptor(sp);
+        });
+
+        // Register MediatR & FluentValidation for Feedback application assembly
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IFeedbackUnitOfWork).Assembly));
+        services.AddValidatorsFromAssembly(typeof(IFeedbackUnitOfWork).Assembly);
+
+        // Register Repositories & Unit of Work
+        services.AddScoped<ISessionFeedbackRepository, SessionFeedbackRepository>();
+        services.AddScoped<IFeedbackUnitOfWork, FeedbackUnitOfWork>();
+
+        // Register Facade Service
+        services.AddScoped<EnglishTutor.Feedback.Contracts.IFeedbackModule, EnglishTutor.Feedback.Application.FeedbackService>();
+
+        // Outbox Publisher
+        services.AddScoped<IFeedbackIntegrationEventPublisher, MassTransitFeedbackIntegrationEventPublisher>();
+
+        // Domain Event Handlers
+        services.AddDomainEventDispatcher();
+        services.AddDomainEventHandler<FeedbackCompletedDomainEvent, FeedbackCompletedDomainEventHandler>();
+
+        return services;
+    }
+}

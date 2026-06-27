@@ -1,7 +1,11 @@
 extern alias WorkerAssembly;
+using EnglishTutor.AiGateway.Infrastructure.Persistence;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Audit.Infrastructure.Persistence;
+using EnglishTutor.Feedback.Infrastructure.Persistence;
 using EnglishTutor.Learning.Infrastructure.Persistence;
+using EnglishTutor.Practice.Infrastructure.Persistence;
+using EnglishTutor.Quota.Infrastructure.Persistence;
 using WorkerOptions = WorkerAssembly::EnglishTutor.Worker.Options.WorkerOptions;
 using WorkerSchemaReadinessHostedService = WorkerAssembly::EnglishTutor.Worker.Readiness.WorkerSchemaReadinessHostedService;
 using ExpiredRefreshTokensCleanupHostedService = WorkerAssembly::EnglishTutor.Worker.Jobs.ExpiredRefreshTokensCleanupHostedService;
@@ -167,10 +171,26 @@ public class WorkerTests
         var learningOptions = new DbContextOptionsBuilder<LearningDbContext>()
             .UseInMemoryDatabase("LearningTestDb_Schema")
             .Options;
+        var aiGatewayOptions = new DbContextOptionsBuilder<AiGatewayDbContext>()
+            .UseInMemoryDatabase("AiGatewayTestDb_Schema")
+            .Options;
+        var quotaOptions = new DbContextOptionsBuilder<QuotaDbContext>()
+            .UseInMemoryDatabase("QuotaTestDb_Schema")
+            .Options;
+        var practiceOptions = new DbContextOptionsBuilder<PracticeDbContext>()
+            .UseInMemoryDatabase("PracticeTestDb_Schema")
+            .Options;
+        var feedbackOptions = new DbContextOptionsBuilder<FeedbackDbContext>()
+            .UseInMemoryDatabase("FeedbackTestDb_Schema")
+            .Options;
 
         var identityDb = new IdentityDbContext(identityOptions);
         var auditDb = new AuditDbContext(auditOptions);
         var learningDb = new LearningDbContext(learningOptions);
+        var aiGatewayDb = new AiGatewayDbContext(aiGatewayOptions);
+        var quotaDb = new QuotaDbContext(quotaOptions);
+        var practiceDb = new PracticeDbContext(practiceOptions);
+        var feedbackDb = new FeedbackDbContext(feedbackOptions);
 
         var serviceProvider = Substitute.For<IServiceProvider>();
         var serviceScope = Substitute.For<IServiceScope>();
@@ -182,6 +202,10 @@ public class WorkerTests
         scopedProvider.GetService(typeof(IdentityDbContext)).Returns(identityDb);
         scopedProvider.GetService(typeof(AuditDbContext)).Returns(auditDb);
         scopedProvider.GetService(typeof(LearningDbContext)).Returns(learningDb);
+        scopedProvider.GetService(typeof(AiGatewayDbContext)).Returns(aiGatewayDb);
+        scopedProvider.GetService(typeof(QuotaDbContext)).Returns(quotaDb);
+        scopedProvider.GetService(typeof(PracticeDbContext)).Returns(practiceDb);
+        scopedProvider.GetService(typeof(FeedbackDbContext)).Returns(feedbackDb);
 
         var lifetime = Substitute.For<IHostApplicationLifetime>();
         var workerOptions = new WorkerOptions { RequireSchemaMatchOnStartup = true };

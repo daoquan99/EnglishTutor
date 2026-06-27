@@ -21,12 +21,52 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\EnglishTutor.Api\EnglishTutor.Api.csproj" />
-    <ProjectReference Include="..\..\src\EnglishTutor.Worker\EnglishTutor.Worker.csproj" Aliases="WorkerAssembly" />
+    <Using Include="Xunit" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Xunit" />
+    <ProjectReference Include="..\..\src\02.Hosts\EnglishTutor.Api\EnglishTutor.Api.csproj" />
+    <ProjectReference Include="..\..\src\02.Hosts\EnglishTutor.Worker\EnglishTutor.Worker.csproj" Aliases="WorkerAssembly" />
+    <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Contracts\EnglishTutor.BuildingBlocks.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Domain\EnglishTutor.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\AiGateway\EnglishTutor.AiGateway.Application\EnglishTutor.AiGateway.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\AiGateway\EnglishTutor.AiGateway.Contracts\EnglishTutor.AiGateway.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\AiGateway\EnglishTutor.AiGateway.Domain\EnglishTutor.AiGateway.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\AiGateway\EnglishTutor.AiGateway.Infrastructure\EnglishTutor.AiGateway.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Audit\EnglishTutor.Audit.Application\EnglishTutor.Audit.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Audit\EnglishTutor.Audit.Contracts\EnglishTutor.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Audit\EnglishTutor.Audit.Domain\EnglishTutor.Audit.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Audit\EnglishTutor.Audit.Infrastructure\EnglishTutor.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Feedback\EnglishTutor.Feedback.Application\EnglishTutor.Feedback.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Feedback\EnglishTutor.Feedback.Contracts\EnglishTutor.Feedback.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Feedback\EnglishTutor.Feedback.Domain\EnglishTutor.Feedback.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Feedback\EnglishTutor.Feedback.Infrastructure\EnglishTutor.Feedback.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Identity\EnglishTutor.Identity.Application\EnglishTutor.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Identity\EnglishTutor.Identity.Contracts\EnglishTutor.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Identity\EnglishTutor.Identity.Domain\EnglishTutor.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Identity\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Learning\EnglishTutor.Learning.Application\EnglishTutor.Learning.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Learning\EnglishTutor.Learning.Contracts\EnglishTutor.Learning.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Learning\EnglishTutor.Learning.Domain\EnglishTutor.Learning.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Learning\EnglishTutor.Learning.Infrastructure\EnglishTutor.Learning.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Practice\EnglishTutor.Practice.Application\EnglishTutor.Practice.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Practice\EnglishTutor.Practice.Contracts\EnglishTutor.Practice.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Practice\EnglishTutor.Practice.Domain\EnglishTutor.Practice.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Practice\EnglishTutor.Practice.Infrastructure\EnglishTutor.Practice.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Progress\EnglishTutor.Progress.Application\EnglishTutor.Progress.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Progress\EnglishTutor.Progress.Contracts\EnglishTutor.Progress.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Progress\EnglishTutor.Progress.Domain\EnglishTutor.Progress.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Progress\EnglishTutor.Progress.Infrastructure\EnglishTutor.Progress.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Quota\EnglishTutor.Quota.Application\EnglishTutor.Quota.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Quota\EnglishTutor.Quota.Contracts\EnglishTutor.Quota.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Quota\EnglishTutor.Quota.Domain\EnglishTutor.Quota.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Quota\EnglishTutor.Quota.Infrastructure\EnglishTutor.Quota.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Realtime\EnglishTutor.Realtime.Application\EnglishTutor.Realtime.Application.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Realtime\EnglishTutor.Realtime.Contracts\EnglishTutor.Realtime.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Realtime\EnglishTutor.Realtime.Domain\EnglishTutor.Realtime.Domain.csproj" />
+    <ProjectReference Include="..\..\src\03.Modules\Realtime\EnglishTutor.Realtime.Infrastructure\EnglishTutor.Realtime.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <UserSecretsId>dotnet-EnglishTutor.Worker-98170547-4257-4f28-a107-b59a82a0d8f0</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.RabbitMQ" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <!-- BuildingBlocks -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\01.Orchestration\EnglishTutor.ServiceDefaults\EnglishTutor.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- Module Infrastructures (for consumers/jobs) -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\03.Modules\Identity\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Learning\EnglishTutor.Learning.Infrastructure\EnglishTutor.Learning.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Practice\EnglishTutor.Practice.Infrastructure\EnglishTutor.Practice.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Realtime\EnglishTutor.Realtime.Infrastructure\EnglishTutor.Realtime.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\AiGateway\EnglishTutor.AiGateway.Infrastructure\EnglishTutor.AiGateway.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Quota\EnglishTutor.Quota.Infrastructure\EnglishTutor.Quota.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Feedback\EnglishTutor.Feedback.Infrastructure\EnglishTutor.Feedback.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Progress\EnglishTutor.Progress.Infrastructure\EnglishTutor.Progress.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\03.Modules\Audit\EnglishTutor.Audit.Infrastructure\EnglishTutor.Audit.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Practice.Domain\EnglishTutor.Practice.Domain.csproj" />
+    <ProjectReference Include="..\EnglishTutor.Practice.Contracts\EnglishTutor.Practice.Contracts.csproj" />
+    <ProjectReference Include="..\..\Quota\EnglishTutor.Quota.Contracts\EnglishTutor.Quota.Contracts.csproj" />
+    <ProjectReference Include="..\..\AiGateway\EnglishTutor.AiGateway.Contracts\EnglishTutor.AiGateway.Contracts.csproj" />
+    <ProjectReference Include="..\..\Learning\EnglishTutor.Learning.Contracts\EnglishTutor.Learning.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+  </ItemGroup>
+</Project>

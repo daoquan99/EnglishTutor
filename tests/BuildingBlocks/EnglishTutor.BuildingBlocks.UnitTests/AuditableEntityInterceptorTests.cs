@@ -41,6 +41,12 @@ public class AuditableEntityInterceptorTests
             base.OnConfiguring(optionsBuilder);
             optionsBuilder.AddInterceptors(_interceptor);
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyAggregateRootConventions();
+        }
     }
 
     [Fact]
@@ -154,6 +160,46 @@ public class AuditableEntityInterceptorTests
             inDb!.IsDeleted.Should().BeTrue();
             inDb.DeletedAtUtc.Should().Be(now);
             inDb.DeletedByUserId.Should().Be(userId);
+        }
+    }
+
+    [Fact]
+    public async Task AggregateRootConventions_Should_Filter_SoftDeleted_Aggregates_By_Default()
+    {
+        var userId = Guid.NewGuid();
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var interceptor = new AuditableEntitySaveChangesInterceptor(
+            currentUser: new StaticCurrentUser(userId),
+            dateTime: new StaticDateTime(now));
+
+        var options = new DbContextOptionsBuilder<TestDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        var aggregate = new TestAggregate();
+
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            ctx.Aggregates.Add(aggregate);
+            await ctx.SaveChangesAsync();
+        }
+
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            var tracked = await ctx.Aggregates.FindAsync(aggregate.Id);
+            tracked.Should().NotBeNull();
+            ctx.Aggregates.Remove(tracked!);
+            await ctx.SaveChangesAsync();
+        }
+
+        using (var ctx = new TestDbContext(options, interceptor))
+        {
+            var defaultQuery = await ctx.Aggregates.FirstOrDefaultAsync(a => a.Id == aggregate.Id);
+            var withDeleted = await ctx.Aggregates.IgnoreQueryFilters().FirstOrDefaultAsync(a => a.Id == aggregate.Id);
+
+            defaultQuery.Should().BeNull();
+            withDeleted.Should().NotBeNull();
+            withDeleted!.IsDeleted.Should().BeTrue();
         }
     }
 

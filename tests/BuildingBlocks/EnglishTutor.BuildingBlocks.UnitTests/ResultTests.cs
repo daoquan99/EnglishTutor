@@ -70,6 +70,7 @@ public class ResultTests
         // Assert
         error.Code.Should().BeEmpty();
         error.Message.Should().BeEmpty();
+        error.Type.Should().Be(ErrorType.None);
     }
 
     [Fact]
@@ -81,6 +82,7 @@ public class ResultTests
         // Assert
         error.Code.Should().Be("Error.NullValue");
         error.Message.Should().NotBeEmpty();
+        error.Type.Should().Be(ErrorType.Failure);
     }
 
     [Fact]
@@ -95,9 +97,14 @@ public class ResultTests
 
         // Assert
         notFound.Code.Should().Be("NF");
+        notFound.Type.Should().Be(ErrorType.NotFound);
         validation.Code.Should().Be("VAL");
+        validation.Type.Should().Be(ErrorType.Validation);
         conflict.Code.Should().Be("CON");
+        conflict.Type.Should().Be(ErrorType.Conflict);
         unauthorized.Code.Should().Be("UNA");
+        unauthorized.Type.Should().Be(ErrorType.Unauthorized);
         forbidden.Code.Should().Be("FOR");
+        forbidden.Type.Should().Be(ErrorType.Forbidden);
     }
 }

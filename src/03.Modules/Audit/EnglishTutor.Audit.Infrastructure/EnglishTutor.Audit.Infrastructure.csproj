@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.Audit.Application\EnglishTutor.Audit.Application.csproj" />
+    <ProjectReference Include="..\..\..\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <!-- Batch R1 H-07: the Audit security-event consumer references the Identity
+         integration-event contract only (allowed: another module's Contracts). -->
+    <ProjectReference Include="..\..\Identity\EnglishTutor.Identity.Contracts\EnglishTutor.Identity.Contracts.csproj" />
+  </ItemGroup>
+</Project>

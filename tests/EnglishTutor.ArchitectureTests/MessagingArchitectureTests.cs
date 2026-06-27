@@ -1,8 +1,13 @@
 extern alias WorkerAssembly;
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using FluentAssertions;
 using MassTransit;
 using NetArchTest.Rules;
 using System.Reflection;
+using Xunit;
 
 namespace EnglishTutor.ArchitectureTests;
 
@@ -168,5 +173,94 @@ public class MessagingArchitectureTests
         consumerTypes.Should().BeEmpty(
             "Worker project must not contain any concrete MassTransit consumers for Task 12 baseline. " +
             $"Found offending types: {string.Join(", ", consumerTypes.Select(t => t.FullName))}");
+    }
+
+    [Fact]
+    public void UnitOfWork_Should_Not_Have_Forbidden_Dependencies()
+    {
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName != null && a.FullName.StartsWith("EnglishTutor.", StringComparison.Ordinal))
+            .ToList();
+
+        foreach (var assembly in assemblies)
+        {
+            var isInfrastructure = assembly.FullName!.Contains(".Infrastructure");
+            if (!isInfrastructure)
+            {
+                continue;
+            }
+
+            var unitOfWorkTypes = Types.InAssembly(assembly)
+                .That()
+                .HaveNameEndingWith("UnitOfWork")
+                .GetTypes()
+                .ToList();
+
+            foreach (var type in unitOfWorkTypes)
+            {
+                var httpContextAccessorDependency = Types.InAssembly(assembly)
+                    .That()
+                    .HaveName(type.Name)
+                    .ShouldNot()
+                    .HaveDependencyOn("Microsoft.AspNetCore.Http.IHttpContextAccessor")
+                    .GetResult();
+
+                httpContextAccessorDependency.IsSuccessful.Should().BeTrue($"{type.Name} must not depend on IHttpContextAccessor.");
+
+                var moduleName = type.Namespace?.Split('.')[1];
+                if (moduleName != null)
+                {
+                    var forbiddenNamespace = $"EnglishTutor.{moduleName}.Contracts.Events";
+                    var contractsEventsDependency = Types.InAssembly(assembly)
+                        .That()
+                        .HaveName(type.Name)
+                        .ShouldNot()
+                        .HaveDependencyOn(forbiddenNamespace)
+                        .GetResult();
+
+                    contractsEventsDependency.IsSuccessful.Should().BeTrue($"{type.Name} must not depend on {forbiddenNamespace}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void Application_Domain_Event_Handlers_Should_Not_Reference_Infrastructure_Types()
+    {
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => a.FullName != null && a.FullName.StartsWith("EnglishTutor.", StringComparison.Ordinal))
+            .ToList();
+
+        foreach (var assembly in assemblies)
+        {
+            var isApplication = assembly.FullName!.Contains(".Application");
+            if (!isApplication)
+            {
+                continue;
+            }
+
+            // Get types implementing IDomainEventHandler<>
+            var handlerTypes = assembly.GetTypes()
+                .Where(t => t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDomainEventHandler<>)))
+                .ToList();
+
+            if (!handlerTypes.Any())
+            {
+                continue;
+            }
+
+            var result = Types.InAssembly(assembly)
+                .That()
+                .ImplementInterface(typeof(IDomainEventHandler<>))
+                .ShouldNot()
+                .HaveDependencyOn("MassTransit")
+                .And()
+                .HaveDependencyOn("Microsoft.EntityFrameworkCore")
+                .And()
+                .HaveDependencyOn("Microsoft.AspNetCore")
+                .GetResult();
+
+            result.IsSuccessful.Should().BeTrue($"Domain event handlers in {assembly.GetName().Name} must not reference MassTransit, EF Core, or ASP.NET.");
+        }
     }
 }

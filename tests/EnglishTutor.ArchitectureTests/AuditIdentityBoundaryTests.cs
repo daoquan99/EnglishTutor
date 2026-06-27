@@ -17,7 +17,7 @@ namespace EnglishTutor.ArchitectureTests;
 //     Audit.Infrastructure / Audit.Domain.
 //   - The Audit domain must be aggregate-first: every Audit
 //     domain type lives under
-//     src/Modules/Audit/EnglishTutor.Audit.Domain/Aggregates/SecurityEvents/
+//     src/03.Modules/Audit/EnglishTutor.Audit.Domain/Aggregates/SecurityEvents/
 //     — never at the Domain project root outside Aggregates/.
 //
 // These tests are structural / architectural — they execute via
@@ -174,7 +174,7 @@ public class AuditIdentityBoundaryTests
     public void Audit_Domain_Should_Have_Exactly_Two_Aggregate_Folders()
     {
         // Sanity check: there are exactly two aggregate folders under
-        // src/Modules/Audit/EnglishTutor.Audit.Domain/Aggregates/.
+        // src/03.Modules/Audit/EnglishTutor.Audit.Domain/Aggregates/.
         // Those are SecurityEvents and AuditLogs.
         var assembly = typeof(EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.SecurityEvent).Assembly;
 

@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EnglishTutor.Learning.Application\EnglishTutor.Learning.Application.csproj" />
-    <ProjectReference Include="..\EnglishTutor.Learning.Contracts\EnglishTutor.Learning.Contracts.csproj" />
-  </ItemGroup>
-</Project>

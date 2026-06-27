@@ -4,79 +4,84 @@
     <File Path="Directory.Packages.props" />
     <File Path=".editorconfig" />
   </Folder>
-  <Folder Name="/src/">
-    <Project Path="src/EnglishTutor.Api/EnglishTutor.Api.csproj" />
-    <Project Path="src/EnglishTutor.Worker/EnglishTutor.Worker.csproj" />
+  <Folder Name="/src/" />
+  <Folder Name="/src/01.Orchestration/">
+    <Project Path="src/01.Orchestration/EnglishTutor.AppHost/EnglishTutor.AppHost.csproj" />
+    <Project Path="src/01.Orchestration/EnglishTutor.ServiceDefaults/EnglishTutor.ServiceDefaults.csproj" />
   </Folder>
-  <Folder Name="/src/BuildingBlocks/">
-    <Project Path="src/BuildingBlocks/EnglishTutor.BuildingBlocks.Application/EnglishTutor.BuildingBlocks.Application.csproj" />
-    <Project Path="src/BuildingBlocks/EnglishTutor.BuildingBlocks.Contracts/EnglishTutor.BuildingBlocks.Contracts.csproj" />
-    <Project Path="src/BuildingBlocks/EnglishTutor.BuildingBlocks.Domain/EnglishTutor.BuildingBlocks.Domain.csproj" />
-    <Project Path="src/BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+  <Folder Name="/src/02.Hosts/">
+    <Project Path="src/02.Hosts/EnglishTutor.Api/EnglishTutor.Api.csproj" />
+    <Project Path="src/02.Hosts/EnglishTutor.Worker/EnglishTutor.Worker.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/" />
-  <Folder Name="/src/Modules/AiGateway/">
-    <Project Path="src/Modules/AiGateway/EnglishTutor.AiGateway.Application/EnglishTutor.AiGateway.Application.csproj" />
-    <Project Path="src/Modules/AiGateway/EnglishTutor.AiGateway.Contracts/EnglishTutor.AiGateway.Contracts.csproj" />
-    <Project Path="src/Modules/AiGateway/EnglishTutor.AiGateway.Domain/EnglishTutor.AiGateway.Domain.csproj" />
-    <Project Path="src/Modules/AiGateway/EnglishTutor.AiGateway.Infrastructure/EnglishTutor.AiGateway.Infrastructure.csproj" />
-    <Project Path="src/Modules/AiGateway/EnglishTutor.AiGateway.Presentation/EnglishTutor.AiGateway.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/" />
+  <Folder Name="/src/03.Modules/AiGateway/">
+    <Project Path="src/03.Modules/AiGateway/EnglishTutor.AiGateway.Application/EnglishTutor.AiGateway.Application.csproj" />
+    <Project Path="src/03.Modules/AiGateway/EnglishTutor.AiGateway.Contracts/EnglishTutor.AiGateway.Contracts.csproj" />
+    <Project Path="src/03.Modules/AiGateway/EnglishTutor.AiGateway.Domain/EnglishTutor.AiGateway.Domain.csproj" />
+    <Project Path="src/03.Modules/AiGateway/EnglishTutor.AiGateway.Infrastructure/EnglishTutor.AiGateway.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/AiGateway/EnglishTutor.AiGateway.Presentation/EnglishTutor.AiGateway.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Audit/">
-    <Project Path="src/Modules/Audit/EnglishTutor.Audit.Application/EnglishTutor.Audit.Application.csproj" />
-    <Project Path="src/Modules/Audit/EnglishTutor.Audit.Contracts/EnglishTutor.Audit.Contracts.csproj" />
-    <Project Path="src/Modules/Audit/EnglishTutor.Audit.Domain/EnglishTutor.Audit.Domain.csproj" />
-    <Project Path="src/Modules/Audit/EnglishTutor.Audit.Infrastructure/EnglishTutor.Audit.Infrastructure.csproj" />
-    <Project Path="src/Modules/Audit/EnglishTutor.Audit.Presentation/EnglishTutor.Audit.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Audit/">
+    <Project Path="src/03.Modules/Audit/EnglishTutor.Audit.Application/EnglishTutor.Audit.Application.csproj" />
+    <Project Path="src/03.Modules/Audit/EnglishTutor.Audit.Contracts/EnglishTutor.Audit.Contracts.csproj" />
+    <Project Path="src/03.Modules/Audit/EnglishTutor.Audit.Domain/EnglishTutor.Audit.Domain.csproj" />
+    <Project Path="src/03.Modules/Audit/EnglishTutor.Audit.Infrastructure/EnglishTutor.Audit.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Audit/EnglishTutor.Audit.Presentation/EnglishTutor.Audit.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Feedback/">
-    <Project Path="src/Modules/Feedback/EnglishTutor.Feedback.Application/EnglishTutor.Feedback.Application.csproj" />
-    <Project Path="src/Modules/Feedback/EnglishTutor.Feedback.Contracts/EnglishTutor.Feedback.Contracts.csproj" />
-    <Project Path="src/Modules/Feedback/EnglishTutor.Feedback.Domain/EnglishTutor.Feedback.Domain.csproj" />
-    <Project Path="src/Modules/Feedback/EnglishTutor.Feedback.Infrastructure/EnglishTutor.Feedback.Infrastructure.csproj" />
-    <Project Path="src/Modules/Feedback/EnglishTutor.Feedback.Presentation/EnglishTutor.Feedback.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Feedback/">
+    <Project Path="src/03.Modules/Feedback/EnglishTutor.Feedback.Application/EnglishTutor.Feedback.Application.csproj" />
+    <Project Path="src/03.Modules/Feedback/EnglishTutor.Feedback.Contracts/EnglishTutor.Feedback.Contracts.csproj" />
+    <Project Path="src/03.Modules/Feedback/EnglishTutor.Feedback.Domain/EnglishTutor.Feedback.Domain.csproj" />
+    <Project Path="src/03.Modules/Feedback/EnglishTutor.Feedback.Infrastructure/EnglishTutor.Feedback.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Feedback/EnglishTutor.Feedback.Presentation/EnglishTutor.Feedback.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Identity/">
-    <Project Path="src/Modules/Identity/EnglishTutor.Identity.Application/EnglishTutor.Identity.Application.csproj" />
-    <Project Path="src/Modules/Identity/EnglishTutor.Identity.Contracts/EnglishTutor.Identity.Contracts.csproj" />
-    <Project Path="src/Modules/Identity/EnglishTutor.Identity.Domain/EnglishTutor.Identity.Domain.csproj" />
-    <Project Path="src/Modules/Identity/EnglishTutor.Identity.Infrastructure/EnglishTutor.Identity.Infrastructure.csproj" />
-    <Project Path="src/Modules/Identity/EnglishTutor.Identity.Presentation/EnglishTutor.Identity.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Identity/">
+    <Project Path="src/03.Modules/Identity/EnglishTutor.Identity.Application/EnglishTutor.Identity.Application.csproj" />
+    <Project Path="src/03.Modules/Identity/EnglishTutor.Identity.Contracts/EnglishTutor.Identity.Contracts.csproj" />
+    <Project Path="src/03.Modules/Identity/EnglishTutor.Identity.Domain/EnglishTutor.Identity.Domain.csproj" />
+    <Project Path="src/03.Modules/Identity/EnglishTutor.Identity.Infrastructure/EnglishTutor.Identity.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Identity/EnglishTutor.Identity.Presentation/EnglishTutor.Identity.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Learning/">
-    <Project Path="src/Modules/Learning/EnglishTutor.Learning.Application/EnglishTutor.Learning.Application.csproj" />
-    <Project Path="src/Modules/Learning/EnglishTutor.Learning.Contracts/EnglishTutor.Learning.Contracts.csproj" />
-    <Project Path="src/Modules/Learning/EnglishTutor.Learning.Domain/EnglishTutor.Learning.Domain.csproj" />
-    <Project Path="src/Modules/Learning/EnglishTutor.Learning.Infrastructure/EnglishTutor.Learning.Infrastructure.csproj" />
-    <Project Path="src/Modules/Learning/EnglishTutor.Learning.Presentation/EnglishTutor.Learning.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Learning/">
+    <Project Path="src/03.Modules/Learning/EnglishTutor.Learning.Application/EnglishTutor.Learning.Application.csproj" />
+    <Project Path="src/03.Modules/Learning/EnglishTutor.Learning.Contracts/EnglishTutor.Learning.Contracts.csproj" />
+    <Project Path="src/03.Modules/Learning/EnglishTutor.Learning.Domain/EnglishTutor.Learning.Domain.csproj" />
+    <Project Path="src/03.Modules/Learning/EnglishTutor.Learning.Infrastructure/EnglishTutor.Learning.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Learning/EnglishTutor.Learning.Presentation/EnglishTutor.Learning.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Practice/">
-    <Project Path="src/Modules/Practice/EnglishTutor.Practice.Application/EnglishTutor.Practice.Application.csproj" />
-    <Project Path="src/Modules/Practice/EnglishTutor.Practice.Contracts/EnglishTutor.Practice.Contracts.csproj" />
-    <Project Path="src/Modules/Practice/EnglishTutor.Practice.Domain/EnglishTutor.Practice.Domain.csproj" />
-    <Project Path="src/Modules/Practice/EnglishTutor.Practice.Infrastructure/EnglishTutor.Practice.Infrastructure.csproj" />
-    <Project Path="src/Modules/Practice/EnglishTutor.Practice.Presentation/EnglishTutor.Practice.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Practice/">
+    <Project Path="src/03.Modules/Practice/EnglishTutor.Practice.Application/EnglishTutor.Practice.Application.csproj" />
+    <Project Path="src/03.Modules/Practice/EnglishTutor.Practice.Contracts/EnglishTutor.Practice.Contracts.csproj" />
+    <Project Path="src/03.Modules/Practice/EnglishTutor.Practice.Domain/EnglishTutor.Practice.Domain.csproj" />
+    <Project Path="src/03.Modules/Practice/EnglishTutor.Practice.Infrastructure/EnglishTutor.Practice.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Practice/EnglishTutor.Practice.Presentation/EnglishTutor.Practice.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Progress/">
-    <Project Path="src/Modules/Progress/EnglishTutor.Progress.Application/EnglishTutor.Progress.Application.csproj" />
-    <Project Path="src/Modules/Progress/EnglishTutor.Progress.Contracts/EnglishTutor.Progress.Contracts.csproj" />
-    <Project Path="src/Modules/Progress/EnglishTutor.Progress.Domain/EnglishTutor.Progress.Domain.csproj" />
-    <Project Path="src/Modules/Progress/EnglishTutor.Progress.Infrastructure/EnglishTutor.Progress.Infrastructure.csproj" />
-    <Project Path="src/Modules/Progress/EnglishTutor.Progress.Presentation/EnglishTutor.Progress.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Progress/">
+    <Project Path="src/03.Modules/Progress/EnglishTutor.Progress.Application/EnglishTutor.Progress.Application.csproj" />
+    <Project Path="src/03.Modules/Progress/EnglishTutor.Progress.Contracts/EnglishTutor.Progress.Contracts.csproj" />
+    <Project Path="src/03.Modules/Progress/EnglishTutor.Progress.Domain/EnglishTutor.Progress.Domain.csproj" />
+    <Project Path="src/03.Modules/Progress/EnglishTutor.Progress.Infrastructure/EnglishTutor.Progress.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Progress/EnglishTutor.Progress.Presentation/EnglishTutor.Progress.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Quota/">
-    <Project Path="src/Modules/Quota/EnglishTutor.Quota.Application/EnglishTutor.Quota.Application.csproj" />
-    <Project Path="src/Modules/Quota/EnglishTutor.Quota.Contracts/EnglishTutor.Quota.Contracts.csproj" />
-    <Project Path="src/Modules/Quota/EnglishTutor.Quota.Domain/EnglishTutor.Quota.Domain.csproj" />
-    <Project Path="src/Modules/Quota/EnglishTutor.Quota.Infrastructure/EnglishTutor.Quota.Infrastructure.csproj" />
-    <Project Path="src/Modules/Quota/EnglishTutor.Quota.Presentation/EnglishTutor.Quota.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Quota/">
+    <Project Path="src/03.Modules/Quota/EnglishTutor.Quota.Application/EnglishTutor.Quota.Application.csproj" />
+    <Project Path="src/03.Modules/Quota/EnglishTutor.Quota.Contracts/EnglishTutor.Quota.Contracts.csproj" />
+    <Project Path="src/03.Modules/Quota/EnglishTutor.Quota.Domain/EnglishTutor.Quota.Domain.csproj" />
+    <Project Path="src/03.Modules/Quota/EnglishTutor.Quota.Infrastructure/EnglishTutor.Quota.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Quota/EnglishTutor.Quota.Presentation/EnglishTutor.Quota.Presentation.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/Realtime/">
-    <Project Path="src/Modules/Realtime/EnglishTutor.Realtime.Application/EnglishTutor.Realtime.Application.csproj" />
-    <Project Path="src/Modules/Realtime/EnglishTutor.Realtime.Contracts/EnglishTutor.Realtime.Contracts.csproj" />
-    <Project Path="src/Modules/Realtime/EnglishTutor.Realtime.Domain/EnglishTutor.Realtime.Domain.csproj" />
-    <Project Path="src/Modules/Realtime/EnglishTutor.Realtime.Infrastructure/EnglishTutor.Realtime.Infrastructure.csproj" />
-    <Project Path="src/Modules/Realtime/EnglishTutor.Realtime.Presentation/EnglishTutor.Realtime.Presentation.csproj" />
+  <Folder Name="/src/03.Modules/Realtime/">
+    <Project Path="src/03.Modules/Realtime/EnglishTutor.Realtime.Application/EnglishTutor.Realtime.Application.csproj" />
+    <Project Path="src/03.Modules/Realtime/EnglishTutor.Realtime.Contracts/EnglishTutor.Realtime.Contracts.csproj" />
+    <Project Path="src/03.Modules/Realtime/EnglishTutor.Realtime.Domain/EnglishTutor.Realtime.Domain.csproj" />
+    <Project Path="src/03.Modules/Realtime/EnglishTutor.Realtime.Infrastructure/EnglishTutor.Realtime.Infrastructure.csproj" />
+    <Project Path="src/03.Modules/Realtime/EnglishTutor.Realtime.Presentation/EnglishTutor.Realtime.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/04.BuildingBlocks/">
+    <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Application/EnglishTutor.BuildingBlocks.Application.csproj" />
+    <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Contracts/EnglishTutor.BuildingBlocks.Contracts.csproj" />
+    <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Domain/EnglishTutor.BuildingBlocks.Domain.csproj" />
+    <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EnglishTutor.ArchitectureTests/EnglishTutor.ArchitectureTests.csproj" />
@@ -86,11 +91,11 @@
     <Project Path="tests/BuildingBlocks/EnglishTutor.BuildingBlocks.UnitTests/EnglishTutor.BuildingBlocks.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tests/Modules/" />
-  <Folder Name="/tests/Modules/Identity/">
-    <Project Path="tests/Modules/Identity/Identity.UnitTests/Identity.UnitTests.csproj" />
-  </Folder>
   <Folder Name="/tests/Modules/Audit/">
     <Project Path="tests/Modules/Audit/EnglishTutor.Audit.UnitTests/EnglishTutor.Audit.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Modules/Identity/">
+    <Project Path="tests/Modules/Identity/Identity.UnitTests/Identity.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tests/Modules/Learning/">
     <Project Path="tests/Modules/Learning/EnglishTutor.Learning.UnitTests/EnglishTutor.Learning.UnitTests.csproj" />

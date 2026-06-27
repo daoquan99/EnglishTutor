@@ -63,6 +63,20 @@ public sealed class DurableSecurityEventConsumptionTests
                 }
             }
 
+            var identityBusBind = Services.GetService<MassTransit.DependencyInjection.Bind<EnglishTutor.Identity.Infrastructure.Messaging.IIdentityBus, MassTransit.IBusControl>>();
+            if (identityBusBind != null)
+            {
+                try
+                {
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    await identityBusBind.Value.StopAsync(cts.Token);
+                }
+                catch
+                {
+                    // Best-effort: never let bus teardown mask a test assertion.
+                }
+            }
+
             Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", null);
             await base.DisposeAsync();
         }

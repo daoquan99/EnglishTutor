@@ -3,10 +3,11 @@ services:
     image: postgres:17-alpine
     container_name: englishtutor-postgres
     restart: unless-stopped
+    # Local dependency defaults only. Override through a private .env for shared environments.
     environment:
-      POSTGRES_USER: englishtutor
-      POSTGRES_PASSWORD: englishtutor_dev
-      POSTGRES_DB: english_tutor_db
+      POSTGRES_USER: ${POSTGRES_USER:-englishtutor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-englishtutor_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-english_tutor_db}
     ports:
       - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
@@ -21,9 +22,10 @@ services:
     image: rabbitmq:4-management-alpine
     container_name: englishtutor-rabbitmq
     restart: unless-stopped
+    # Local dependency defaults only. Override through a private .env for shared environments.
     environment:
-      RABBITMQ_DEFAULT_USER: englishtutor
-      RABBITMQ_DEFAULT_PASS: englishtutor_dev
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-englishtutor}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-englishtutor_dev}
     ports:
       - "${RABBITMQ_HOST_PORT:-5672}:5672"
       - "${RABBITMQ_MGMT_HOST_PORT:-15672}:15672"

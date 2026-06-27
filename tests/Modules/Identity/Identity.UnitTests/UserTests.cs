@@ -6,6 +6,9 @@ namespace EnglishTutor.Identity.UnitTests;
 
 public class UserTests
 {
+    private const int MaxFailedLoginAttempts = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     private static User CreateValidUser(string email = "user@test.com")
     {
         var hash = HashedPassword.FromNewHash("$2a$12$abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQR");
@@ -27,7 +30,11 @@ public class UserTests
     public void VerifyPassword_With_Correct_Password_Should_Return_True()
     {
         var user = CreateValidUser();
-        var ok = user.VerifyPassword("plain", (plain, hash) => plain == "plain");
+        var ok = user.VerifyPassword(
+            "plain",
+            (plain, hash) => plain == "plain",
+            MaxFailedLoginAttempts,
+            LockoutDuration);
         ok.Should().BeTrue();
         user.FailedLoginAttempts.Should().Be(0);
     }
@@ -36,7 +43,11 @@ public class UserTests
     public void VerifyPassword_With_Wrong_Password_Should_Return_False_And_Increment()
     {
         var user = CreateValidUser();
-        var ok = user.VerifyPassword("plain", (_, _) => false);
+        var ok = user.VerifyPassword(
+            "plain",
+            (_, _) => false,
+            MaxFailedLoginAttempts,
+            LockoutDuration);
         ok.Should().BeFalse();
         user.FailedLoginAttempts.Should().Be(1);
     }
@@ -47,7 +58,11 @@ public class UserTests
         var user = CreateValidUser();
         for (var i = 0; i < 5; i++)
         {
-            user.VerifyPassword("plain", (_, _) => false);
+            user.VerifyPassword(
+                "plain",
+                (_, _) => false,
+                MaxFailedLoginAttempts,
+                LockoutDuration);
         }
         user.IsLockedOut.Should().BeTrue();
         user.LockoutEndUtc.Should().NotBeNull();
@@ -59,7 +74,11 @@ public class UserTests
     {
         var user = CreateValidUser();
         user.Lockout(DateTime.UtcNow.AddMinutes(5));
-        var ok = user.VerifyPassword("plain", (_, _) => true);
+        var ok = user.VerifyPassword(
+            "plain",
+            (_, _) => true,
+            MaxFailedLoginAttempts,
+            LockoutDuration);
         ok.Should().BeFalse();
     }
 
