@@ -2,23 +2,7 @@ using FluentAssertions;
 
 namespace EnglishTutor.IntegrationTests.Infrastructure;
 
-// Integration tests for CorrelationIdMiddleware: input validation,
-// length capping, and response echo behavior.
-//
-// Uses IntegrationTestFactory (a custom WebApplicationFactory subclass)
-// so every test host gets a valid Jwt:SigningKey baseline. The Slice
-// 2.7 JwtBearer registration requires the key at DI build time;
-// without it the host throws IDX10703 the first time
-// AuthenticationMiddleware runs in the pipeline.
-//
-// All integration tests share the "EnglishTutorIntegrationTests" xUnit
-// collection so they run sequentially. IntegrationTestFactory uses
-// process-wide environment variables (ConnectionStrings__Default,
-// ConnectionStrings__Audit, Database__ApplyAuditMigrationsOnStartup,
-// SeedData__Owner__Password) set in its constructor. Parallel test
-// classes would race on these env vars and the factories would
-// collide on the wrong database. See IntegrationTestFactory for the
-// rationale and the env-var set.
+
 [Collection("EnglishTutorIntegrationTests")]
 public class CorrelationIdMiddlewareTests : IClassFixture<IntegrationTestFactory>
 {

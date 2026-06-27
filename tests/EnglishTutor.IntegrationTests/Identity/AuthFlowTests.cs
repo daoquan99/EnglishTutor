@@ -72,9 +72,8 @@ public class AuthFlowTests
         rawJson.Should().NotContain("refreshToken");
         rawJson.Should().NotContain("RefreshToken");
 
-        var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
-        payload.Should().NotBeNull();
-        payload!.AccessToken.Should().NotBeNullOrWhiteSpace();
+        var payload = await response.Content.ReadApiDataAsync<LoginResponse>();
+        payload.AccessToken.Should().NotBeNullOrWhiteSpace();
 
         // H-01/H-02: refresh token is delivered only via the __Host- cookie.
         ExtractRawSetCookie(response, RefreshCookieName).Should().NotBeNull();
@@ -143,8 +142,7 @@ public class AuthFlowTests
         var response = await client.GetAsync("/api/auth/sessions");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var sessions = await response.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
-        sessions.Should().NotBeNull();
+        var sessions = await response.Content.ReadApiDataAsync<List<UserSessionResponse>>();
         sessions.Should().NotBeEmpty();
     }
 
@@ -170,15 +168,15 @@ public class AuthFlowTests
         var (client, _, _) = await LoginOwnerAsync(factory);
 
         var getResponse = await client.GetAsync("/api/auth/sessions");
-        var sessions = await getResponse.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
-        var targetSessionId = sessions!.First().Id;
+        var sessions = await getResponse.Content.ReadApiDataAsync<List<UserSessionResponse>>();
+        var targetSessionId = sessions.First().Id;
 
         var deleteResponse = await client.SendAsync(
             Mutation(HttpMethod.Delete, $"/api/auth/sessions/{targetSessionId}"));
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var getResponse2 = await client.GetAsync("/api/auth/sessions");
-        var sessions2 = await getResponse2.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
+        var sessions2 = await getResponse2.Content.ReadApiDataAsync<List<UserSessionResponse>>();
         sessions2.Should().NotContain(s => s.Id == targetSessionId);
     }
 
@@ -189,8 +187,8 @@ public class AuthFlowTests
         var (client, _, _) = await LoginOwnerAsync(factory);
 
         var getResponse = await client.GetAsync("/api/auth/sessions");
-        var sessions = await getResponse.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
-        var targetSessionId = sessions!.First().Id;
+        var sessions = await getResponse.Content.ReadApiDataAsync<List<UserSessionResponse>>();
+        var targetSessionId = sessions.First().Id;
 
         // No CSRF cookie/header -> 403.
         var deleteResponse = await client.DeleteAsync($"/api/auth/sessions/{targetSessionId}");
@@ -211,17 +209,17 @@ public class AuthFlowTests
 
         var clientA = factory.CreateClient();
         var loginResponseA = await clientA.PostAsJsonAsync("/api/auth/login", new LoginRequest(userAEmail, userPassword));
-        var authA = await loginResponseA.Content.ReadFromJsonAsync<LoginResponse>();
-        clientA.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authA!.AccessToken);
+        var authA = await loginResponseA.Content.ReadApiDataAsync<LoginResponse>();
+        clientA.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authA.AccessToken);
 
         var getSessionsA = await clientA.GetAsync("/api/auth/sessions");
-        var sessionsA = await getSessionsA.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
-        var userASessionId = sessionsA!.First().Id;
+        var sessionsA = await getSessionsA.Content.ReadApiDataAsync<List<UserSessionResponse>>();
+        var userASessionId = sessionsA.First().Id;
 
         var clientB = factory.CreateClient();
         var loginResponseB = await clientB.PostAsJsonAsync("/api/auth/login", new LoginRequest(userBEmail, userPassword));
-        var authB = await loginResponseB.Content.ReadFromJsonAsync<LoginResponse>();
-        clientB.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authB!.AccessToken);
+        var authB = await loginResponseB.Content.ReadApiDataAsync<LoginResponse>();
+        clientB.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authB.AccessToken);
 
         var deleteResponseByB = await clientB.SendAsync(
             Mutation(HttpMethod.Delete, $"/api/auth/sessions/{userASessionId}"));
@@ -230,7 +228,7 @@ public class AuthFlowTests
         var (clientAdmin, _, _) = await LoginOwnerAsync(factory);
         var deleteResponseByAdmin = await clientAdmin.SendAsync(
             Mutation(HttpMethod.Delete, $"/api/auth/sessions/{userASessionId}"));
-        deleteResponseByAdmin.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        deleteResponseByAdmin.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -244,17 +242,17 @@ public class AuthFlowTests
 
         var client1 = factory.CreateClient();
         var loginRes1 = await client1.PostAsJsonAsync("/api/auth/login", new LoginRequest(userEmail, userPassword));
-        var auth1 = await loginRes1.Content.ReadFromJsonAsync<LoginResponse>();
+        var auth1 = await loginRes1.Content.ReadApiDataAsync<LoginResponse>();
 
         var client2 = factory.CreateClient();
         await client2.PostAsJsonAsync("/api/auth/login", new LoginRequest(userEmail, userPassword));
 
-        client1.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth1!.AccessToken);
+        client1.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth1.AccessToken);
         var logoutAllResponse = await client1.SendAsync(Mutation(HttpMethod.Post, "/api/auth/logout-all"));
-        logoutAllResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        logoutAllResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var getSessionsResponse = await client1.GetAsync("/api/auth/sessions");
-        var activeSessions = await getSessionsResponse.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
+        var activeSessions = await getSessionsResponse.Content.ReadApiDataAsync<List<UserSessionResponse>>();
         activeSessions.Should().BeEmpty();
     }
 
@@ -265,12 +263,12 @@ public class AuthFlowTests
         var (client, _, refreshToken) = await LoginOwnerAsync(factory);
 
         var getSessions = await client.GetAsync("/api/auth/sessions");
-        var sessions = await getSessions.Content.ReadFromJsonAsync<List<UserSessionResponse>>();
-        var sessionId = sessions!.First().Id;
+        var sessions = await getSessions.Content.ReadApiDataAsync<List<UserSessionResponse>>();
+        var sessionId = sessions.First().Id;
 
         var deleteResponse = await client.SendAsync(
             Mutation(HttpMethod.Delete, $"/api/auth/sessions/{sessionId}"));
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Refresh with the (now revoked) session's cookie + valid CSRF -> 401.
         var refreshResponse = await client.SendAsync(
@@ -373,14 +371,13 @@ public class AuthFlowTests
             new LoginRequest(OwnerEmail, OwnerPassword));
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
-        payload.Should().NotBeNull();
+        var payload = await response.Content.ReadApiDataAsync<LoginResponse>();
 
         var refreshToken = ExtractCookieValue(response, RefreshCookieName);
         refreshToken.Should().NotBeNullOrWhiteSpace();
 
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload.AccessToken);
 
         return (client, payload, refreshToken!);
     }

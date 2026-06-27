@@ -14,6 +14,7 @@ using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using EnglishTutor.Identity.Infrastructure.Audit;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Identity.Infrastructure.Persistence.Repositories;
+using EnglishTutor.Identity.Infrastructure.Persistence.Queries;
 using EnglishTutor.Identity.Infrastructure.Persistence.Seed.Options;
 using EnglishTutor.Identity.Infrastructure.Security;
 using EnglishTutor.Identity.Infrastructure.Security.Options;
@@ -101,6 +102,7 @@ public static class IdentityInfrastructureServiceCollectionExtensions
         // Aggregate repositories (Application interfaces + Infrastructure impls).
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
+        services.AddScoped<IUserSessionQueryService, UserSessionQueryService>();
         services.AddScoped<IRoleRepository, RoleRepository>();
 
         // Unit of Work (Application interface + Infrastructure impl).

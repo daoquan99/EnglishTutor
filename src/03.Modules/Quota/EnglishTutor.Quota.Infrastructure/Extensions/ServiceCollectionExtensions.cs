@@ -11,6 +11,7 @@ using EnglishTutor.Quota.Domain.Aggregates.UsageLog.Repositories;
 using EnglishTutor.Quota.Domain.Aggregates.RateLimitEvent.Repositories;
 using EnglishTutor.Quota.Infrastructure.Persistence;
 using EnglishTutor.Quota.Infrastructure.Persistence.Repositories;
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using System;
 using FluentValidation;
@@ -50,7 +51,7 @@ public static class ServiceCollectionExtensions
 
         // Add MediatR handlers from the Quota Application assembly
         services.AddValidatorsFromAssembly(typeof(QuotaService).Assembly);
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(QuotaService).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(QuotaService).Assembly);
 
         // Add the application service (the use case handler)
         services.AddScoped<IQuotaModule, QuotaService>();

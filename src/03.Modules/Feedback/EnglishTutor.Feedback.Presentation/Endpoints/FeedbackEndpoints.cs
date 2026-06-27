@@ -1,4 +1,5 @@
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Feedback.Application.SessionFeedback.Queries.GetSessionFeedback;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -23,7 +24,11 @@ public static class FeedbackEndpoints
         {
             if (user.UserId is not Guid userId)
             {
-                return Results.Unauthorized();
+                return ApiResults.Problem(
+                    statusCode: StatusCodes.Status401Unauthorized,
+                    code: ApiErrorCodes.Unauthorized,
+                    title: "Unauthorized",
+                    message: "Authentication is required.");
             }
 
             var query = new GetSessionFeedbackQuery(practiceSessionId, userId);
@@ -33,18 +38,26 @@ public static class FeedbackEndpoints
             {
                 if (result.Error?.Code == "Feedback.Forbidden")
                 {
-                    return Results.Forbid();
+                    return ApiResults.Problem(
+                        statusCode: StatusCodes.Status403Forbidden,
+                        code: "feedback.forbidden",
+                        title: "Forbidden",
+                        message: "You are not authorized to access this feedback.");
                 }
-                return Results.BadRequest(result.Error);
+                return ApiResults.FromError(result.Error!);
             }
 
             var dto = result.Value;
             if (dto!.Status == "NotFound")
             {
-                return Results.NotFound();
+                return ApiResults.Problem(
+                    statusCode: StatusCodes.Status404NotFound,
+                    code: "feedback.not_found",
+                    title: "Not found",
+                    message: "Feedback was not found.");
             }
 
-            return Results.Ok(dto);
+            return ApiResults.Ok(dto);
         });
 
         return routes;

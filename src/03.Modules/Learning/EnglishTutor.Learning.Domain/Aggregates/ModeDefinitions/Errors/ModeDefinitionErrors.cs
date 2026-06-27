@@ -6,11 +6,11 @@ namespace EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions.Errors;
 public static class ModeDefinitionErrors
 {
     public static Error NotFound(Guid modeDefinitionId) =>
-        new("Learning.ModeDefinitionNotFound", $"Mode definition '{modeDefinitionId}' was not found.");
+        Error.NotFound("Learning.ModeDefinitionNotFound", $"Mode definition '{modeDefinitionId}' was not found.");
 
     public static Error NotFoundByCode(string code) =>
-        new("Learning.ModeDefinitionNotFound", $"Mode definition with code '{code}' was not found.");
+        Error.NotFound("Learning.ModeDefinitionNotFound", $"Mode definition with code '{code}' was not found.");
 
     public static Error DuplicateCode(string code) =>
-        new("Learning.ModeDefinitionDuplicateCode", $"Mode definition with code '{code}' already exists.");
+        Error.Conflict("Learning.ModeDefinitionDuplicateCode", $"Mode definition with code '{code}' already exists.");
 }

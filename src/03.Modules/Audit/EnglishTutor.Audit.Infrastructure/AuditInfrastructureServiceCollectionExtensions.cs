@@ -6,9 +6,9 @@ using EnglishTutor.Audit.Domain.Aggregates.SecurityEvents.Repositories;
 using EnglishTutor.Audit.Infrastructure.Persistence;
 using EnglishTutor.Audit.Infrastructure.Persistence.Repositories;
 using EnglishTutor.Audit.Infrastructure.SecurityEvents;
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,8 +26,7 @@ public static class AuditInfrastructureServiceCollectionExtensions
             ?? throw new InvalidOperationException(
                 "ConnectionStrings:Audit (or ConnectionStrings:Default) must be configured for Audit.");
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(
-            typeof(RecordSecurityEventCommand).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(RecordSecurityEventCommand).Assembly);
 
         services.AddScoped<ISecurityEventRepository, SecurityEventRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();

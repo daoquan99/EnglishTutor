@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Learning.Application.Commands.TopicVocabularies.AddTopicVocabulary;
 using EnglishTutor.Learning.Application.Commands.TopicVocabularies.UpdateTopicVocabulary;
 using EnglishTutor.Learning.Application.Commands.TopicVocabularies.DeleteTopicVocabulary;
@@ -51,7 +52,7 @@ public static class VocabularyEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Created(
+            return ApiResults.Created(
                 $"/api/admin/learning/topics/{topicId}/vocabulary/{result.Value}",
                 new { id = result.Value });
         });
@@ -79,17 +80,11 @@ public static class VocabularyEndpoints
             }
 
             var paged = result.Value!;
-            var response = new
-            {
-                items = paged.Items.Select(MapToVocabularyResponse).ToList(),
-                paged.TotalCount,
-                paged.Page,
-                paged.PageSize,
-                paged.TotalPages,
-                paged.HasNextPage,
-                paged.HasPreviousPage
-            };
-            return Results.Ok(response);
+            return ApiResults.Paged(
+                items: paged.Items.Select(MapToVocabularyResponse).ToList(),
+                page: paged.Page,
+                pageSize: paged.PageSize,
+                totalCount: paged.TotalCount);
         });
 
         adminGroup.MapGet("/{vocabularyId:guid}", async (
@@ -106,7 +101,7 @@ public static class VocabularyEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok(MapToVocabularyResponse(result.Value!));
+            return ApiResults.Ok(MapToVocabularyResponse(result.Value!));
         });
 
         adminGroup.MapPut("/{vocabularyId:guid}", async (
@@ -135,7 +130,7 @@ public static class VocabularyEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok();
+            return ApiResults.Empty();
         });
 
         adminGroup.MapDelete("/{vocabularyId:guid}", async (
@@ -152,7 +147,7 @@ public static class VocabularyEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.NoContent();
+            return ApiResults.Empty();
         });
 
         // Public/User catalog endpoints — requires authenticated session
@@ -179,17 +174,11 @@ public static class VocabularyEndpoints
             }
 
             var paged = result.Value!;
-            var response = new
-            {
-                items = paged.Items.Select(MapToVocabularyResponse).ToList(),
-                paged.TotalCount,
-                paged.Page,
-                paged.PageSize,
-                paged.TotalPages,
-                paged.HasNextPage,
-                paged.HasPreviousPage
-            };
-            return Results.Ok(response);
+            return ApiResults.Paged(
+                items: paged.Items.Select(MapToVocabularyResponse).ToList(),
+                page: paged.Page,
+                pageSize: paged.PageSize,
+                totalCount: paged.TotalCount);
         });
 
         return routes;
@@ -202,10 +191,26 @@ public static class VocabularyEndpoints
     {
         return error.Type switch
         {
-            ErrorType.NotFound => Results.NotFound(error.Message),
-            ErrorType.Conflict => Results.Conflict(error.Message),
-            ErrorType.Validation => Results.BadRequest(error.Message),
-            _ => Results.Problem(detail: error.Message, statusCode: 400, title: error.Code)
+            ErrorType.NotFound => ApiResults.Problem(
+                statusCode: 404,
+                code: error.Code,
+                title: "Not found",
+                message: error.Message),
+            ErrorType.Conflict => ApiResults.Problem(
+                statusCode: 409,
+                code: error.Code,
+                title: "Conflict",
+                message: error.Message),
+            ErrorType.Validation => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Validation failed",
+                message: error.Message),
+            _ => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Bad request",
+                message: error.Message)
         };
     }
 }

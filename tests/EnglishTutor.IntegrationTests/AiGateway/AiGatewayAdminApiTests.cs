@@ -50,7 +50,7 @@ public class AiGatewayAdminApiTests
         var createProvider = await client.PostAsJsonAsync("/api/admin/ai-gateway/providers",
             new { Name = "Mock", Code = "mock", IsActive = true });
         createProvider.StatusCode.Should().Be(HttpStatusCode.Created);
-        var provider = await createProvider.Content.ReadFromJsonAsync<IdResponse>();
+        var provider = await createProvider.Content.ReadApiDataAsync<IdResponse>();
 
         var createKey = await client.PostAsJsonAsync("/api/admin/ai-gateway/provider-keys",
             new { ProviderId = provider!.Id, Name = "primary", Secret = "sk-supersecret-7777", Priority = 0, IsActive = true });
@@ -86,7 +86,7 @@ public class AiGatewayAdminApiTests
 
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("AiGateway.NotFound");
-        response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
     }
 
     [Fact]
@@ -121,8 +121,8 @@ public class AiGatewayAdminApiTests
         var client = factory.CreateClient();
         var login = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(OwnerEmail, OwnerPassword));
         login.StatusCode.Should().Be(HttpStatusCode.OK);
-        var payload = await login.Content.ReadFromJsonAsync<LoginResponse>();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", payload!.AccessToken);
+        var payload = await login.Content.ReadApiDataAsync<LoginResponse>();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", payload.AccessToken);
         return client;
     }
 }

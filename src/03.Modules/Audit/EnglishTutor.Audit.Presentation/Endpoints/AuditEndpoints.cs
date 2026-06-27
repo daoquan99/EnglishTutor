@@ -1,5 +1,6 @@
 using EnglishTutor.Audit.Application.Queries.SearchAuditLogs;
 using EnglishTutor.Audit.Application.Queries.SearchSecurityEvents;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -41,9 +42,14 @@ public static class AuditEndpoints
             var result = await mediator.Send(query, ct);
             if (!result.IsSuccess)
             {
-                return Results.BadRequest(result.Error);
+                return ApiResults.FromError(result.Error!);
             }
-            return Results.Ok(result.Value);
+            var page = result.Value!;
+            return ApiResults.Paged(
+                items: page.Items,
+                page: page.Page,
+                pageSize: page.PageSize,
+                totalCount: page.TotalCount);
         })
         .RequireAuthorization(policy => policy.RequireClaim(
             AuditEndpointAuthorization.PermissionClaimType,
@@ -70,9 +76,14 @@ public static class AuditEndpoints
             var result = await mediator.Send(query, ct);
             if (!result.IsSuccess)
             {
-                return Results.BadRequest(result.Error);
+                return ApiResults.FromError(result.Error!);
             }
-            return Results.Ok(result.Value);
+            var page = result.Value!;
+            return ApiResults.Paged(
+                items: page.Items,
+                page: page.Page,
+                pageSize: page.PageSize,
+                totalCount: page.TotalCount);
         })
         .RequireAuthorization(policy => policy.RequireClaim(
             AuditEndpointAuthorization.PermissionClaimType,

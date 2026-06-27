@@ -5,7 +5,6 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using EnglishTutor.Audit.Application.Queries.SearchAuditLogs;
 using EnglishTutor.Audit.Application.Queries.SearchSecurityEvents;
-using EnglishTutor.BuildingBlocks.Application.Pagination;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
@@ -72,8 +71,8 @@ public class AuditEndpointsTests
         await CreateAndRegisterUserAsync(factory, userEmail, userPassword, "Standard User");
 
         var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(userEmail, userPassword));
-        var loginPayload = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginPayload!.AccessToken);
+        var loginPayload = await loginResponse.Content.ReadApiDataAsync<LoginResponse>();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginPayload.AccessToken);
 
         var response = await client.GetAsync("/api/admin/audit/logs");
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -90,8 +89,8 @@ public class AuditEndpointsTests
         await CreateAndRegisterUserAsync(factory, userEmail, userPassword, "Standard User 2");
 
         var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(userEmail, userPassword));
-        var loginPayload = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginPayload!.AccessToken);
+        var loginPayload = await loginResponse.Content.ReadApiDataAsync<LoginResponse>();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginPayload.AccessToken);
 
         var response = await client.GetAsync("/api/admin/audit/security-events");
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -106,10 +105,9 @@ public class AuditEndpointsTests
         var response = await client.GetAsync("/api/admin/audit/logs?pageNumber=1&pageSize=10");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<PagedResult<AuditLogResponseDto>>();
-        pagedResult.Should().NotBeNull();
-        pagedResult!.Page.Should().Be(1);
-        pagedResult.PageSize.Should().Be(10);
+        var pagedResult = await response.Content.ReadApiResponseAsync<List<AuditLogResponseDto>>();
+        pagedResult.Meta!.Pagination!.Page.Should().Be(1);
+        pagedResult.Meta.Pagination.PageSize.Should().Be(10);
     }
 
     [Fact]
@@ -121,10 +119,9 @@ public class AuditEndpointsTests
         var response = await client.GetAsync("/api/admin/audit/security-events?pageNumber=1&pageSize=10");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<PagedResult<SecurityEventResponseDto>>();
-        pagedResult.Should().NotBeNull();
-        pagedResult!.Page.Should().Be(1);
-        pagedResult.PageSize.Should().Be(10);
+        var pagedResult = await response.Content.ReadApiResponseAsync<List<SecurityEventResponseDto>>();
+        pagedResult.Meta!.Pagination!.Page.Should().Be(1);
+        pagedResult.Meta.Pagination.PageSize.Should().Be(10);
     }
 
     private static async Task<(HttpClient Client, LoginResponse Auth, string RefreshCookie)> LoginOwnerAsync(
@@ -135,8 +132,7 @@ public class AuditEndpointsTests
             new LoginRequest(OwnerEmail, OwnerPassword));
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
-        payload.Should().NotBeNull();
+        var payload = await response.Content.ReadApiDataAsync<LoginResponse>();
 
         string? refreshCookie = null;
         if (response.Headers.TryGetValues("Set-Cookie", out var values))
@@ -145,7 +141,7 @@ public class AuditEndpointsTests
         }
 
         client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload.AccessToken);
 
         return (client, payload, refreshCookie ?? "");
     }

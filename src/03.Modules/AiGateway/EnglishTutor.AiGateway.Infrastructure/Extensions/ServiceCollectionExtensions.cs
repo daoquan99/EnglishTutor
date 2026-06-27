@@ -17,6 +17,7 @@ using EnglishTutor.AiGateway.Infrastructure.Persistence;
 using EnglishTutor.AiGateway.Infrastructure.Persistence.Repositories;
 using EnglishTutor.AiGateway.Infrastructure.Providers;
 using EnglishTutor.AiGateway.Infrastructure.Security;
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -57,7 +58,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IAiGatewayModule, AiGatewayService>();
         services.AddValidatorsFromAssembly(typeof(AiGatewayService).Assembly);
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AiGatewayService).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(AiGatewayService).Assembly);
 
         services.AddScoped<IAiProviderRepository, AiProviderRepository>();
         services.AddScoped<IAiModelRepository, AiModelRepository>();

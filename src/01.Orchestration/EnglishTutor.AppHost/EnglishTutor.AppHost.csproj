@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EnglishTutor.ServiceDefaults\EnglishTutor.ServiceDefaults.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\02.Hosts\EnglishTutor.Api\EnglishTutor.Api.csproj" />
     <ProjectReference Include="..\..\02.Hosts\EnglishTutor.Worker\EnglishTutor.Worker.csproj" />
   </ItemGroup>

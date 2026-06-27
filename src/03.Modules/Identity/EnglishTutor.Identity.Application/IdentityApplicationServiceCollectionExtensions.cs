@@ -1,3 +1,4 @@
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Commands.Login;
 using EnglishTutor.Identity.Application.Commands.Logout;
@@ -7,7 +8,6 @@ using EnglishTutor.Identity.Application.Security;
 using EnglishTutor.Identity.Application.Services;
 using EnglishTutor.Identity.Contracts;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,7 +30,7 @@ public static class IdentityApplicationServiceCollectionExtensions
         IConfiguration configuration)
     {
         // MediatR handlers + FluentValidation validators from this assembly.
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IdentityApplicationServiceCollectionExtensions).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(IdentityApplicationServiceCollectionExtensions).Assembly);
         services.AddValidatorsFromAssembly(typeof(IdentityApplicationServiceCollectionExtensions).Assembly);
         services
             .AddOptions<IdentitySecurityOptions>()

@@ -10,7 +10,10 @@ namespace EnglishTutor.IntegrationTests;
 public class IntegrationTestFactory : WebApplicationFactory<Program>
 {
     public const string TestJwtSigningKey =
-        "integration-test-signing-key-32-bytes-min-please-do-not-reuse";
+        "local-dev-jwt-signing-key-32-characters-minimum";
+
+    public const string TestAiGatewayEncryptionMasterKey =
+        "local-dev-ai-gateway-master-key-32-characters-minimum";
 
     public const string TestJwtIssuer = "EnglishTutor.IntegrationTests";
     public const string TestJwtAudience = "EnglishTutor.IntegrationTests";
@@ -20,6 +23,7 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
         "Host=localhost;Port=5432;Database=postgres;Username=englishtutor;Password=englishtutor_dev";
 
     private readonly string _testDbName = $"english_tutor_test_{Guid.NewGuid():N}";
+    private int _databaseDropped;
 
     public string TestConnectionString =>
         $"Host=localhost;Port=5432;Database={_testDbName};Username=englishtutor;Password=englishtutor_dev";
@@ -61,11 +65,18 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
         new Dictionary<string, string?>
         {
             ["Jwt:SigningKey"] = TestJwtSigningKey,
+            ["Jwt:Secret"] = TestJwtSigningKey,
             ["Jwt:Issuer"] = TestJwtIssuer,
             ["Jwt:Audience"] = TestJwtAudience,
             ["Jwt:AccessTokenMinutes"] = "15",
             ["Jwt:RefreshTokenDays"] = "7",
+            ["AiGateway:EncryptionMasterKey"] = TestAiGatewayEncryptionMasterKey,
             ["SeedData:Owner:Password"] = TestSeedOwnerPassword,
+            ["RabbitMq:HostName"] = "localhost",
+            ["RabbitMq:Port"] = "5672",
+            ["RabbitMq:UserName"] = "englishtutor",
+            ["RabbitMq:Password"] = "englishtutor_dev",
+            ["RabbitMq:VirtualHost"] = "/",
         };
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -120,16 +131,41 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
+        try
         {
-            DropTestDatabase();
+            base.Dispose(disposing);
         }
-        base.Dispose(disposing);
+        finally
+        {
+            if (disposing)
+            {
+                DropTestDatabaseOnce();
+            }
+        }
     }
 
-    // Best-effort drop of the per-factory temporary database. Runs only
-    // against the DB name this factory generated; never targets the
-    // main `english_tutor_db` database.
+    public override async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await base.DisposeAsync();
+        }
+        finally
+        {
+            DropTestDatabaseOnce();
+        }
+    }
+
+    private void DropTestDatabaseOnce()
+    {
+        if (System.Threading.Interlocked.Exchange(ref _databaseDropped, 1) == 1)
+        {
+            return;
+        }
+
+        DropTestDatabase();
+    }
+
     private void DropTestDatabase()
     {
         try
@@ -137,8 +173,6 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
             using var conn = new NpgsqlConnection(PostgresAdminConnectionString);
             conn.Open();
 
-            // Disconnect any active connections to the test DB so DROP
-            // can succeed. We filter by datname to scope the terminate.
             using (var discCmd = new NpgsqlCommand(
                 "SELECT pg_terminate_backend(pid) FROM pg_stat_activity " +
                 "WHERE datname = @dbname AND pid <> pg_backend_pid()", conn))
@@ -154,8 +188,6 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
         }
         catch
         {
-            // Best-effort teardown; never let teardown errors mask test
-            // failures.
         }
     }
 }

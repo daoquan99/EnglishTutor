@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Practice.Contracts.Dtos;
 using EnglishTutor.Practice.Application.Sessions.Commands.StartPracticeSession;
 using EnglishTutor.Practice.Application.Sessions.Commands.AppendPracticeMessage;
@@ -29,7 +30,7 @@ public static class PracticeEndpoints
 
         group.MapPost("/", async (StartSessionRequest request, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var command = new StartPracticeSessionCommand(userId, request.ScenarioId, request.IdempotencyKey, request.RequestedMinutes);
             var result = await sender.Send(command, ct);
@@ -41,7 +42,7 @@ public static class PracticeEndpoints
             var dto = result.Value!;
             return dto.Status switch
             {
-                StartSessionStatus.Success => Results.Created($"/api/practice/sessions/{dto.SessionId}", dto),
+                StartSessionStatus.Success => ApiResults.Created($"/api/practice/sessions/{dto.SessionId}", dto),
                 StartSessionStatus.ScenarioNotFound => Problem(StatusCodes.Status404NotFound, "Scenario not found", dto.ErrorCode),
                 StartSessionStatus.ValidationError => Problem(StatusCodes.Status400BadRequest, "Validation error", dto.ErrorCode),
                 _ => Problem(StatusCodes.Status409Conflict, "Session could not be started", dto.ErrorCode),
@@ -50,7 +51,7 @@ public static class PracticeEndpoints
 
         group.MapGet("/", async (int? page, int? pageSize, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var query = new ListPracticeSessionsQuery(userId, page ?? 1, pageSize ?? 20);
             var result = await sender.Send(query, ct);
@@ -59,12 +60,17 @@ public static class PracticeEndpoints
                 return Problem(StatusCodes.Status400BadRequest, "Validation error", result.Error?.Code);
             }
 
-            return Results.Ok(result.Value!);
+            var pageResult = result.Value!;
+            return ApiResults.Paged(
+                items: pageResult.Items,
+                page: pageResult.Page,
+                pageSize: pageResult.PageSize,
+                totalCount: pageResult.TotalCount);
         });
 
         group.MapGet("/{sessionId:guid}", async (Guid sessionId, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var query = new GetPracticeSessionQuery(userId, sessionId);
             var result = await sender.Send(query, ct);
@@ -76,7 +82,7 @@ public static class PracticeEndpoints
             var dto = result.Value!;
             return dto.Status switch
             {
-                PracticeQueryStatus.Success => Results.Ok(dto.Session),
+                PracticeQueryStatus.Success => ApiResults.Ok(dto.Session),
                 PracticeQueryStatus.Forbidden => Problem(StatusCodes.Status403Forbidden, "Forbidden", "practice.forbidden"),
                 _ => Problem(StatusCodes.Status404NotFound, "Session not found", "practice.not_found"),
             };
@@ -84,7 +90,7 @@ public static class PracticeEndpoints
 
         group.MapGet("/{sessionId:guid}/transcript", async (Guid sessionId, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var query = new GetPracticeTranscriptQuery(userId, sessionId);
             var result = await sender.Send(query, ct);
@@ -96,7 +102,7 @@ public static class PracticeEndpoints
             var dto = result.Value!;
             return dto.Status switch
             {
-                PracticeQueryStatus.Success => Results.Ok(dto.Messages),
+                PracticeQueryStatus.Success => ApiResults.Ok(dto.Messages),
                 PracticeQueryStatus.Forbidden => Problem(StatusCodes.Status403Forbidden, "Forbidden", "practice.forbidden"),
                 _ => Problem(StatusCodes.Status404NotFound, "Session not found", "practice.not_found"),
             };
@@ -104,7 +110,7 @@ public static class PracticeEndpoints
 
         group.MapPost("/{sessionId:guid}/messages", async (Guid sessionId, AppendTranscriptRequest request, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var command = new AppendPracticeMessageCommand(userId, sessionId, request.Content);
             var result = await sender.Send(command, ct);
@@ -116,7 +122,7 @@ public static class PracticeEndpoints
             var dto = result.Value!;
             return dto.Status switch
             {
-                AppendTranscriptStatus.Success => Results.Ok(dto),
+                AppendTranscriptStatus.Success => ApiResults.Ok(dto),
                 AppendTranscriptStatus.SessionNotFound => Problem(StatusCodes.Status404NotFound, "Session not found", dto.ErrorCode),
                 AppendTranscriptStatus.Forbidden => Problem(StatusCodes.Status403Forbidden, "Forbidden", dto.ErrorCode),
                 AppendTranscriptStatus.SessionNotActive => Problem(StatusCodes.Status409Conflict, "Session not active", dto.ErrorCode),
@@ -127,7 +133,7 @@ public static class PracticeEndpoints
 
         group.MapPost("/{sessionId:guid}/end", async (Guid sessionId, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var command = new EndPracticeSessionCommand(userId, sessionId);
             var result = await sender.Send(command, ct);
@@ -139,7 +145,7 @@ public static class PracticeEndpoints
             var dto = result.Value!;
             return dto.Status switch
             {
-                EndSessionStatus.Success or EndSessionStatus.AlreadyEnded => Results.Ok(dto),
+                EndSessionStatus.Success or EndSessionStatus.AlreadyEnded => ApiResults.Ok(dto),
                 EndSessionStatus.Forbidden => Problem(StatusCodes.Status403Forbidden, "Forbidden", dto.ErrorCode),
                 _ => Problem(StatusCodes.Status404NotFound, "Session not found", dto.ErrorCode),
             };
@@ -147,7 +153,7 @@ public static class PracticeEndpoints
 
         group.MapPost("/{sessionId:guid}/cancel", async (Guid sessionId, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var command = new CancelPracticeSessionCommand(userId, sessionId);
             var result = await sender.Send(command, ct);
@@ -159,7 +165,7 @@ public static class PracticeEndpoints
             var dto = result.Value!;
             return dto.Status switch
             {
-                EndSessionStatus.Success or EndSessionStatus.AlreadyEnded => Results.Ok(dto),
+                EndSessionStatus.Success or EndSessionStatus.AlreadyEnded => ApiResults.Ok(dto),
                 EndSessionStatus.Forbidden => Problem(StatusCodes.Status403Forbidden, "Forbidden", dto.ErrorCode),
                 _ => Problem(StatusCodes.Status404NotFound, "Session not found", dto.ErrorCode),
             };
@@ -167,7 +173,7 @@ public static class PracticeEndpoints
 
         group.MapPost("/{sessionId:guid}/complete-scenario", async (Guid sessionId, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
-            if (user.UserId is not Guid userId) return Results.Unauthorized();
+            if (user.UserId is not Guid userId) return Unauthorized();
             
             var command = new CompletePracticeScenarioCommand(userId, sessionId);
             var result = await sender.Send(command, ct);
@@ -179,7 +185,7 @@ public static class PracticeEndpoints
             var dto = result.Value!;
             return dto.Status switch
             {
-                EndSessionStatus.Success or EndSessionStatus.AlreadyEnded => Results.Ok(dto),
+                EndSessionStatus.Success or EndSessionStatus.AlreadyEnded => ApiResults.Ok(dto),
                 EndSessionStatus.Forbidden => Problem(StatusCodes.Status403Forbidden, "Forbidden", dto.ErrorCode),
                 _ => Problem(StatusCodes.Status404NotFound, "Session not found", dto.ErrorCode),
             };
@@ -189,8 +195,16 @@ public static class PracticeEndpoints
     }
 
     private static IResult Problem(int statusCode, string title, string? errorCode) =>
-        Results.Problem(
+        ApiResults.Problem(
             statusCode: statusCode,
+            code: errorCode ?? ApiErrorCodes.InvalidRequest,
             title: title,
-            extensions: new Dictionary<string, object?> { ["errorCode"] = errorCode });
+            message: title);
+
+    private static IResult Unauthorized() =>
+        ApiResults.Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            code: ApiErrorCodes.Unauthorized,
+            title: "Unauthorized",
+            message: "Authentication is required.");
 }

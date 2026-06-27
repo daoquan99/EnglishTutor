@@ -15,6 +15,7 @@ using EnglishTutor.BuildingBlocks.Infrastructure.Correlation;
 using EnglishTutor.BuildingBlocks.Infrastructure.HealthChecks;
 using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Infrastructure.Options;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Identity.Application;
 using EnglishTutor.Identity.Infrastructure;
 using EnglishTutor.Identity.Infrastructure.Messaging;
@@ -35,7 +36,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
 
+RepositoryEnvironment.LoadIntoProcess();
+
 var builder = WebApplication.CreateBuilder(args);
+const string DefaultCorsPolicy = "DefaultCors";
 
 builder.AddServiceDefaults();
 
@@ -44,6 +48,22 @@ builder.Host.UseSerilog((context, loggerConfig) =>
 
 // Strongly-typed options + startup validation
 builder.Services.AddBaseOptions(builder.Configuration);
+builder.Services.AddApiPresentation();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(DefaultCorsPolicy, policy =>
+    {
+        var allowedOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>()
+            ?? [];
+
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // Health checks: liveness + readiness (Postgres / RabbitMQ / Redis)
 builder.Services.AddBaseHealthChecks();
@@ -143,8 +163,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Middleware
+app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseCors(DefaultCorsPolicy);
 
 // Authentication + Authorization — required because /api/me and
 // /api/auth/logout carry .RequireAuthorization() metadata.
@@ -166,7 +188,7 @@ app.MapFeedbackModuleEndpoints();
 app.MapRealtimeHubs();
 
 // Minimal API root
-app.MapGet("/", () => Results.Ok(new
+app.MapGet("/", () => ApiResults.Ok(new
 {
     service = "EnglishTutor.Api",
     version = "1.0.0",
@@ -175,6 +197,13 @@ app.MapGet("/", () => Results.Ok(new
 }))
 .WithName("GetRoot")
 .ExcludeFromDescription();
+
+app.MapFallback("/api/{**path}", () =>
+    ApiResults.Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        code: ApiErrorCodes.NotFound,
+        title: "Not found",
+        message: "The requested API resource was not found."));
 
 app.Run();
 

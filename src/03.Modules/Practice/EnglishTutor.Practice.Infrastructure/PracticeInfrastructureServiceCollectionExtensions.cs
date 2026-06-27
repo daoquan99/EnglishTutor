@@ -1,11 +1,11 @@
 using System;
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Practice.Application.Abstractions.Persistence;
 using EnglishTutor.Practice.Domain.Aggregates.PracticeSession.Repositories;
 using EnglishTutor.Practice.Domain.Aggregates.PracticeScenarioReadModel.Repositories;
 using EnglishTutor.Practice.Infrastructure.Persistence;
 using EnglishTutor.Practice.Infrastructure.Persistence.Repositories;
-using MediatR;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,7 +20,7 @@ public static class PracticeInfrastructureServiceCollectionExtensions
         IConfiguration configuration)
     {
         // 1. Register MediatR handlers + FluentValidation validators from Application assembly
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IPracticeUnitOfWork).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(IPracticeUnitOfWork).Assembly);
         services.AddValidatorsFromAssembly(typeof(IPracticeUnitOfWork).Assembly);
 
         // 2. Resolve Connection String

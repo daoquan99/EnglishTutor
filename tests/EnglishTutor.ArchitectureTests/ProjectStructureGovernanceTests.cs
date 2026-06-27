@@ -255,6 +255,9 @@ public sealed class ProjectStructureGovernanceTests
                     && target.Kind is ProjectKind.Domain
                         or ProjectKind.Application
                         or ProjectKind.Contracts,
+                ProjectKind.Presentation =>
+                    target.IsBuildingBlocks
+                    && target.Kind == ProjectKind.Domain,
                 _ => false
             };
         }
@@ -262,7 +265,8 @@ public sealed class ProjectStructureGovernanceTests
         if (source.Kind == ProjectKind.ApiHost)
         {
             return target.Kind == ProjectKind.ServiceDefaults
-                   || target.IsBuildingBlocks && target.Kind == ProjectKind.Infrastructure
+                   || target.IsBuildingBlocks
+                   && target.Kind is ProjectKind.Infrastructure or ProjectKind.Presentation
                    || target.IsModule
                    && target.Kind is ProjectKind.Presentation or ProjectKind.Infrastructure;
         }
@@ -291,7 +295,8 @@ public sealed class ProjectStructureGovernanceTests
                         or ProjectKind.Application
                         or ProjectKind.Infrastructure
                         or ProjectKind.Contracts,
-                ProjectKind.Presentation => target.Kind == ProjectKind.Application,
+                ProjectKind.Presentation =>
+                    target.Kind is ProjectKind.Application or ProjectKind.Presentation,
                 ProjectKind.Contracts => target.Kind == ProjectKind.Contracts,
                 _ => false
             };

@@ -1,4 +1,5 @@
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Commands.Login;
 using EnglishTutor.Identity.Application.Commands.LogoutAll;
@@ -32,7 +33,7 @@ public static class AuthEndpoints
         group.MapGet("/csrf", (HttpContext httpContext, IOptions<CsrfOptions> csrfOptions) =>
         {
             var token = CsrfProtection.IssueToken(httpContext.Response, csrfOptions.Value);
-            return Results.Ok(new CsrfTokenResponse(token));
+            return ApiResults.Ok(new CsrfTokenResponse(token));
         });
 
         // ----- Login -----
@@ -74,7 +75,7 @@ public static class AuthEndpoints
             // Issue a CSRF token so the client can immediately call refresh.
             CsrfProtection.IssueToken(httpContext.Response, csrfOptions.Value);
 
-            return Results.Ok(ToLoginResponse(result.Value!));
+            return ApiResults.Ok(ToLoginResponse(result.Value!));
         }).RequireRateLimiting(AuthRateLimitPolicies.Login);
 
         // ----- Refresh (cookie-only + CSRF) -----
@@ -119,7 +120,7 @@ public static class AuthEndpoints
                 result.Value.ExpiresAt,
                 options);
 
-            return Results.Ok(ToRefreshResponse(result.Value!));
+            return ApiResults.Ok(ToRefreshResponse(result.Value!));
         }).RequireRateLimiting(AuthRateLimitPolicies.Refresh);
 
         // ----- Logout (cookie + CSRF) -----
@@ -136,7 +137,7 @@ public static class AuthEndpoints
             if (string.IsNullOrWhiteSpace(token))
             {
                 // Idempotent: nothing to revoke.
-                return Results.NoContent();
+                return ApiResults.Empty();
             }
 
             var csrfError = ValidateCsrf(httpContext, csrfOptions.Value);
@@ -150,7 +151,7 @@ public static class AuthEndpoints
 
             RefreshTokenCookieHelper.ClearRefreshTokenCookie(httpContext.Response, options);
 
-            return result.IsSuccess ? Results.NoContent() : AuthProblemResults.FromError(result.Error!);
+            return result.IsSuccess ? ApiResults.Empty() : AuthProblemResults.FromError(result.Error!);
         }).RequireAuthorization().RequireRateLimiting(AuthRateLimitPolicies.Logout);
 
         // ----- Logout-all (CSRF) -----
@@ -183,13 +184,15 @@ public static class AuthEndpoints
 
             RefreshTokenCookieHelper.ClearRefreshTokenCookie(httpContext.Response, cookieOptions.Value);
 
-            return Results.NoContent();
+            return ApiResults.Empty();
         }).RequireAuthorization().RequireRateLimiting(AuthRateLimitPolicies.Logout);
 
         // ----- Sessions list (safe GET, no CSRF) -----
         group.MapGet("/sessions", async (
             IMediator mediator,
             ICurrentUser currentUser,
+            int? page,
+            int? pageSize,
             CancellationToken ct) =>
         {
             var userId = currentUser.UserId;
@@ -198,15 +201,23 @@ public static class AuthEndpoints
                 return AuthProblemResults.Unauthorized();
             }
 
-            var query = new GetUserSessionsQuery(userId.Value);
+            var query = new GetUserSessionsQuery(
+                UserId: userId.Value,
+                Page: page ?? 1,
+                PageSize: pageSize ?? 20);
             var result = await mediator.Send(query, ct);
             if (!result.IsSuccess)
             {
                 return AuthProblemResults.FromError(result.Error!);
             }
 
-            var response = result.Value!.Select(ToUserSessionResponse).ToList();
-            return Results.Ok(response);
+            var resultPage = result.Value!;
+            var response = resultPage.Items.Select(ToUserSessionResponse).ToList();
+            return ApiResults.Paged(
+                items: response,
+                page: resultPage.Page,
+                pageSize: resultPage.PageSize,
+                totalCount: resultPage.TotalCount);
         }).RequireAuthorization();
 
         // ----- Session revoke (CSRF) -----
@@ -236,7 +247,7 @@ public static class AuthEndpoints
             var command = new RevokeSessionCommand(sessionId, userId.Value, isAdmin);
             var result = await mediator.Send(command, ct);
 
-            return result.IsSuccess ? Results.NoContent() : AuthProblemResults.FromError(result.Error!);
+            return result.IsSuccess ? ApiResults.Empty() : AuthProblemResults.FromError(result.Error!);
         }).RequireAuthorization().RequireRateLimiting(AuthRateLimitPolicies.SessionMutation);
 
         return routes;

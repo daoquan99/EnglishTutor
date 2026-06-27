@@ -98,8 +98,8 @@ public class LearningFlowTests
 
         using var client = factory.CreateClient();
         var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(standardEmail, password));
-        var authPayload = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authPayload!.AccessToken);
+        var authPayload = await loginResponse.Content.ReadApiDataAsync<LoginResponse>();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authPayload.AccessToken);
 
         // Act
         var getTopicsRes = await client.GetAsync("/api/admin/learning/topics");
@@ -142,16 +142,16 @@ public class LearningFlowTests
 
         createModeRes.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var modeCreatedPayload = await createModeRes.Content.ReadFromJsonAsync<CreatedResponse>();
-        var modeId = modeCreatedPayload!.Id;
+        var modeCreatedPayload = await createModeRes.Content.ReadApiDataAsync<CreatedResponse>();
+        var modeId = modeCreatedPayload.Id;
 
         // 2. Create a Topic via Admin API
         var topicSlug = "daily-conversations";
         var createTopicRes = await adminClient.PostAsJsonAsync("/api/admin/learning/topics",
             new CreateTopicRequest("Daily Conversations", topicSlug, "Talk about daily routines"));
         createTopicRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var topicCreatedPayload = await createTopicRes.Content.ReadFromJsonAsync<CreatedResponse>();
-        var topicId = topicCreatedPayload!.Id;
+        var topicCreatedPayload = await createTopicRes.Content.ReadApiDataAsync<CreatedResponse>();
+        var topicId = topicCreatedPayload.Id;
 
         // 3. Enable the Mode for the Topic via Admin API
         var enableModeRes = await adminClient.PostAsJsonAsync($"/api/admin/learning/topics/{topicId}/modes",
@@ -169,13 +169,13 @@ public class LearningFlowTests
                 "Beginner",
                 "Recruiter template"));
         createScenarioRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var scenarioCreatedPayload = await createScenarioRes.Content.ReadFromJsonAsync<CreatedResponse>();
-        var scenarioId = scenarioCreatedPayload!.Id;
+        var scenarioCreatedPayload = await createScenarioRes.Content.ReadApiDataAsync<CreatedResponse>();
+        var scenarioId = scenarioCreatedPayload.Id;
 
         // 5. Query active Topic details via User API
         var detailsRes = await adminClient.GetAsync($"/api/learning/topics/{topicSlug}");
         detailsRes.StatusCode.Should().Be(HttpStatusCode.OK);
-        var details = await detailsRes.Content.ReadFromJsonAsync<TopicDetailsResponse>();
+        var details = await detailsRes.Content.ReadApiDataAsync<TopicDetailsResponse>();
         details.Should().NotBeNull();
         details!.Id.Should().Be(topicId);
         details.TopicModes.Should().ContainSingle(m => m.ModeDefinitionId == modeId && m.IsEnabled);
@@ -183,7 +183,7 @@ public class LearningFlowTests
         // 6. Query Scenario list via User API
         var scenariosRes = await adminClient.GetAsync($"/api/learning/topics/{topicSlug}/modes/{modeCode}/scenarios");
         scenariosRes.StatusCode.Should().Be(HttpStatusCode.OK);
-        var scenarios = await scenariosRes.Content.ReadFromJsonAsync<List<ScenarioResponse>>();
+        var scenarios = await scenariosRes.Content.ReadApiDataAsync<List<ScenarioResponse>>();
         scenarios.Should().NotBeEmpty();
         scenarios.Should().ContainSingle(s => s.Id == scenarioId);
 
@@ -194,13 +194,13 @@ public class LearningFlowTests
         var createModeBRes = await adminClient.PostAsJsonAsync("/api/admin/learning/modes",
             new CreateModeDefinitionRequest(modeCodeB, "Free Talk Mode", "Free conversation"));
         createModeBRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var modeBId = (await createModeBRes.Content.ReadFromJsonAsync<CreatedResponse>())!.Id;
+        var modeBId = (await createModeBRes.Content.ReadApiDataAsync<CreatedResponse>()).Id;
 
         var topicSlugB = "advanced-debates";
         var createTopicBRes = await adminClient.PostAsJsonAsync("/api/admin/learning/topics",
             new CreateTopicRequest("Advanced Debates", topicSlugB, "Argue complex topics"));
         createTopicBRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var topicBId = (await createTopicBRes.Content.ReadFromJsonAsync<CreatedResponse>())!.Id;
+        var topicBId = (await createTopicBRes.Content.ReadApiDataAsync<CreatedResponse>()).Id;
 
         var enableModeBRes = await adminClient.PostAsJsonAsync($"/api/admin/learning/topics/{topicBId}/modes",
             new EnableTopicModeRequest(modeId, "{}"));
@@ -215,17 +215,17 @@ public class LearningFlowTests
                 "Hard",
                 "Recruiter template"));
         createScenarioBRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var scenarioBId = (await createScenarioBRes.Content.ReadFromJsonAsync<CreatedResponse>())!.Id;
+        var scenarioBId = (await createScenarioBRes.Content.ReadApiDataAsync<CreatedResponse>()).Id;
 
         // Disable them via Admin APIs
         var disableTopicRes = await adminClient.DeleteAsync($"/api/admin/learning/topics/{topicBId}");
-        disableTopicRes.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        disableTopicRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var disableModeRes = await adminClient.DeleteAsync($"/api/admin/learning/modes/{modeBId}");
-        disableModeRes.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        disableModeRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var disableScenarioRes = await adminClient.DeleteAsync($"/api/admin/learning/scenarios/{scenarioBId}");
-        disableScenarioRes.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        disableScenarioRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Register and login a standard authenticated user (not admin/owner)
         var standardEmail = "standard-user@test.local";
@@ -235,15 +235,15 @@ public class LearningFlowTests
         using var standardClient = factory.CreateClient();
         var stdLoginResponse = await standardClient.PostAsJsonAsync("/api/auth/login", new LoginRequest(standardEmail, standardPassword));
         stdLoginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stdAuthPayload = await stdLoginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        standardClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", stdAuthPayload!.AccessToken);
+        var stdAuthPayload = await stdLoginResponse.Content.ReadApiDataAsync<LoginResponse>();
+        standardClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", stdAuthPayload.AccessToken);
 
         // Assert: Authenticated user can access public catalog routes
         var getTopicsRes = await standardClient.GetAsync("/api/learning/topics");
         getTopicsRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Assert: Disabled Topic does not appear in public active topic queries
-        var topics = await getTopicsRes.Content.ReadFromJsonAsync<List<TopicResponse>>();
+        var topics = await getTopicsRes.Content.ReadApiDataAsync<List<TopicResponse>>();
         topics.Should().Contain(t => t.Id == topicId);
         topics.Should().NotContain(t => t.Id == topicBId);
 
@@ -254,7 +254,7 @@ public class LearningFlowTests
         // Assert: Disabled Mode/TopicMode does not appear in public enabled mode queries
         var getTopicModesRes = await standardClient.GetAsync($"/api/learning/topics/{topicSlug}/modes");
         getTopicModesRes.StatusCode.Should().Be(HttpStatusCode.OK);
-        var topicModes = await getTopicModesRes.Content.ReadFromJsonAsync<List<TopicModeResponse>>();
+        var topicModes = await getTopicModesRes.Content.ReadApiDataAsync<List<TopicModeResponse>>();
         // Mode A (active/enabled) should be present
         topicModes.Should().Contain(tm => tm.ModeDefinitionId == modeId);
         // Mode B (disabled mode definition) should not be present
@@ -263,21 +263,21 @@ public class LearningFlowTests
         // Assert: Disabled Scenario does not appear in public active scenario queries
         var getScenariosRes = await standardClient.GetAsync($"/api/learning/topics/{topicSlug}/modes/{modeCode}/scenarios");
         getScenariosRes.StatusCode.Should().Be(HttpStatusCode.OK);
-        var scenariosList = await getScenariosRes.Content.ReadFromJsonAsync<List<ScenarioResponse>>();
+        var scenariosList = await getScenariosRes.Content.ReadApiDataAsync<List<ScenarioResponse>>();
         scenariosList.Should().Contain(s => s.Id == scenarioId);
         scenariosList.Should().NotContain(s => s.Id == scenarioBId);
 
         // Assert: Admin list routes can see inactive/disabled items
         var adminGetTopicsRes = await adminClient.GetAsync("/api/admin/learning/topics");
-        var adminTopics = await adminGetTopicsRes.Content.ReadFromJsonAsync<List<TopicResponse>>();
+        var adminTopics = await adminGetTopicsRes.Content.ReadApiDataAsync<List<TopicResponse>>();
         adminTopics.Should().Contain(t => t.Id == topicBId && !t.IsActive);
 
         var adminGetModesRes = await adminClient.GetAsync("/api/admin/learning/modes");
-        var adminModes = await adminGetModesRes.Content.ReadFromJsonAsync<List<ModeDefinitionResponse>>();
+        var adminModes = await adminGetModesRes.Content.ReadApiDataAsync<List<ModeDefinitionResponse>>();
         adminModes.Should().Contain(m => m.Id == modeBId && !m.IsActive);
 
         var adminGetScenariosRes = await adminClient.GetAsync("/api/admin/learning/scenarios");
-        var adminScenarios = await adminGetScenariosRes.Content.ReadFromJsonAsync<List<ScenarioResponse>>();
+        var adminScenarios = await adminGetScenariosRes.Content.ReadApiDataAsync<List<ScenarioResponse>>();
         adminScenarios.Should().Contain(s => s.Id == scenarioBId && !s.IsActive);
 
         // 7. Verify Outbox Message Persistence
@@ -348,13 +348,13 @@ public class LearningFlowTests
         var createTopicRes = await adminClient.PostAsJsonAsync("/api/admin/learning/topics",
             new CreateTopicRequest("Vocabulary Topic", "vocab-topic", "Topic for testing vocabulary"));
         createTopicRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var topicId = (await createTopicRes.Content.ReadFromJsonAsync<CreatedResponse>())!.Id;
+        var topicId = (await createTopicRes.Content.ReadApiDataAsync<CreatedResponse>()).Id;
 
         // 2. Add Vocabulary
         var addVocabRes = await adminClient.PostAsJsonAsync($"/api/admin/learning/topics/{topicId}/vocabulary",
             new CreateVocabularyRequest("Hello", "A common greeting", "Noun", "/həˈloʊ/", "Hello world", "Xin chào thế giới"));
         addVocabRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var vocabId = (await addVocabRes.Content.ReadFromJsonAsync<CreatedResponse>())!.Id;
+        var vocabId = (await addVocabRes.Content.ReadApiDataAsync<CreatedResponse>()).Id;
 
         // Verify Duplicate check (Case-insensitive & spacing normalization)
         var duplicateVocabRes = await adminClient.PostAsJsonAsync($"/api/admin/learning/topics/{topicId}/vocabulary",
@@ -365,7 +365,7 @@ public class LearningFlowTests
         var addPhraseRes = await adminClient.PostAsJsonAsync($"/api/admin/learning/topics/{topicId}/phrases",
             new CreatePhraseRequest("How are you?", "Bạn khỏe không?", "Common greeting context"));
         addPhraseRes.StatusCode.Should().Be(HttpStatusCode.Created);
-        var phraseId = (await addPhraseRes.Content.ReadFromJsonAsync<CreatedResponse>())!.Id;
+        var phraseId = (await addPhraseRes.Content.ReadApiDataAsync<CreatedResponse>()).Id;
 
         // Verify Duplicate Phrase check
         var duplicatePhraseRes = await adminClient.PostAsJsonAsync($"/api/admin/learning/topics/{topicId}/phrases",
@@ -379,10 +379,10 @@ public class LearningFlowTests
 
         // 5. Delete (Soft-Delete) Vocabulary and Phrase
         var deleteVocabRes = await adminClient.DeleteAsync($"/api/admin/learning/topics/{topicId}/vocabulary/{vocabId}");
-        deleteVocabRes.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        deleteVocabRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var deletePhraseRes = await adminClient.DeleteAsync($"/api/admin/learning/topics/{topicId}/phrases/{phraseId}");
-        deletePhraseRes.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        deletePhraseRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // 6. Admin details retrieve behavior (includeDeleted)
         // With includeDeleted=false (default): should return 404
@@ -400,17 +400,15 @@ public class LearningFlowTests
 
         using var standardClient = factory.CreateClient();
         var stdLoginResponse = await standardClient.PostAsJsonAsync("/api/auth/login", new LoginRequest(standardEmail, standardPassword));
-        var stdAuthPayload = await stdLoginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        standardClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", stdAuthPayload!.AccessToken);
+        var stdAuthPayload = await stdLoginResponse.Content.ReadApiDataAsync<LoginResponse>();
+        standardClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", stdAuthPayload.AccessToken);
 
         // Public listing of active vocabulary should be empty (since it's soft-deleted)
         var getPublicVocabRes = await standardClient.GetAsync($"/api/learning/topics/vocab-topic/vocabulary");
         getPublicVocabRes.StatusCode.Should().Be(HttpStatusCode.OK);
-        var publicVocabs = await getPublicVocabRes.Content.ReadFromJsonAsync<PagedListResult<VocabularyResponse>>();
-        publicVocabs!.Items.Should().BeEmpty();
+        var publicVocabs = await getPublicVocabRes.Content.ReadApiDataAsync<List<VocabularyResponse>>();
+        publicVocabs.Should().BeEmpty();
     }
-
-    private sealed record PagedListResult<T>(List<T> Items, int TotalCount);
 
     private static async Task SeedOwnerAsync(WebApplicationFactory<Program> factory)
     {
@@ -426,11 +424,11 @@ public class LearningFlowTests
             new LoginRequest(OwnerEmail, OwnerPassword));
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        var payload = await response.Content.ReadApiDataAsync<LoginResponse>();
         payload.Should().NotBeNull();
 
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload.AccessToken);
 
         return (client, payload);
     }

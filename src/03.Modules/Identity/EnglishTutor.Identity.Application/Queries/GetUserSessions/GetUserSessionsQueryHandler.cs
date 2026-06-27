@@ -1,40 +1,30 @@
+using EnglishTutor.BuildingBlocks.Application.Pagination;
 using EnglishTutor.BuildingBlocks.Application.Queries;
 using EnglishTutor.BuildingBlocks.Domain.Results;
-using EnglishTutor.Identity.Domain.Aggregates.Sessions.Repositories;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using EnglishTutor.Identity.Application.Abstractions.Persistence;
 
 namespace EnglishTutor.Identity.Application.Queries.GetUserSessions;
 
 public sealed class GetUserSessionsQueryHandler
-    : IQueryHandler<GetUserSessionsQuery, IReadOnlyList<UserSessionResult>>
+    : IQueryHandler<GetUserSessionsQuery, PagedResult<UserSessionResult>>
 {
-    private readonly IUserSessionRepository _userSessionRepository;
+    private readonly IUserSessionQueryService _queryService;
 
-    public GetUserSessionsQueryHandler(IUserSessionRepository userSessionRepository)
+    public GetUserSessionsQueryHandler(IUserSessionQueryService queryService)
     {
-        _userSessionRepository = userSessionRepository;
+        _queryService = queryService;
     }
 
-    public async Task<Result<IReadOnlyList<UserSessionResult>>> Handle(
+    public async Task<Result<PagedResult<UserSessionResult>>> Handle(
         GetUserSessionsQuery request,
         CancellationToken cancellationToken)
     {
-        var sessions = await _userSessionRepository.GetActiveSessionsByUserIdAsync(request.UserId, cancellationToken);
+        var page = await _queryService.GetActiveSessionsAsync(
+            userId: request.UserId,
+            page: request.Page,
+            pageSize: request.PageSize,
+            cancellationToken: cancellationToken);
 
-        var results = sessions
-            .Select(s => new UserSessionResult(
-                Id: s.Id,
-                DeviceId: s.Device.DeviceId,
-                DeviceName: s.Device.DeviceName,
-                UserAgentHash: s.Device.UserAgentHash,
-                IpAddressHash: s.Device.IpAddressHash,
-                CreatedAtUtc: s.CreatedAtUtc,
-                LastSeenAtUtc: s.LastSeenAtUtc))
-            .ToList();
-
-        return Result.Success<IReadOnlyList<UserSessionResult>>(results);
+        return Result.Success(page);
     }
 }

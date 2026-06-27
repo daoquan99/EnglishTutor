@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Learning.Application.Commands.Scenarios.CreateScenario;
 using EnglishTutor.Learning.Application.Commands.Scenarios.UpdateScenario;
 using EnglishTutor.Learning.Application.Commands.Scenarios.DisableScenario;
@@ -50,7 +51,7 @@ public static class ScenariosEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Created($"/api/admin/learning/scenarios/{result.Value}", new { id = result.Value });
+            return ApiResults.Created($"/api/admin/learning/scenarios/{result.Value}", new { id = result.Value });
         });
 
         adminGroup.MapGet("/", async (
@@ -65,7 +66,7 @@ public static class ScenariosEndpoints
             }
 
             var response = result.Value!.Select(MapToScenarioResponse).ToList();
-            return Results.Ok(response);
+            return ApiResults.Ok(response);
         });
 
         adminGroup.MapGet("/{scenarioId:guid}", async (
@@ -80,7 +81,7 @@ public static class ScenariosEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok(MapToScenarioResponse(result.Value!));
+            return ApiResults.Ok(MapToScenarioResponse(result.Value!));
         });
 
         adminGroup.MapPut("/{scenarioId:guid}", async (
@@ -104,7 +105,7 @@ public static class ScenariosEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok();
+            return ApiResults.Empty();
         });
 
         adminGroup.MapDelete("/{scenarioId:guid}", async (
@@ -120,7 +121,7 @@ public static class ScenariosEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.NoContent();
+            return ApiResults.Empty();
         });
 
         // Public/User catalog scenarios group - requires authenticated session
@@ -138,7 +139,7 @@ public static class ScenariosEndpoints
             }
 
             var response = result.Value!.Select(MapToScenarioResponse).ToList();
-            return Results.Ok(response);
+            return ApiResults.Ok(response);
         })
         .WithTags("Scenarios")
         .RequireAuthorization();
@@ -153,10 +154,26 @@ public static class ScenariosEndpoints
     {
         return error.Type switch
         {
-            ErrorType.NotFound => Results.NotFound(error.Message),
-            ErrorType.Conflict => Results.Conflict(error.Message),
-            ErrorType.Validation => Results.BadRequest(error.Message),
-            _ => Results.Problem(detail: error.Message, statusCode: 400, title: error.Code)
+            ErrorType.NotFound => ApiResults.Problem(
+                statusCode: 404,
+                code: error.Code,
+                title: "Not found",
+                message: error.Message),
+            ErrorType.Conflict => ApiResults.Problem(
+                statusCode: 409,
+                code: error.Code,
+                title: "Conflict",
+                message: error.Message),
+            ErrorType.Validation => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Validation failed",
+                message: error.Message),
+            _ => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Bad request",
+                message: error.Message)
         };
     }
 }

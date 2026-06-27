@@ -6,6 +6,7 @@ using EnglishTutor.Audit.Infrastructure.Persistence;
 using EnglishTutor.BuildingBlocks.Infrastructure.HealthChecks;
 using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Infrastructure.Options;
+using EnglishTutor.BuildingBlocks.Application.CurrentUser;
 using EnglishTutor.Identity.Application;
 using EnglishTutor.Identity.Infrastructure;
 using EnglishTutor.Identity.Infrastructure.Messaging;
@@ -16,6 +17,7 @@ using EnglishTutor.Quota.Infrastructure.Extensions;
 using EnglishTutor.Feedback.Infrastructure.Extensions;
 using EnglishTutor.Feedback.Infrastructure.Persistence;
 using EnglishTutor.Feedback.Infrastructure.Messaging;
+using EnglishTutor.Practice.Infrastructure.Extensions;
 using EnglishTutor.Practice.Infrastructure.Persistence;
 using EnglishTutor.Worker.HostedServices;
 using EnglishTutor.Worker.Jobs;
@@ -23,6 +25,8 @@ using EnglishTutor.Worker.Options;
 using EnglishTutor.Worker.Readiness;
 using MassTransit;
 using Serilog;
+
+RepositoryEnvironment.LoadIntoProcess();
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -33,6 +37,8 @@ builder.Services.AddSerilog(loggerConfig =>
 
 // Strongly-typed options + startup validation
 builder.Services.AddBaseOptions(builder.Configuration);
+builder.Services.AddRouting();
+builder.Services.AddScoped<ICurrentUser, WorkerCurrentUser>();
 
 builder.Services
     .AddOptions<WorkerOptions>()
@@ -74,6 +80,7 @@ builder.Services.AddAudit(builder.Configuration);
 builder.Services.AddLearningInfrastructure(builder.Configuration);
 builder.Services.AddQuotaModule(builder.Configuration);
 builder.Services.AddAiGatewayModule(builder.Configuration);
+builder.Services.AddPracticeModule(builder.Configuration);
 builder.Services.AddFeedbackModule(builder.Configuration);
 
 // Schema readiness and background jobs hosted services
@@ -129,3 +136,12 @@ var host = builder.Build();
 Log.Information("EnglishTutor.Worker starting...");
 
 host.Run();
+
+internal sealed class WorkerCurrentUser : ICurrentUser
+{
+    public Guid? UserId => null;
+    public string? Email => null;
+    public bool IsAuthenticated => false;
+    public IReadOnlyList<string> Roles => [];
+    public bool IsInRole(string role) => false;
+}

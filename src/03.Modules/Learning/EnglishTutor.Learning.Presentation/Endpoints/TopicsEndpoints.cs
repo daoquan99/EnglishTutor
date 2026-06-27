@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Learning.Application.Commands.Topics.CreateTopic;
 using EnglishTutor.Learning.Application.Commands.Topics.UpdateTopic;
 using EnglishTutor.Learning.Application.Commands.Topics.DisableTopic;
@@ -51,7 +52,7 @@ public static class TopicsEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Created($"/api/learning/topics/{result.Value}", new { id = result.Value });
+            return ApiResults.Created($"/api/learning/topics/{result.Value}", new { id = result.Value });
         });
 
         adminGroup.MapGet("/", async (
@@ -66,7 +67,7 @@ public static class TopicsEndpoints
             }
 
             var response = result.Value!.Select(MapToTopicResponse).ToList();
-            return Results.Ok(response);
+            return ApiResults.Ok(response);
         });
 
         adminGroup.MapGet("/{topicId:guid}", async (
@@ -81,7 +82,7 @@ public static class TopicsEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok(MapToTopicDetailsResponse(result.Value!));
+            return ApiResults.Ok(MapToTopicDetailsResponse(result.Value!));
         });
 
         adminGroup.MapPut("/{topicId:guid}", async (
@@ -104,7 +105,7 @@ public static class TopicsEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok();
+            return ApiResults.Empty();
         });
 
         adminGroup.MapDelete("/{topicId:guid}", async (
@@ -120,7 +121,7 @@ public static class TopicsEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.NoContent();
+            return ApiResults.Empty();
         });
 
         adminGroup.MapPost("/{topicId:guid}/modes", async (
@@ -142,7 +143,7 @@ public static class TopicsEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok();
+            return ApiResults.Empty();
         });
 
         adminGroup.MapDelete("/{topicId:guid}/modes/{modeDefinitionId:guid}", async (
@@ -159,7 +160,7 @@ public static class TopicsEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.NoContent();
+            return ApiResults.Empty();
         });
 
         // Public/User catalog endpoints group - requires authenticated session
@@ -179,7 +180,7 @@ public static class TopicsEndpoints
             }
 
             var response = result.Value!.Select(MapToTopicResponse).ToList();
-            return Results.Ok(response);
+            return ApiResults.Ok(response);
         });
 
         publicGroup.MapGet("/{topicIdOrSlug}", async (
@@ -194,7 +195,7 @@ public static class TopicsEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok(MapToTopicDetailsResponse(result.Value!));
+            return ApiResults.Ok(MapToTopicDetailsResponse(result.Value!));
         });
 
         publicGroup.MapGet("/{topicIdOrSlug}/modes", async (
@@ -210,7 +211,7 @@ public static class TopicsEndpoints
             }
 
             var response = result.Value!.Select(MapToTopicModeResponse).ToList();
-            return Results.Ok(response);
+            return ApiResults.Ok(response);
         });
 
         return routes;
@@ -229,10 +230,26 @@ public static class TopicsEndpoints
     {
         return error.Type switch
         {
-            ErrorType.NotFound => Results.NotFound(error.Message),
-            ErrorType.Conflict => Results.Conflict(error.Message),
-            ErrorType.Validation => Results.BadRequest(error.Message),
-            _ => Results.Problem(detail: error.Message, statusCode: 400, title: error.Code)
+            ErrorType.NotFound => ApiResults.Problem(
+                statusCode: 404,
+                code: error.Code,
+                title: "Not found",
+                message: error.Message),
+            ErrorType.Conflict => ApiResults.Problem(
+                statusCode: 409,
+                code: error.Code,
+                title: "Conflict",
+                message: error.Message),
+            ErrorType.Validation => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Validation failed",
+                message: error.Message),
+            _ => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Bad request",
+                message: error.Message)
         };
     }
 }

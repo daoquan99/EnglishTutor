@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Learning.Application.Commands.ModeDefinitions.CreateModeDefinition;
 using EnglishTutor.Learning.Application.Commands.ModeDefinitions.UpdateModeDefinition;
 using EnglishTutor.Learning.Application.Commands.ModeDefinitions.DisableModeDefinition;
@@ -46,7 +47,7 @@ public static class ModesEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Created($"/api/admin/learning/modes/{result.Value}", new { id = result.Value });
+            return ApiResults.Created($"/api/admin/learning/modes/{result.Value}", new { id = result.Value });
         });
 
         adminGroup.MapGet("/", async (
@@ -61,7 +62,7 @@ public static class ModesEndpoints
             }
 
             var response = result.Value!.Select(MapToModeDefinitionResponse).ToList();
-            return Results.Ok(response);
+            return ApiResults.Ok(response);
         });
 
         adminGroup.MapGet("/{modeId:guid}", async (
@@ -76,7 +77,7 @@ public static class ModesEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok(MapToModeDefinitionResponse(result.Value!));
+            return ApiResults.Ok(MapToModeDefinitionResponse(result.Value!));
         });
 
         adminGroup.MapPut("/{modeId:guid}", async (
@@ -98,7 +99,7 @@ public static class ModesEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.Ok();
+            return ApiResults.Empty();
         });
 
         adminGroup.MapDelete("/{modeId:guid}", async (
@@ -114,7 +115,7 @@ public static class ModesEndpoints
                 return MapErrorToHttp(result.Error!);
             }
 
-            return Results.NoContent();
+            return ApiResults.Empty();
         });
 
         return routes;
@@ -127,10 +128,26 @@ public static class ModesEndpoints
     {
         return error.Type switch
         {
-            ErrorType.NotFound => Results.NotFound(error.Message),
-            ErrorType.Conflict => Results.Conflict(error.Message),
-            ErrorType.Validation => Results.BadRequest(error.Message),
-            _ => Results.Problem(detail: error.Message, statusCode: 400, title: error.Code)
+            ErrorType.NotFound => ApiResults.Problem(
+                statusCode: 404,
+                code: error.Code,
+                title: "Not found",
+                message: error.Message),
+            ErrorType.Conflict => ApiResults.Problem(
+                statusCode: 409,
+                code: error.Code,
+                title: "Conflict",
+                message: error.Message),
+            ErrorType.Validation => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Validation failed",
+                message: error.Message),
+            _ => ApiResults.Problem(
+                statusCode: 400,
+                code: error.Code,
+                title: "Bad request",
+                message: error.Message)
         };
     }
 }

@@ -1,5 +1,6 @@
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Identity.Application.Queries.GetCurrentUser;
 using EnglishTutor.Identity.Presentation.Endpoints.Dtos;
 using MediatR;
@@ -22,10 +23,10 @@ public static class MeEndpoints
             var result = await mediator.Send(new GetCurrentUserQuery(), ct);
             if (!result.IsSuccess)
             {
-                return Results.Unauthorized();
+                return Auth.AuthProblemResults.Unauthorized();
             }
             // IsSuccess guarantees Value is non-null (per Result<T> contract).
-            return Results.Ok(ToCurrentUserResponse(result.Value!));
+            return ApiResults.Ok(ToCurrentUserResponse(result.Value!));
         });
 
         return routes;

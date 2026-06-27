@@ -7,14 +7,40 @@ namespace EnglishTutor.BuildingBlocks.Application;
 
 public static class ApplicationModuleExtensions
 {
+    private const string MediatRLicenseKeyConfigurationKey = "MediatR:LicenseKey";
+
     public static IServiceCollection AddApplicationModule(
         this IServiceCollection services,
+        string? mediatRLicenseKey,
         Assembly assembly)
     {
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
+        services.AddLicensedMediatR(mediatRLicenseKey, assembly);
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
 
         return services;
+    }
+
+    public static IServiceCollection AddLicensedMediatR(
+        this IServiceCollection services,
+        string? licenseKey,
+        Assembly assembly)
+    {
+        services.AddMediatR(cfg =>
+        {
+            if (!string.IsNullOrWhiteSpace(licenseKey))
+            {
+                cfg.LicenseKey = licenseKey;
+            }
+
+            cfg.RegisterServicesFromAssembly(assembly);
+        });
+
+        return services;
+    }
+
+    public static string? GetMediatRLicenseKey(Func<string, string?> configurationValue)
+    {
+        return configurationValue(MediatRLicenseKeyConfigurationKey);
     }
 
     public static IServiceCollection AddValidationPipeline(this IServiceCollection services)

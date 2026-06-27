@@ -13,28 +13,8 @@ using Microsoft.Extensions.Options;
 
 namespace EnglishTutor.Identity.Infrastructure.Persistence;
 
-/// <summary>
-/// Seeds the Identity lookup data (permissions, roles, role-permissions)
-/// and the Owner user account on first startup.
-/// Idempotent — running it twice does not duplicate data.
-/// <para>
-/// <b>Seed order (required for FK correctness):</b>
-/// <list type="number">
-///   <item><c>SeedPermissionsAsync</c> — permission codes</item>
-///   <item><c>SeedRolesAsync</c> — well-known roles</item>
-///   <item><c>SeedRolePermissionsAsync</c> — role-to-permission mapping</item>
-///   <item><c>SaveChangesAsync</c> — persist 1, 2, 3 so subsequent
-///         queries can find them</item>
-///   <item><c>SeedOwnerAsync</c> — Owner user</item>
-///   <item><c>SeedOwnerUserRoleAsync</c> — Owner user-to-role mapping</item>
-///   <item><c>SaveChangesAsync</c> — final flush</item>
-/// </list>
-/// </para>
-/// </summary>
 public sealed class IdentityDataSeeder
 {
-    // Permission codes are module-scoped strings. We seed a small baseline
-    // here so role-permission lookups always have something to find.
     private static readonly (string Code, string Module, string DisplayName)[] BaselinePermissions =
     {
         (IdentityPermissionCodes.Manage,     IdentityModuleNames.Identity, "Manage identity (create/update/delete users)"),
@@ -44,7 +24,6 @@ public sealed class IdentityDataSeeder
         (IdentityPermissionCodes.SecurityRead, IdentityModuleNames.Audit,    "Read security events"),
     };
 
-    // (Role name, permission codes assigned to that role).
     private static readonly (string Role, string[] Permissions)[] BaselineRolePermissions =
     {
         (Role.WellKnownNames.Owner, new[] { IdentityPermissionCodes.Manage, IdentityPermissionCodes.View, IdentityPermissionCodes.SelfManage, IdentityPermissionCodes.AuditRead, IdentityPermissionCodes.SecurityRead }),
@@ -78,36 +57,17 @@ public sealed class IdentityDataSeeder
         await SeedPermissionsAsync(cancellationToken);
         await SeedRolesAsync(cancellationToken);
 
-        // 3. Flush so SeedRolePermissionsAsync (which reads roles and
-        //    permissions from the DB) can find the just-staged rows.
-        //    Per .agents/rules/40-seeding-and-test-data.md the seed order
-        //    requires a flush before any later step that does a DB lookup.
         await _db.SaveChangesAsync(cancellationToken);
 
         // 4. Stage role_permissions.
         await SeedRolePermissionsAsync(cancellationToken);
 
-        // 5. Flush so subsequent lookups (SeedOwnerAsync reads the Owner
-        //    role; SeedOwnerUserRoleAsync reads Owner user + role) find
-        //    the role_permissions rows if they need them.
         await _db.SaveChangesAsync(cancellationToken);
 
-        // 6. Stage Owner user. Idempotent: short-circuits if the Owner
-        //    user already exists (second-run safety).
         await SeedOwnerAsync(cancellationToken);
 
-        // 7. Flush the Owner user BEFORE SeedOwnerUserRoleAsync runs.
-        //    SeedOwnerUserRoleAsync uses an AsNoTracking projection
-        //    against `identity.users`, which bypasses the change tracker
-        //    and reads only persisted rows. Without this flush, the
-        //    freshly-staged Owner user is invisible to that query, the
-        //    helper returns early, and `identity.user_roles` is left
-        //    empty on a first-time seed run. This flush makes the
-        //    first startup assign the Owner role to the Owner user.
         await _db.SaveChangesAsync(cancellationToken);
 
-        // 8. Stage the Owner user-role join row. Idempotent: short-circuits
-        //    if the join row already exists (second-run safety).
         await SeedOwnerUserRoleAsync(cancellationToken);
 
         // 9. Final flush so the join row is persisted atomically with
@@ -188,23 +148,11 @@ public sealed class IdentityDataSeeder
     {
         var ownerEmail = _options.Owner.Email.Trim().ToLowerInvariant();
 
-        // Existence check via EF Core LINQ on the owned Email navigation.
-        // EF translates u.Email.Value to a SQL predicate on the owned column;
-        // AnyAsync returns bool without ever materialising the User entity, so
-        // the User.Email getter (which throws when the EF rehydrator has not
-        // yet populated the backing field) is never invoked.
         if (await OwnerUserExistsAsync(ownerEmail, ct))
         {
             return;
         }
 
-        // The Owner bootstrap password MUST come from configuration / an
-        // approved secret channel (SeedData:Owner:Password). We never generate
-        // a random password and we never log the plaintext value — in ANY
-        // environment (Batch R1, H-05 / migrations-seeding.md "Seeder
-        // Secrets"). A missing secret fails safely with a non-secret error
-        // rather than bootstrapping an account with an unknown or logged
-        // credential.
         if (string.IsNullOrWhiteSpace(_options.Owner.Password))
         {
             throw new InvalidOperationException(
@@ -215,11 +163,6 @@ public sealed class IdentityDataSeeder
 
         var password = _options.Owner.Password;
 
-        // Use FirstOrDefault + defensive create. We do NOT use FirstAsync here
-        // because: (a) the Owner role is staged above and persisted before this
-        // method runs, so it MUST exist — but if it ever doesn't (e.g. someone
-        // calls SeedAsync from a partial state), we want a clean retry signal,
-        // not a SingleAsync / FirstAsync crash.
         var ownerRole = await _db.Roles.IgnoreQueryFilters()
             .FirstOrDefaultAsync(r => r.Name == Role.WellKnownNames.Owner, ct);
         if (ownerRole is null)

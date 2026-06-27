@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Domain\EnglishTutor.BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Infrastructure\EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Presentation\EnglishTutor.BuildingBlocks.Presentation.csproj" />
     <ProjectReference Include="..\..\src\03.Modules\Identity\EnglishTutor.Identity.Domain\EnglishTutor.Identity.Domain.csproj" />
     <ProjectReference Include="..\..\src\03.Modules\Identity\EnglishTutor.Identity.Application\EnglishTutor.Identity.Application.csproj" />
     <ProjectReference Include="..\..\src\03.Modules\Identity\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />

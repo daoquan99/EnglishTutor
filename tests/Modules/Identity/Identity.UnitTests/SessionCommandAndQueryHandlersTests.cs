@@ -1,4 +1,5 @@
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.BuildingBlocks.Application.Pagination;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
 using EnglishTutor.Identity.Application.Commands.LogoutAll;
 using EnglishTutor.Identity.Application.Commands.RevokeSession;
@@ -37,24 +38,36 @@ public class SessionCommandAndQueryHandlersTests
         var userId = Guid.NewGuid();
         var session1 = UserSession.Create(userId, DeviceInfo.Create("d1", "Name1", "ua1", "ip1"), DateTime.UtcNow);
         var session2 = UserSession.Create(userId, DeviceInfo.Create("d2", "Name2", "ua2", "ip2"), DateTime.UtcNow);
-        // Revoked session
-        var session3 = UserSession.Create(userId, DeviceInfo.Create("d3", "Name3", "ua3", "ip3"), DateTime.UtcNow);
-        session3.Revoke(DateTime.UtcNow, userId, "revoked");
-
-        _repository.Sessions.Add(session1);
-        _repository.Sessions.Add(session2);
-
-        var query = new GetUserSessionsQuery(userId);
-        var handler = new GetUserSessionsQueryHandler(_repository);
+        var page = PagedResult<UserSessionResult>.Create(
+            items:
+            [
+                ToResult(session1),
+                ToResult(session2)
+            ],
+            totalCount: 2,
+            page: 1,
+            pageSize: 20);
+        var query = new GetUserSessionsQuery(UserId: userId, Page: 1, PageSize: 20);
+        var handler = new GetUserSessionsQueryHandler(new FakeUserSessionQueryService(page));
 
         // Act
         var result = await handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        result.Value.Select(s => s.Id).Should().Contain(new[] { session1.Id, session2.Id });
+        result.Value!.Items.Should().HaveCount(2);
+        result.Value.Items.Select(s => s.Id).Should().Contain(new[] { session1.Id, session2.Id });
     }
+
+    private static UserSessionResult ToResult(UserSession session) =>
+        new(
+            Id: session.Id,
+            DeviceId: session.Device.DeviceId,
+            DeviceName: session.Device.DeviceName,
+            UserAgentHash: session.Device.UserAgentHash,
+            IpAddressHash: session.Device.IpAddressHash,
+            CreatedAtUtc: session.CreatedAtUtc,
+            LastSeenAtUtc: session.LastSeenAtUtc);
 
     [Fact]
     public async Task LogoutAllCommandHandler_Should_Revoke_All_Active_Sessions()
@@ -187,6 +200,23 @@ internal class FakeUserSessionRepository : IUserSessionRepository
     {
         return Task.FromResult(0);
     }
+}
+
+internal sealed class FakeUserSessionQueryService : IUserSessionQueryService
+{
+    private readonly PagedResult<UserSessionResult> _page;
+
+    public FakeUserSessionQueryService(PagedResult<UserSessionResult> page)
+    {
+        _page = page;
+    }
+
+    public Task<PagedResult<UserSessionResult>> GetActiveSessionsAsync(
+        Guid userId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(_page);
 }
 
 internal class FakeIdentityUnitOfWork : IIdentityUnitOfWork

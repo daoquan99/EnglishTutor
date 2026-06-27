@@ -1,4 +1,5 @@
 using System;
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Learning.Application.Abstractions.Persistence;
 using EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions.Repositories;
@@ -8,7 +9,6 @@ using EnglishTutor.Learning.Domain.Aggregates.Topics.Repositories;
 using EnglishTutor.Learning.Domain.Aggregates.TopicVocabularies.Repositories;
 using EnglishTutor.Learning.Infrastructure.Persistence;
 using EnglishTutor.Learning.Infrastructure.Persistence.Repositories;
-using MediatR;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,7 +32,7 @@ public static class LearningInfrastructureServiceCollectionExtensions
         IConfiguration configuration)
     {
         // Register MediatR handlers + FluentValidation validators from Application assembly
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ILearningUnitOfWork).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(ILearningUnitOfWork).Assembly);
         services.AddValidatorsFromAssembly(typeof(ILearningUnitOfWork).Assembly);
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException(

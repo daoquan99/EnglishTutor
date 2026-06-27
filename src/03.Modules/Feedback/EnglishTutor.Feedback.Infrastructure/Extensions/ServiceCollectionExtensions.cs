@@ -1,11 +1,11 @@
 using System;
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using EnglishTutor.Feedback.Application.Abstractions.Persistence;
 using EnglishTutor.Feedback.Domain.Aggregates.SessionFeedback.Repositories;
 using EnglishTutor.Feedback.Infrastructure.Persistence;
 using EnglishTutor.Feedback.Infrastructure.Persistence.Repositories;
 using FluentValidation;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +38,7 @@ public static class ServiceCollectionExtensions
         });
 
         // Register MediatR & FluentValidation for Feedback application assembly
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IFeedbackUnitOfWork).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(IFeedbackUnitOfWork).Assembly);
         services.AddValidatorsFromAssembly(typeof(IFeedbackUnitOfWork).Assembly);
 
         // Register Repositories & Unit of Work

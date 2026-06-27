@@ -99,7 +99,7 @@ public class AuthSecurityContainmentTests
     }
 
     [Fact]
-    public async Task Login_Over_Rate_Limit_Should_Return_429_ProblemDetails()
+    public async Task Login_Over_Rate_Limit_Should_Return_429_ApiEnvelope()
     {
         await using var factory = new LoginRateLimitFactory();
         using var client = factory.CreateClient();
@@ -122,7 +122,7 @@ public class AuthSecurityContainmentTests
         limited.Should().NotBeNull("the limiter should reject once the window permit is exhausted");
         var body = await limited!.Content.ReadAsStringAsync();
         body.Should().Contain("auth.rate_limited");
-        limited.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+        limited.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
     }
 
     // ---- helpers ----
@@ -143,14 +143,13 @@ public class AuthSecurityContainmentTests
             new LoginRequest(OwnerEmail, OwnerPassword));
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
-        payload.Should().NotBeNull();
+        var payload = await response.Content.ReadApiDataAsync<LoginResponse>();
 
         var refreshToken = ExtractCookieValue(response, RefreshCookieName);
         refreshToken.Should().NotBeNullOrWhiteSpace();
 
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload.AccessToken);
 
         return (client, refreshToken!);
     }

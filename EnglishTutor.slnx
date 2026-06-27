@@ -82,12 +82,14 @@
     <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Contracts/EnglishTutor.BuildingBlocks.Contracts.csproj" />
     <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Domain/EnglishTutor.BuildingBlocks.Domain.csproj" />
     <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Infrastructure/EnglishTutor.BuildingBlocks.Infrastructure.csproj" />
+    <Project Path="src/04.BuildingBlocks/EnglishTutor.BuildingBlocks.Presentation/EnglishTutor.BuildingBlocks.Presentation.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EnglishTutor.ArchitectureTests/EnglishTutor.ArchitectureTests.csproj" />
     <Project Path="tests/EnglishTutor.IntegrationTests/EnglishTutor.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/BuildingBlocks/">
+    <Project Path="tests/BuildingBlocks/EnglishTutor.BuildingBlocks.Presentation.UnitTests/EnglishTutor.BuildingBlocks.Presentation.UnitTests.csproj" />
     <Project Path="tests/BuildingBlocks/EnglishTutor.BuildingBlocks.UnitTests/EnglishTutor.BuildingBlocks.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tests/Modules/" />

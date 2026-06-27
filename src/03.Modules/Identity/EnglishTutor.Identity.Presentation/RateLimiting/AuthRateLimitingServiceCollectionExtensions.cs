@@ -1,6 +1,7 @@
 using System;
 using System.Threading.RateLimiting;
 using EnglishTutor.Identity.Presentation.Auth;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
@@ -52,16 +53,12 @@ public static class AuthRateLimitingServiceCollectionExtensions
                         ((int)retryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
                 }
 
-                response.ContentType = "application/problem+json";
-                var problem = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    type = "https://tools.ietf.org/html/rfc9110#section-15.5.29",
-                    title = "Too many requests",
-                    status = StatusCodes.Status429TooManyRequests,
-                    detail = "Rate limit exceeded. Please retry later.",
-                    errorCode = AuthErrorCodes.RateLimited
-                });
-                await response.WriteAsync(problem, token);
+                await ApiResults.Problem(
+                        statusCode: StatusCodes.Status429TooManyRequests,
+                        code: AuthErrorCodes.RateLimited,
+                        title: "Too many requests",
+                        message: "Rate limit exceeded. Please retry later.")
+                    .ExecuteAsync(context.HttpContext);
             };
         });
 

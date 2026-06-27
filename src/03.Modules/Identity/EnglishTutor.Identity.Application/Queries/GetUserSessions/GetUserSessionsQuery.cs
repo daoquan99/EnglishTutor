@@ -1,7 +1,9 @@
+using EnglishTutor.BuildingBlocks.Application.Pagination;
 using EnglishTutor.BuildingBlocks.Application.Queries;
-using System;
-using System.Collections.Generic;
 
 namespace EnglishTutor.Identity.Application.Queries.GetUserSessions;
 
-public sealed record GetUserSessionsQuery(Guid UserId) : IQuery<IReadOnlyList<UserSessionResult>>;
+public sealed record GetUserSessionsQuery(
+    Guid UserId,
+    int Page,
+    int PageSize) : IQuery<PagedResult<UserSessionResult>>;

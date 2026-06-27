@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using EnglishTutor.BuildingBlocks.Domain.Results;
+using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using Microsoft.AspNetCore.Http;
 
 namespace EnglishTutor.Identity.Presentation.Auth;
@@ -13,11 +14,11 @@ namespace EnglishTutor.Identity.Presentation.Auth;
 public static class AuthProblemResults
 {
     public static IResult Problem(int statusCode, string errorCode, string title, string detail) =>
-        Results.Problem(
+        ApiResults.Problem(
             statusCode: statusCode,
+            code: errorCode,
             title: title,
-            detail: detail,
-            extensions: new Dictionary<string, object?> { ["errorCode"] = errorCode });
+            message: detail);
 
     public static IResult RefreshCookieMissing() =>
         Problem(StatusCodes.Status401Unauthorized, AuthErrorCodes.RefreshCookieMissing,

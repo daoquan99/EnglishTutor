@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using EnglishTutor.BuildingBlocks.Application;
 using EnglishTutor.Realtime.Application;
 using EnglishTutor.Realtime.Application.Abstractions;
 using EnglishTutor.Realtime.Infrastructure.Registry;
@@ -15,7 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRealtimeConnectionRegistry, InMemoryRealtimeConnectionRegistry>();
         
         // Add MediatR from Application assembly
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(RealtimeApplicationServiceCollectionExtensions).Assembly));
+        services.AddLicensedMediatR(configuration["MediatR:LicenseKey"], typeof(RealtimeApplicationServiceCollectionExtensions).Assembly);
 
         return services;
     }

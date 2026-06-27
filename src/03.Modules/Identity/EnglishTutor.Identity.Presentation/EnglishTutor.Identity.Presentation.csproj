@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Presentation\EnglishTutor.BuildingBlocks.Presentation.csproj" />
     <ProjectReference Include="..\EnglishTutor.Identity.Application\EnglishTutor.Identity.Application.csproj" />
     <ProjectReference Include="..\EnglishTutor.Identity.Contracts\EnglishTutor.Identity.Contracts.csproj" />
     <ProjectReference Include="..\EnglishTutor.Identity.Infrastructure\EnglishTutor.Identity.Infrastructure.csproj" />
