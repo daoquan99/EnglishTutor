@@ -133,10 +133,10 @@ public class PracticeDurabilityTests
         result.Status.Should().Be(StartSessionStatus.Success);
 
         var db = scope.ServiceProvider.GetRequiredService<PracticeDbContext>();
-        var outboxMessages = await db.Set<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>().ToListAsync();
+        var outboxMessages = await db.OutboxMessages.ToListAsync();
         
         // Find started event
-        var startedEvent = outboxMessages.FirstOrDefault(m => m.Body != null && m.Body.Contains("PracticeSessionStartedIntegrationEventV1"));
+        var startedEvent = outboxMessages.FirstOrDefault(m => m.ContractName == "practice.session.started.v1");
         startedEvent.Should().NotBeNull("happy path session start must stage started integration event");
     }
 

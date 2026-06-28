@@ -30,4 +30,9 @@ public interface IUserRepository
 
     /// <summary>Stages a new user for insertion. Persisted via the unit-of-work.</summary>
     void Add(User user);
+
+    Task ReplaceRolesAsync(
+        Guid userId,
+        IReadOnlyCollection<Guid> roleIds,
+        CancellationToken ct);
 }

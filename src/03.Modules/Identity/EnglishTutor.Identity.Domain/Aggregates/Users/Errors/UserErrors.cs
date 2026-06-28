@@ -10,11 +10,24 @@ namespace EnglishTutor.Identity.Domain.Aggregates.Users.Errors;
 public static class UserErrors
 {
     public static Error NotFound(Guid userId) =>
-        new("Identity.UserNotFound", $"User '{userId}' was not found.");
+        Error.NotFound("Identity.UserNotFound", $"User '{userId}' was not found.");
 
     public static Error AlreadyExists(string email) =>
-        new("Identity.UserAlreadyExists", $"A user with email '{email}' already exists.");
+        Error.Conflict("Identity.UserAlreadyExists", $"A user with email '{email}' already exists.");
 
     public static Error Locked() =>
-        new("Identity.UserLocked", "User account is locked.");
+        Error.Conflict("Identity.UserLocked", "User account is locked.");
+
+    public static Error InvalidCurrentPassword() =>
+        Error.Forbidden("Identity.InvalidCurrentPassword", "The current password is invalid.");
+
+    public static Error PrivilegedRoleRequiresOwner() =>
+        Error.Forbidden(
+            "Identity.PrivilegedRoleRequiresOwner",
+            "Only Owner users can manage Owner or Admin role assignments.");
+
+    public static Error PrivilegedUserRequiresOwner() =>
+        Error.Forbidden(
+            "Identity.PrivilegedUserRequiresOwner",
+            "Only Owner users can modify privileged users.");
 }

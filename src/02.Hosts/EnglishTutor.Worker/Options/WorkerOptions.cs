@@ -37,7 +37,7 @@ public sealed class WorkerOptions
     public bool RequireSchemaMatchOnStartup { get; set; } = true;
 
     /// <summary>
-    /// Graceful shutdown timeout allowed for MassTransit and background services to finish processing active work.
+    /// Graceful shutdown timeout for messaging and background services to finish active work.
     /// Default is 30 seconds.
     /// </summary>
     public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);

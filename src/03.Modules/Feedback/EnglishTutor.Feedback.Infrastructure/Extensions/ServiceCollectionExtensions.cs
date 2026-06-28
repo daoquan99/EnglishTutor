@@ -14,6 +14,9 @@ using EnglishTutor.Feedback.Application.Abstractions.Messaging;
 using EnglishTutor.Feedback.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
+using EnglishTutor.Feedback.Contracts.Events;
 using EnglishTutor.Feedback.Domain.Aggregates.SessionFeedback.Events;
 using EnglishTutor.Feedback.Application.Messaging.DomainEventHandlers;
 
@@ -49,7 +52,24 @@ public static class ServiceCollectionExtensions
         services.AddScoped<EnglishTutor.Feedback.Contracts.IFeedbackModule, EnglishTutor.Feedback.Application.FeedbackService>();
 
         // Outbox Publisher
-        services.AddScoped<IFeedbackIntegrationEventPublisher, MassTransitFeedbackIntegrationEventPublisher>();
+        services.AddScoped<NativeOutboxWriter<FeedbackDbContext>>();
+        services.AddScoped<IFeedbackIntegrationEventPublisher, NativeFeedbackIntegrationEventPublisher>();
+        services.AddScoped<IOutboxStore>(sp =>
+            new EfOutboxStore<FeedbackDbContext>(
+                sp.GetRequiredService<FeedbackDbContext>(),
+                "Feedback"));
+        services.AddNativeMessageContract<FeedbackReadyIntegrationEventV1>(
+            "feedback.session.ready.v1",
+            MessageTopologyNames.IntegrationExchange,
+            "feedback.session.ready.v1");
+        services.AddNativeMessageContract<GenerateSessionFeedbackRequestedV1>(
+            "feedback.generate-session.v1",
+            MessageTopologyNames.CommandExchange,
+            "feedback.generate-session.v1");
+        services.AddNativeMessageContract<ExtractVocabularyRequestedV1>(
+            "feedback.extract-vocabulary.v1",
+            MessageTopologyNames.CommandExchange,
+            "feedback.extract-vocabulary.v1");
 
         // Domain Event Handlers
         services.AddDomainEventDispatcher();

@@ -26,7 +26,7 @@ namespace EnglishTutor.IntegrationTests.Identity;
 public class AuthFlowTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
 
     // Secure __Host- cookies are not auto-sent by the test client over http,
     // so cookie-based flows are exercised by setting the Cookie header

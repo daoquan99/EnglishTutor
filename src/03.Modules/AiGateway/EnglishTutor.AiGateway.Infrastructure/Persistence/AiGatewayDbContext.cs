@@ -5,7 +5,6 @@ using EnglishTutor.AiGateway.Domain.Aggregates.AiRouteLease;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRoutingRule;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using MassTransit;
 
 namespace EnglishTutor.AiGateway.Infrastructure.Persistence;
 
@@ -37,9 +36,5 @@ public sealed class AiGatewayDbContext : DbContext
         // Apply canonical audit/soft-delete Conventions from BuildingBlocks
         modelBuilder.ApplyAggregateRootConventions();
 
-        // MassTransit EF Outbox tables mapped to aigateway schema
-        modelBuilder.AddInboxStateEntity(b => b.ToTable("inbox_state", SchemaName));
-        modelBuilder.AddOutboxMessageEntity(b => b.ToTable("outbox_message", SchemaName));
-        modelBuilder.AddOutboxStateEntity(b => b.ToTable("outbox_state", SchemaName));
     }
 }

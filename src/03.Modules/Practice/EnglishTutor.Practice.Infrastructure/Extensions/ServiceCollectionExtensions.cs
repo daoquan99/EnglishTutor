@@ -19,6 +19,9 @@ using EnglishTutor.Practice.Application.Abstractions.Messaging;
 using EnglishTutor.Practice.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
+using EnglishTutor.Practice.Contracts.Events;
 using EnglishTutor.Practice.Domain.Aggregates.PracticeSession.Events;
 using EnglishTutor.Practice.Application.Messaging.DomainEventHandlers;
 
@@ -54,7 +57,20 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPracticeSessionRepository, PracticeSessionRepository>();
         services.AddScoped<IPracticeScenarioReadModelRepository, PracticeScenarioReadModelRepository>();
         services.AddScoped<IPracticeUnitOfWork, PracticeUnitOfWork>();
-        services.AddScoped<IPracticeIntegrationEventPublisher, MassTransitPracticeIntegrationEventPublisher>();
+        services.AddScoped<NativeOutboxWriter<PracticeDbContext>>();
+        services.AddScoped<IPracticeIntegrationEventPublisher, NativePracticeIntegrationEventPublisher>();
+        services.AddScoped<IOutboxStore>(sp =>
+            new EfOutboxStore<PracticeDbContext>(
+                sp.GetRequiredService<PracticeDbContext>(),
+                "Practice"));
+        services.AddNativeMessageContract<PracticeSessionStartedIntegrationEventV1>(
+            "practice.session.started.v1",
+            MessageTopologyNames.IntegrationExchange,
+            "practice.session.started.v1");
+        services.AddNativeMessageContract<PracticeSessionEndedIntegrationEventV1>(
+            "practice.session.ended.v1",
+            MessageTopologyNames.IntegrationExchange,
+            "practice.session.ended.v1");
 
         // Domain Event Handlers & Dispatcher
         services.AddDomainEventDispatcher();

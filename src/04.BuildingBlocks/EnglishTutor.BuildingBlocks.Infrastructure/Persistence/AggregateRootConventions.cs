@@ -3,22 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 
-/// <summary>
-/// EF Core model-building conventions for <see cref="AggregateRoot"/> types:
-/// applies <c>HasQueryFilter(e =&gt; !e.IsDeleted)</c> so that
-/// soft-deleted aggregates are filtered out by default.
-/// </summary>
-/// <remarks>
-/// To include deleted rows in a specific query (admin / audit / restore
-/// flows), call <c>IgnoreQueryFilters()</c> on the LINQ query. Production
-/// code SHOULD NOT bypass the filter except in documented maintenance paths.
-/// </remarks>
 public static class AggregateRootConventions
 {
-    /// <summary>
-    /// Walks every entity type assignable to <see cref="AggregateRoot"/> in
-    /// the model and applies <c>HasQueryFilter(!IsDeleted)</c>.
-    /// </summary>
     public static void ApplyAggregateRootConventions(this ModelBuilder modelBuilder)
     {
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

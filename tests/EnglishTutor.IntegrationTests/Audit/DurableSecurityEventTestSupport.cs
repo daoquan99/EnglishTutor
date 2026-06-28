@@ -3,6 +3,7 @@ using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Learning.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EnglishTutor.IntegrationTests.Audit;
@@ -69,20 +70,20 @@ internal static class DurableSecurityEventTestSupport
     public static async Task<List<string>> PollOutboxBodiesAsync(WebApplicationFactory<Program> factory, int minCount)
     {
         var messages = await PollOutboxMessagesAsync<IdentityDbContext>(factory, _ => true, minCount);
-        return messages.Where(m => m.Body is not null).Select(m => m.Body!).ToList();
+        return messages.Select(m => m.PayloadJson).ToList();
     }
 
-    public static async Task<List<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>>
+    public static async Task<List<OutboxMessage>>
         PollOutboxMessagesAsync<TDbContext>(
             WebApplicationFactory<Program> factory,
-            Func<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage, bool> predicate,
+            Func<OutboxMessage, bool> predicate,
             int minCount)
         where TDbContext : DbContext
     {
         var timeout = TimeSpan.FromSeconds(45);
         var interval = TimeSpan.FromMilliseconds(250);
         var start = DateTime.UtcNow;
-        List<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage> messages = new();
+        List<OutboxMessage> messages = new();
         while (DateTime.UtcNow - start < timeout)
         {
             messages = await ListOutboxMessagesAsync<TDbContext>(factory, predicate);
@@ -99,22 +100,22 @@ internal static class DurableSecurityEventTestSupport
 
     public static async Task<int> CountOutboxMessagesAsync<TDbContext>(
         WebApplicationFactory<Program> factory,
-        Func<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage, bool> predicate)
+        Func<OutboxMessage, bool> predicate)
         where TDbContext : DbContext
     {
         var messages = await ListOutboxMessagesAsync<TDbContext>(factory, predicate);
         return messages.Count;
     }
 
-    private static async Task<List<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>>
+    private static async Task<List<OutboxMessage>>
         ListOutboxMessagesAsync<TDbContext>(
             WebApplicationFactory<Program> factory,
-            Func<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage, bool> predicate)
+            Func<OutboxMessage, bool> predicate)
         where TDbContext : DbContext
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TDbContext>();
-        var messages = await db.Set<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>()
+        var messages = await db.Set<OutboxMessage>()
             .AsNoTracking()
             .ToListAsync();
         return messages.Where(predicate).ToList();

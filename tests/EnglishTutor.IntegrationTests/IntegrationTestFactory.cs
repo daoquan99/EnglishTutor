@@ -35,8 +35,6 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Database__ApplyAuditMigrationsOnStartup", "true");
         Environment.SetEnvironmentVariable("SeedData__Owner__Password", TestSeedOwnerPassword);
 
-        Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", "false");
-
         TryCreateTestDatabaseWithTemplate0();
     }
 
@@ -87,47 +85,7 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(DefaultConfiguration());
         });
 
-        builder.ConfigureServices(services =>
-        {
-            var toRemove = services.Where(d =>
-                d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) &&
-                d.ImplementationType != null &&
-                IsRemovableMessagingHostedService(d.ImplementationType))
-                .ToList();
-
-            foreach (var descriptor in toRemove)
-            {
-                services.Remove(descriptor);
-            }
-        });
     }
-
-    private bool IsRemovableMessagingHostedService(Type implementationType)
-    {
-        var isDelivery = implementationType.Name.StartsWith("BusOutboxDeliveryService");
-        var isCleanup = implementationType.Name.StartsWith("InboxCleanupService");
-        if (!isDelivery && !isCleanup)
-        {
-            return false;
-        }
-
-        if (!KeepMessagingHostedServices)
-        {
-            return true;
-        }
-
-        // Keep Identity/Audit services; remove any others (like Learning) whose schema is not migrated on startup.
-        var hasIdentityOrAudit = implementationType.GenericTypeArguments.Any(t =>
-            t.Name.Contains("Identity") || t.Name.Contains("Audit"));
-        return !hasIdentityOrAudit;
-    }
-
-    /// <summary>
-    /// When true, the Identity/Audit MassTransit outbox delivery + inbox-cleanup
-    /// hosted services are left running so the durable security-event flow
-    /// (outbox → in-process delivery → Audit consumer) completes. Default false.
-    /// </summary>
-    protected virtual bool KeepMessagingHostedServices => false;
 
     protected override void Dispose(bool disposing)
     {

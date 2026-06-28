@@ -22,7 +22,7 @@ namespace EnglishTutor.IntegrationTests.Audit;
 public class AuditEndpointsTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
 
     private sealed class AuditEndpointsTestFactory : IntegrationTestFactory
     {

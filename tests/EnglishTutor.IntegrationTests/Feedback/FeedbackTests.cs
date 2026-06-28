@@ -14,7 +14,8 @@ using EnglishTutor.Feedback.Domain.Aggregates.SessionFeedback.Repositories;
 using EnglishTutor.Feedback.Contracts.Events;
 using EnglishTutor.Feedback.Application.Abstractions.Messaging;
 using EnglishTutor.BuildingBlocks.Contracts.Events;
-using MassTransit;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
+using System.Text.Json;
 using EnglishTutor.Feedback.Infrastructure.Persistence;
 using EnglishTutor.Practice.Contracts;
 using EnglishTutor.Practice.Contracts.Dtos;
@@ -352,15 +353,24 @@ public class FeedbackTests
         var feedbackModule = scope.ServiceProvider.GetRequiredService<EnglishTutor.Feedback.Contracts.IFeedbackModule>();
         var consumer = new EnglishTutor.Realtime.Infrastructure.Consumers.FeedbackReadyIntegrationEventConsumer(feedbackModule, mockNotifier);
 
-        var context = Substitute.For<ConsumeContext<FeedbackReadyIntegrationEventV1>>();
-        context.Message.Returns(new FeedbackReadyIntegrationEventV1(sessionId, userId)
+        var integrationEvent = new FeedbackReadyIntegrationEventV1(sessionId, userId)
         {
             CorrelationId = Guid.NewGuid()
-        });
-        context.CancellationToken.Returns(CancellationToken.None);
+        };
+        var context = new MessageDeliveryContext(
+            integrationEvent.EventId,
+            "feedback.ready.v1",
+            integrationEvent.SchemaVersion,
+            integrationEvent.CorrelationId,
+            integrationEvent.CausationId,
+            0,
+            DateTimeOffset.UtcNow);
 
         // Act
-        await consumer.Consume(context);
+        await ((IRabbitMqMessageHandler)consumer).HandleAsync(
+            JsonSerializer.SerializeToUtf8Bytes(integrationEvent),
+            context,
+            CancellationToken.None);
 
         // Assert
         await mockNotifier.Received(1).NotifyFeedbackReadyAsync(

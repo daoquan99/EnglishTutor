@@ -18,6 +18,9 @@ using EnglishTutor.Learning.Application.Abstractions.Messaging;
 using EnglishTutor.Learning.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
+using EnglishTutor.Learning.Contracts.Events;
 using EnglishTutor.Learning.Domain.Aggregates.Topics.Events;
 using EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions.Events;
 using EnglishTutor.Learning.Domain.Aggregates.Scenarios.Events;
@@ -56,7 +59,13 @@ public static class LearningInfrastructureServiceCollectionExtensions
         services.AddScoped<ILearningUnitOfWork, LearningUnitOfWork>();
 
         // Outbox Publisher
-        services.AddScoped<ILearningIntegrationEventPublisher, MassTransitLearningIntegrationEventPublisher>();
+        services.AddScoped<NativeOutboxWriter<LearningDbContext>>();
+        services.AddScoped<ILearningIntegrationEventPublisher, NativeLearningIntegrationEventPublisher>();
+        services.AddScoped<IOutboxStore>(sp =>
+            new EfOutboxStore<LearningDbContext>(
+                sp.GetRequiredService<LearningDbContext>(),
+                "Learning"));
+        services.AddLearningMessageContracts();
 
         // Domain Event Handlers
         services.AddDomainEventDispatcher();
@@ -75,5 +84,20 @@ public static class LearningInfrastructureServiceCollectionExtensions
         services.AddDomainEventHandler<ScenarioDisabledDomainEvent, ScenarioDisabledDomainEventHandler>();
 
         return services;
+    }
+
+    private static void AddLearningMessageContracts(this IServiceCollection services)
+    {
+        services.AddNativeMessageContract<TopicCreatedIntegrationEvent>("learning.topic.created.v1", MessageTopologyNames.IntegrationExchange, "learning.topic.created.v1");
+        services.AddNativeMessageContract<TopicUpdatedIntegrationEvent>("learning.topic.updated.v1", MessageTopologyNames.IntegrationExchange, "learning.topic.updated.v1");
+        services.AddNativeMessageContract<TopicDisabledIntegrationEvent>("learning.topic.disabled.v1", MessageTopologyNames.IntegrationExchange, "learning.topic.disabled.v1");
+        services.AddNativeMessageContract<TopicModeEnabledIntegrationEvent>("learning.topic-mode.enabled.v1", MessageTopologyNames.IntegrationExchange, "learning.topic-mode.enabled.v1");
+        services.AddNativeMessageContract<TopicModeDisabledIntegrationEvent>("learning.topic-mode.disabled.v1", MessageTopologyNames.IntegrationExchange, "learning.topic-mode.disabled.v1");
+        services.AddNativeMessageContract<ModeDefinitionCreatedIntegrationEvent>("learning.mode.created.v1", MessageTopologyNames.IntegrationExchange, "learning.mode.created.v1");
+        services.AddNativeMessageContract<ModeDefinitionUpdatedIntegrationEvent>("learning.mode.updated.v1", MessageTopologyNames.IntegrationExchange, "learning.mode.updated.v1");
+        services.AddNativeMessageContract<ModeDefinitionDisabledIntegrationEvent>("learning.mode.disabled.v1", MessageTopologyNames.IntegrationExchange, "learning.mode.disabled.v1");
+        services.AddNativeMessageContract<ScenarioCreatedIntegrationEvent>("learning.scenario.created.v1", MessageTopologyNames.IntegrationExchange, "learning.scenario.created.v1");
+        services.AddNativeMessageContract<ScenarioUpdatedIntegrationEvent>("learning.scenario.updated.v1", MessageTopologyNames.IntegrationExchange, "learning.scenario.updated.v1");
+        services.AddNativeMessageContract<ScenarioDisabledIntegrationEvent>("learning.scenario.disabled.v1", MessageTopologyNames.IntegrationExchange, "learning.scenario.disabled.v1");
     }
 }

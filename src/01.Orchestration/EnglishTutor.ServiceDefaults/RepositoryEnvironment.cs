@@ -19,6 +19,11 @@ public static class RepositoryEnvironment
     {
         foreach (var (key, value) in Load())
         {
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
+            {
+                continue;
+            }
+
             Environment.SetEnvironmentVariable(key, value);
         }
     }

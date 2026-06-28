@@ -64,5 +64,54 @@ internal sealed class RoleRepository : IRoleRepository
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<Role>> GetByNamesAsync(
+        IReadOnlyCollection<string> names,
+        CancellationToken ct)
+    {
+        if (names.Count == 0)
+        {
+            return Array.Empty<Role>();
+        }
+
+        return await _db.Roles
+            .Where(r => names.Contains(r.Name))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Permission>> GetPermissionsByCodesAsync(
+        IReadOnlyCollection<string> codes,
+        CancellationToken ct)
+    {
+        if (codes.Count == 0)
+        {
+            return Array.Empty<Permission>();
+        }
+
+        return await _db.Permissions
+            .Where(permission => codes.Contains(permission.Code))
+            .ToListAsync(ct);
+    }
+
+    public async Task ReplacePermissionsAsync(
+        Guid roleId,
+        IReadOnlyCollection<Guid> permissionIds,
+        CancellationToken ct)
+    {
+        var existing = await _db.RolePermissions
+            .Where(rolePermission => rolePermission.RoleId == roleId)
+            .ToListAsync(ct);
+
+        _db.RolePermissions.RemoveRange(existing);
+
+        foreach (var permissionId in permissionIds.Distinct())
+        {
+            _db.RolePermissions.Add(new RolePermission
+            {
+                RoleId = roleId,
+                PermissionId = permissionId
+            });
+        }
+    }
+
     public void Add(Role role) => _db.Roles.Add(role);
 }

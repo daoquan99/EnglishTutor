@@ -37,8 +37,9 @@ internal sealed class FeedbackUnitOfWork : IFeedbackUnitOfWork
             .SelectMany(aggregate => aggregate.DomainEvents)
             .ToArray();
 
-        await using var transaction =
-            await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var ownedTransaction = _dbContext.Database.CurrentTransaction is null
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
 
         await _dispatcher.DispatchAsync(
             events: domainEvents,
@@ -46,7 +47,10 @@ internal sealed class FeedbackUnitOfWork : IFeedbackUnitOfWork
 
         var result = await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await transaction.CommitAsync(cancellationToken);
+        if (ownedTransaction is not null)
+        {
+            await ownedTransaction.CommitAsync(cancellationToken);
+        }
 
         foreach (var aggregate in aggregates)
         {

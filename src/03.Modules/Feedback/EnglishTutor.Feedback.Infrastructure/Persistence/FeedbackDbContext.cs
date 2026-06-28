@@ -1,13 +1,14 @@
 using System.Threading;
 using System.Threading.Tasks;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Inbox;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
 using EnglishTutor.Feedback.Domain.Aggregates.SessionFeedback;
 using Microsoft.EntityFrameworkCore;
-using MassTransit;
 
 namespace EnglishTutor.Feedback.Infrastructure.Persistence;
 
-public sealed class FeedbackDbContext : DbContext
+public sealed class FeedbackDbContext : DbContext, IOutboxDbContext, IInboxDbContext
 {
     public const string SchemaName = "feedback";
 
@@ -53,6 +54,8 @@ public sealed class FeedbackDbContext : DbContext
     public DbSet<Correction> Corrections => Set<Correction>();
     public DbSet<ExtractedVocabulary> ExtractedVocabularies => Set<ExtractedVocabulary>();
     public DbSet<MistakePattern> MistakePatterns => Set<MistakePattern>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -64,9 +67,11 @@ public sealed class FeedbackDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ExtractedVocabularyConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.MistakePatternConfiguration());
 
-        modelBuilder.AddInboxStateEntity(b => b.ToTable("inbox_state", SchemaName));
-        modelBuilder.AddOutboxMessageEntity(b => b.ToTable("outbox_message", SchemaName));
-        modelBuilder.AddOutboxStateEntity(b => b.ToTable("outbox_state", SchemaName));
+        modelBuilder.AddNativeOutbox();
+        modelBuilder.Entity<OutboxMessage>().ToTable("integration_outbox_messages", SchemaName);
+        modelBuilder.Entity<OutboxMessage>().Property(message => message.PayloadJson).HasColumnType("jsonb");
+        modelBuilder.AddNativeInbox();
+        modelBuilder.Entity<InboxMessage>().ToTable("integration_inbox_messages", SchemaName);
 
         modelBuilder.ApplyAggregateRootConventions();
     }

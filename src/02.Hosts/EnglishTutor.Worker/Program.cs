@@ -9,7 +9,6 @@ using EnglishTutor.BuildingBlocks.Infrastructure.Options;
 using EnglishTutor.BuildingBlocks.Application.CurrentUser;
 using EnglishTutor.Identity.Application;
 using EnglishTutor.Identity.Infrastructure;
-using EnglishTutor.Identity.Infrastructure.Messaging;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Learning.Infrastructure;
 using EnglishTutor.Learning.Infrastructure.Persistence;
@@ -23,7 +22,6 @@ using EnglishTutor.Worker.HostedServices;
 using EnglishTutor.Worker.Jobs;
 using EnglishTutor.Worker.Options;
 using EnglishTutor.Worker.Readiness;
-using MassTransit;
 using Serilog;
 
 RepositoryEnvironment.LoadIntoProcess();
@@ -89,47 +87,9 @@ builder.Services.AddHostedService<ExpiredRefreshTokensCleanupHostedService>();
 builder.Services.AddHostedService<QuotaExpiredReservationCleanupHostedService>();
 builder.Services.AddHostedService<ExpireAiRouteLeasesHostedService>();
 
-builder.Services.AddWorkerBrokerMessaging<IIdentityBus>(
-    builder.Configuration,
-    x =>
-    {
-        x.AddEntityFrameworkOutbox<AuditDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddEntityFrameworkOutbox<LearningDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddEntityFrameworkOutbox<PracticeDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddEntityFrameworkOutbox<FeedbackDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddFeedbackConsumers();
-    },
-    x =>
-    {
-        x.AddEntityFrameworkOutbox<IIdentityBus, IdentityDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-
-        x.AddAuditSecurityEventConsumers();
-    });
-
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<MassTransit.IBus, EnglishTutor.Learning.Infrastructure.Persistence.LearningDbContext>>();
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<MassTransit.IBus, EnglishTutor.Practice.Infrastructure.Persistence.PracticeDbContext>>();
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<MassTransit.IBus, EnglishTutor.Feedback.Infrastructure.Persistence.FeedbackDbContext>>();
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<EnglishTutor.Identity.Infrastructure.Messaging.IIdentityBus, EnglishTutor.Identity.Infrastructure.Persistence.IdentityDbContext>>();
+builder.Services.AddAuditSecurityEventConsumers();
+builder.Services.AddFeedbackConsumers();
+builder.Services.AddNativeRabbitMqWorker(builder.Configuration);
 
 var host = builder.Build();
 

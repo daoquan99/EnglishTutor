@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using EnglishTutor.Audit.Contracts;
+using EnglishTutor.Audit.Infrastructure.Messaging;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.Identity.Presentation.Endpoints.Dtos;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
@@ -13,22 +15,15 @@ namespace EnglishTutor.IntegrationTests.Audit;
 public sealed class DurableSecurityEventConsumptionTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
 
     private const string RefreshCookieName = "__Host-et_refresh";
     private const string CsrfCookieName = "__Host-et_csrf";
     private const string CsrfHeaderName = "X-CSRF-TOKEN";
     private const string CsrfToken = "test-csrf-token-value";
 
-    private sealed class DurableFactory : IntegrationTestFactory, IAsyncDisposable
+    private sealed class DurableFactory : IntegrationTestFactory
     {
-        public DurableFactory()
-        {
-            Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", "true");
-        }
-
-        protected override bool KeepMessagingHostedServices => true;
-
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             base.ConfigureWebHost(builder);
@@ -39,46 +34,13 @@ public sealed class DurableSecurityEventConsumptionTests
                 {
                     ["SeedData:Owner:Password"] = OwnerPassword,
                     ["Auth:RateLimit:Enabled"] = "false",
-                    ["Messaging:InProcessAuditConsumer"] = "true",
                 });
             });
-        }
-
-        // Stop the in-memory buses BEFORE the host (and its database) go away,
-        // so no consumer endpoint from this host survives to steal the next
-        // test's published message. WebApplicationFactory.DisposeAsync does not
-        // guarantee this ordering, so do it explicitly first.
-        public override async ValueTask DisposeAsync()
-        {
-            foreach (var bus in Services.GetServices<MassTransit.IBusControl>())
+            builder.ConfigureServices((context, services) =>
             {
-                try
-                {
-                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10));
-                    await bus.StopAsync(cts.Token);
-                }
-                catch
-                {
-                    // Best-effort: never let bus teardown mask a test assertion.
-                }
-            }
-
-            var identityBusBind = Services.GetService<MassTransit.DependencyInjection.Bind<EnglishTutor.Identity.Infrastructure.Messaging.IIdentityBus, MassTransit.IBusControl>>();
-            if (identityBusBind != null)
-            {
-                try
-                {
-                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(10));
-                    await identityBusBind.Value.StopAsync(cts.Token);
-                }
-                catch
-                {
-                    // Best-effort: never let bus teardown mask a test assertion.
-                }
-            }
-
-            Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", null);
-            await base.DisposeAsync();
+                services.AddAuditSecurityEventConsumers();
+                services.AddNativeRabbitMqWorker(context.Configuration);
+            });
         }
     }
 

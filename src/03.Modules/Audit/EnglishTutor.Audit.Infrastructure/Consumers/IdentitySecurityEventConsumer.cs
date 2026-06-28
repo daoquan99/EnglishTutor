@@ -1,67 +1,87 @@
 using EnglishTutor.Audit.Application.Commands.RecordSecurityEvent;
+using EnglishTutor.Audit.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Inbox;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.Identity.Contracts.Events;
-using MassTransit;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace EnglishTutor.Audit.Infrastructure.Consumers;
 
-/// <summary>
-/// Consumes durable Identity security integration events (Batch R1, H-07) and
-/// records them in the Audit store via the existing
-/// <see cref="RecordSecurityEventCommand"/>.
-/// </summary>
-/// <remarks>
-/// <para>
-/// Idempotency is provided by the MassTransit Entity Framework <b>inbox</b>
-/// (configured per receive endpoint by
-/// <see cref="IdentitySecurityEventConsumerDefinition"/> via
-/// <c>UseEntityFrameworkOutbox&lt;AuditDbContext&gt;</c>). The inbox dedupes by
-/// (MessageId, ConsumerId) in <c>audit.inbox_state</c> and commits the
-/// dedup row in the SAME <c>AuditDbContext</c> transaction as the
-/// <c>SecurityEvent</c> row, so a redelivered message never produces a
-/// duplicate audit row.
-/// </para>
-/// <para>
-/// This consumer references only <c>EnglishTutor.Identity.Contracts</c> (the
-/// integration-event contract) and <c>EnglishTutor.Audit.Application</c> — never
-/// Identity.Domain or Identity.Application (AuditIdentityBoundaryTests).
-/// </para>
-/// </remarks>
-public sealed class IdentitySecurityEventConsumer : IConsumer<IdentitySecurityEventRecordedV1>
+public sealed class IdentitySecurityEventConsumer
+    : RabbitMqMessageHandler<IdentitySecurityEventRecordedV1>
 {
+    public const string ConsumerName = "audit.identity-security.v1";
+    public const string QueueName = "english.audit.identity-security.v1";
+
     private readonly ISender _sender;
+    private readonly AuditDbContext _dbContext;
     private readonly ILogger<IdentitySecurityEventConsumer> _logger;
 
-    public IdentitySecurityEventConsumer(ISender sender, ILogger<IdentitySecurityEventConsumer> logger)
+    public IdentitySecurityEventConsumer(
+        ISender sender,
+        AuditDbContext dbContext,
+        ILogger<IdentitySecurityEventConsumer> logger)
     {
         _sender = sender;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
-    public async Task Consume(ConsumeContext<IdentitySecurityEventRecordedV1> context)
+    public override MessageConsumerDescriptor Descriptor { get; } = new(
+        ConsumerName: ConsumerName,
+        QueueName: QueueName,
+        MessageType: typeof(IdentitySecurityEventRecordedV1),
+        PrefetchCount: 32,
+        Concurrency: 4,
+        MaxAttempts: 5,
+        RetryDelay: TimeSpan.FromSeconds(10));
+
+    protected override async Task HandleAsync(
+        IdentitySecurityEventRecordedV1 message,
+        MessageDeliveryContext context,
+        CancellationToken cancellationToken)
     {
-        var m = context.Message;
+        if (await _dbContext.InboxMessages.AnyAsync(
+                inbox => inbox.MessageId == context.MessageId &&
+                         inbox.ConsumerName == ConsumerName,
+                cancellationToken))
+        {
+            return;
+        }
 
         _logger.LogInformation(
             "Recording durable Identity security event. Category={Category} EventType={EventType} UserId={UserId} SessionId={SessionId}.",
-            m.CategoryCode, m.EventType, m.UserId, m.SessionId);
+            message.CategoryCode,
+            message.EventType,
+            message.UserId,
+            message.SessionId);
 
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        _dbContext.InboxMessages.Add(new InboxMessage(
+            messageId: context.MessageId,
+            consumerName: ConsumerName,
+            contractName: context.ContractName,
+            schemaVersion: context.SchemaVersion,
+            receivedAtUtc: context.ReceivedAtUtc));
         await _sender.Send(
             new RecordSecurityEventCommand(
-                CategoryCode: m.CategoryCode,
-                SourceModule: m.SourceModule,
-                SourceEventType: m.SourceEventType,
-                UserId: m.UserId,
-                SessionId: m.SessionId,
-                RefreshTokenFamilyId: m.RefreshTokenFamilyId,
-                RefreshTokenId: m.RefreshTokenId,
-                ReasonCode: m.ReasonCode,
-                CorrelationId: m.CorrelationId,
-                CausationId: m.CausationId,
-                IpAddressHash: m.IpAddressHash,
-                UserAgentHash: m.UserAgentHash,
-                OccurredAtUtc: m.OccurredAtUtc),
-            context.CancellationToken);
+                CategoryCode: message.CategoryCode,
+                SourceModule: message.SourceModule,
+                SourceEventType: message.SourceEventType,
+                UserId: message.UserId,
+                SessionId: message.SessionId,
+                RefreshTokenFamilyId: message.RefreshTokenFamilyId,
+                RefreshTokenId: message.RefreshTokenId,
+                ReasonCode: message.ReasonCode,
+                CorrelationId: message.CorrelationId,
+                CausationId: message.CausationId,
+                IpAddressHash: message.IpAddressHash,
+                UserAgentHash: message.UserAgentHash,
+                OccurredAtUtc: message.OccurredAtUtc),
+            cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 }

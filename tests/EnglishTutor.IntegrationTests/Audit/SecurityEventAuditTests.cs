@@ -6,7 +6,9 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using EnglishTutor.Audit.Contracts;
+using EnglishTutor.Audit.Infrastructure.Messaging;
 using EnglishTutor.Audit.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Identity.Presentation.Endpoints.Dtos;
 using FluentAssertions;
@@ -21,7 +23,7 @@ namespace EnglishTutor.IntegrationTests.Audit;
 public class SecurityEventAuditTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
 
     private const string RefreshCookieName = "__Host-et_refresh";
     private const string CsrfCookieName = "__Host-et_csrf";
@@ -30,15 +32,6 @@ public class SecurityEventAuditTests
 
     private sealed class AuditTestFactory : IntegrationTestFactory
     {
-        // Batch R1, H-07: run the durable pipeline in-process so the reuse
-        // event flows Identity outbox -> delivery -> Audit consumer -> store.
-        public AuditTestFactory()
-        {
-            Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", "true");
-        }
-
-        protected override bool KeepMessagingHostedServices => true;
-
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             base.ConfigureWebHost(builder);
@@ -49,18 +42,13 @@ public class SecurityEventAuditTests
                 {
                     ["SeedData:Owner:Password"] = OwnerPassword,
                     ["Auth:RateLimit:Enabled"] = "false",
-                    ["Messaging:InProcessAuditConsumer"] = "true",
                 });
             });
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
+            builder.ConfigureServices((context, services) =>
             {
-                Environment.SetEnvironmentVariable("Messaging__InProcessAuditConsumer", null);
-            }
-            base.Dispose(disposing);
+                services.AddAuditSecurityEventConsumers();
+                services.AddNativeRabbitMqWorker(context.Configuration);
+            });
         }
     }
 

@@ -12,9 +12,6 @@
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="StackExchange.Redis" />
-    <PackageReference Include="MassTransit" />
-    <PackageReference Include="MassTransit.RabbitMQ" />
-    <PackageReference Include="MassTransit.EntityFrameworkCore" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.BuildingBlocks.Application\EnglishTutor.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\EnglishTutor.BuildingBlocks.Contracts\EnglishTutor.BuildingBlocks.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

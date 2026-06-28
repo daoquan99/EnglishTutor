@@ -3,6 +3,9 @@ using EnglishTutor.Audit.Contracts;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.DomainEvents;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
+using EnglishTutor.Identity.Contracts.Events;
 using EnglishTutor.Identity.Application.Abstractions;
 using EnglishTutor.Identity.Application.Abstractions.Auth;
 using EnglishTutor.Identity.Application.Abstractions.Persistence;
@@ -103,6 +106,7 @@ public static class IdentityInfrastructureServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IUserSessionQueryService, UserSessionQueryService>();
+        services.AddScoped<IUserManagementQueryService, UserManagementQueryService>();
         services.AddScoped<IRoleRepository, RoleRepository>();
 
         // Unit of Work (Application interface + Infrastructure impl).
@@ -116,8 +120,17 @@ public static class IdentityInfrastructureServiceCollectionExtensions
         // current request.
         services.AddHttpContextAccessor();
         services.AddScoped<IRefreshTokenReuseContextAccessor, HttpContextRefreshTokenReuseContextAccessor>();
-        services.AddScoped<IIdentitySecurityEventPublisher, OutboxIdentitySecurityEventPublisher>();
+        services.AddScoped<NativeOutboxWriter<IdentityDbContext>>();
+        services.AddScoped<IIdentitySecurityEventPublisher, NativeIdentitySecurityEventPublisher>();
         services.AddScoped<IIdentitySecurityEventService, IdentitySecurityEventService>();
+        services.AddScoped<IOutboxStore>(sp =>
+            new EfOutboxStore<IdentityDbContext>(
+                sp.GetRequiredService<IdentityDbContext>(),
+                "Identity"));
+        services.AddNativeMessageContract<IdentitySecurityEventRecordedV1>(
+            contractName: "identity.security.recorded.v1",
+            exchangeName: MessageTopologyNames.IntegrationExchange,
+            routingKey: "identity.security.recorded.v1");
 
         // Domain event dispatcher. The InMemory implementation lives in
         // BuildingBlocks.Infrastructure. Identity.Infrastructure adds the

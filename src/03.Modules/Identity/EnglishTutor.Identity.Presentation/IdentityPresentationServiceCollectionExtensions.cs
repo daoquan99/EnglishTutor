@@ -36,6 +36,8 @@ public static class IdentityPresentationServiceCollectionExtensions
     {
         routes.MapAuthEndpoints();
         routes.MapMeEndpoints();
+        routes.MapMeProfileEndpoints();
+        routes.MapAdminIdentityEndpoints();
         return routes;
     }
 }

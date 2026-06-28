@@ -1,18 +1,23 @@
 using EnglishTutor.Audit.Infrastructure.Consumers;
-using MassTransit;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
+using EnglishTutor.Identity.Contracts.Events;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EnglishTutor.Audit.Infrastructure.Messaging;
 
 public static class AuditMessagingRegistration
 {
-    public static void AddAuditSecurityEventConsumers(this IBusRegistrationConfigurator configurator)
+    public static IServiceCollection AddAuditSecurityEventConsumers(
+        this IServiceCollection services)
     {
-        configurator.AddConsumer<IdentitySecurityEventConsumer, IdentitySecurityEventConsumerDefinition>();
-    }
-
-    public static void AddAuditSecurityEventConsumers<TBus>(this IBusRegistrationConfigurator<TBus> configurator)
-        where TBus : class, IBus
-    {
-        configurator.AddConsumer<IdentitySecurityEventConsumer, IdentitySecurityEventConsumerDefinition>();
+        return services.AddNativeRabbitMqConsumer<IdentitySecurityEventConsumer>(
+            new MessageConsumerDescriptor(
+                ConsumerName: IdentitySecurityEventConsumer.ConsumerName,
+                QueueName: IdentitySecurityEventConsumer.QueueName,
+                MessageType: typeof(IdentitySecurityEventRecordedV1),
+                PrefetchCount: 32,
+                Concurrency: 4,
+                MaxAttempts: 5,
+                RetryDelay: TimeSpan.FromSeconds(10)));
     }
 }

@@ -3,8 +3,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using EnglishTutor.BuildingBlocks.Application.DomainEvents;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using FluentAssertions;
-using MassTransit;
 using NetArchTest.Rules;
 using System.Reflection;
 using Xunit;
@@ -19,7 +19,7 @@ public class MessagingArchitectureTests
     private const string AuditApplicationNamespace = "EnglishTutor.Audit.Application";
 
     [Fact]
-    public void Domain_Assemblies_Should_Not_Reference_MassTransit()
+    public void Domain_Assemblies_Should_Not_Reference_RabbitMqClient()
     {
         var assemblies = new[]
         {
@@ -32,15 +32,15 @@ public class MessagingArchitectureTests
         {
             var result = Types.InAssembly(assembly)
                 .ShouldNot()
-                .HaveDependencyOn("MassTransit")
+                .HaveDependencyOn("RabbitMQ.Client")
                 .GetResult();
 
-            result.IsSuccessful.Should().BeTrue($"Domain assembly {assembly.GetName().Name} must not reference MassTransit.");
+            result.IsSuccessful.Should().BeTrue($"Domain assembly {assembly.GetName().Name} must not reference RabbitMQ.Client.");
         }
     }
 
     [Fact]
-    public void Application_Assemblies_Should_Not_Reference_MassTransit()
+    public void Application_Assemblies_Should_Not_Reference_RabbitMqClient()
     {
         var assemblies = new[]
         {
@@ -53,10 +53,10 @@ public class MessagingArchitectureTests
         {
             var result = Types.InAssembly(assembly)
                 .ShouldNot()
-                .HaveDependencyOn("MassTransit")
+                .HaveDependencyOn("RabbitMQ.Client")
                 .GetResult();
 
-            result.IsSuccessful.Should().BeTrue($"Application assembly {assembly.GetName().Name} must not reference MassTransit.");
+            result.IsSuccessful.Should().BeTrue($"Application assembly {assembly.GetName().Name} must not reference RabbitMQ.Client.");
         }
     }
 
@@ -133,12 +133,12 @@ public class MessagingArchitectureTests
     {
         var consumerTypes = Types.InAssembly(typeof(Program).Assembly)
             .That()
-            .ImplementInterface(typeof(IConsumer))
+            .ImplementInterface(typeof(IRabbitMqMessageHandler))
             .GetTypes()
             .ToList();
 
         consumerTypes.Should().BeEmpty(
-            "API must not host any MassTransit consumers. All consumers must be hosted in the Worker or Test projects. " +
+            "API must not host RabbitMQ message handlers. All consumers are composed by the Worker. " +
             $"Found offending types: {string.Join(", ", consumerTypes.Select(t => t.FullName))}");
     }
 
@@ -166,12 +166,12 @@ public class MessagingArchitectureTests
 
         var consumerTypes = Types.InAssembly(workerAssembly)
             .That()
-            .ImplementInterface(typeof(IConsumer))
+            .ImplementInterface(typeof(IRabbitMqMessageHandler))
             .GetTypes()
             .ToList();
 
         consumerTypes.Should().BeEmpty(
-            "Worker project must not contain any concrete MassTransit consumers for Task 12 baseline. " +
+            "Worker host must compose module handlers without defining transport handlers itself. " +
             $"Found offending types: {string.Join(", ", consumerTypes.Select(t => t.FullName))}");
     }
 
@@ -253,14 +253,14 @@ public class MessagingArchitectureTests
                 .That()
                 .ImplementInterface(typeof(IDomainEventHandler<>))
                 .ShouldNot()
-                .HaveDependencyOn("MassTransit")
+                .HaveDependencyOn("RabbitMQ.Client")
                 .And()
                 .HaveDependencyOn("Microsoft.EntityFrameworkCore")
                 .And()
                 .HaveDependencyOn("Microsoft.AspNetCore")
                 .GetResult();
 
-            result.IsSuccessful.Should().BeTrue($"Domain event handlers in {assembly.GetName().Name} must not reference MassTransit, EF Core, or ASP.NET.");
+            result.IsSuccessful.Should().BeTrue($"Domain event handlers in {assembly.GetName().Name} must not reference RabbitMQ.Client, EF Core, or ASP.NET.");
         }
     }
 }

@@ -1,3 +1,5 @@
+using EnglishTutor.BuildingBlocks.Contracts.Events;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
 using FluentAssertions;
 
@@ -5,139 +7,83 @@ namespace EnglishTutor.BuildingBlocks.UnitTests;
 
 public class OutboxMessageTests
 {
-    // ===== Fix #1: ModuleName required =====
-
     [Fact]
-    public void Constructor_Should_Require_ModuleName()
+    public void Create_Should_Copy_Envelope_And_Routing_Metadata()
     {
-        // Act
-        var act = () => new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow,
-            moduleName: "",
-            type: "TestEvent",
-            payloadJson: "{}");
-
-        // Assert
-        act.Should().Throw<ArgumentException>().WithParameterName("moduleName");
-    }
-
-    [Fact]
-    public void Constructor_Should_Require_Type()
-    {
-        var act = () => new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow,
-            moduleName: "Practice",
-            type: "",
-            payloadJson: "{}");
-
-        act.Should().Throw<ArgumentException>().WithParameterName("type");
-    }
-
-    [Fact]
-    public void Constructor_Should_Set_ModuleName()
-    {
-        var message = new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow,
-            "Practice", "PracticeEndedIntegrationEvent", "{}");
-
-        message.ModuleName.Should().Be("Practice");
-        message.Type.Should().Be("PracticeEndedIntegrationEvent");
-    }
-
-    // ===== Fix #2: CorrelationId / CausationId are now Guid? (aligned with IntegrationEvent) =====
-
-    [Fact]
-    public void Constructor_Should_Set_All_Required_Properties()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var occurredAt = DateTime.UtcNow;
+        var eventId = Guid.NewGuid();
         var correlationId = Guid.NewGuid();
         var causationId = Guid.NewGuid();
+        var occurredAtUtc = DateTime.UtcNow;
+        var createdAtUtc = DateTimeOffset.UtcNow;
+        var integrationEvent = new TestIntegrationEvent
+        {
+            EventId = eventId,
+            OccurredAtUtc = occurredAtUtc,
+            CorrelationId = correlationId,
+            CausationId = causationId,
+            SchemaVersion = "2.0"
+        };
+        var descriptor = new MessageContractDescriptor(
+            typeof(TestIntegrationEvent),
+            "test.event.v2",
+            "english.integration",
+            "test.event.v2");
 
-        // Act
-        var message = new OutboxMessage(
-            id: id,
-            occurredAtUtc: occurredAt,
-            moduleName: "Practice",
-            type: "TestEvent",
-            payloadJson: "{\"key\":\"value\"}",
-            correlationId: correlationId,
-            causationId: causationId);
+        var message = OutboxMessage.Create(
+            integrationEvent,
+            descriptor,
+            "{\"value\":1}",
+            createdAtUtc);
 
-        // Assert
-        message.Id.Should().Be(id);
-        message.OccurredAtUtc.Should().Be(occurredAt);
-        message.ModuleName.Should().Be("Practice");
-        message.Type.Should().Be("TestEvent");
-        message.PayloadJson.Should().Be("{\"key\":\"value\"}");
+        message.Id.Should().Be(eventId);
+        message.ContractName.Should().Be("test.event.v2");
+        message.SchemaVersion.Should().Be("2.0");
+        message.ExchangeName.Should().Be("english.integration");
+        message.RoutingKey.Should().Be("test.event.v2");
+        message.OccurredAtUtc.Should().Be(new DateTimeOffset(occurredAtUtc, TimeSpan.Zero));
+        message.PayloadJson.Should().Be("{\"value\":1}");
         message.CorrelationId.Should().Be(correlationId);
         message.CausationId.Should().Be(causationId);
-        message.RetryCount.Should().Be(0);
-        message.ProcessedAtUtc.Should().BeNull();
-        message.Error.Should().BeNull();
+        message.Status.Should().Be(OutboxMessageStatus.Pending);
+        message.AttemptCount.Should().Be(0);
+        message.NextAttemptAtUtc.Should().Be(createdAtUtc);
+        message.CreatedAtUtc.Should().Be(createdAtUtc);
     }
 
     [Fact]
-    public void Constructor_Should_Allow_Null_Correlation_And_Causation()
+    public void MarkPublished_Should_Reject_Message_Not_Owned_By_Lease()
     {
-        var message = new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow, "Practice", "T", "{}");
+        var message = CreateMessage();
 
-        message.CorrelationId.Should().BeNull();
-        message.CausationId.Should().BeNull();
+        var act = () => message.MarkPublished(Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
-    public void CorrelationId_Type_Should_Match_IntegrationEvent_Guid()
+    public void MarkFailed_Should_Reject_Message_Not_Owned_By_Lease()
     {
-        // Regression: outbox must align with IntegrationEvent.CorrelationId (Guid?).
-        var guid = Guid.NewGuid();
-        var message = new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow, "Practice", "T", "{}",
-            correlationId: guid);
+        var message = CreateMessage();
 
-        message.CorrelationId.Should().Be(guid);
-        message.CorrelationId.Should().NotBeNull();
+        var act = () => message.MarkFailed(
+            Guid.NewGuid(),
+            "broker_unavailable",
+            "RabbitMQ unavailable",
+            DateTimeOffset.UtcNow.AddSeconds(5),
+            5);
+
+        act.Should().Throw<InvalidOperationException>();
     }
 
-    [Fact]
-    public void MarkProcessed_Should_Set_ProcessedAtUtc_And_Clear_Error()
-    {
-        var message = new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow, "Practice", "T", "{}");
-        // Seed a failed state via the public domain API (private setters forbid
-        // direct assignment).
-        message.MarkFailed("previous error");
+    private static OutboxMessage CreateMessage() => OutboxMessage.Create(
+        new TestIntegrationEvent(),
+        new MessageContractDescriptor(
+            typeof(TestIntegrationEvent),
+            "test.event.v1",
+            "english.integration",
+            "test.event.v1"),
+        "{}",
+        DateTimeOffset.UtcNow);
 
-        var processedAt = DateTime.UtcNow.AddSeconds(1);
-        message.MarkProcessed(processedAt);
-
-        message.ProcessedAtUtc.Should().Be(processedAt);
-        message.Error.Should().BeNull();
-    }
-
-    [Fact]
-    public void MarkFailed_Should_Set_Error_And_Increment_RetryCount()
-    {
-        var message = new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow, "Practice", "T", "{}");
-
-        message.MarkFailed("first error");
-        message.Error.Should().Be("first error");
-        message.RetryCount.Should().Be(1);
-
-        message.MarkFailed("second error");
-        message.Error.Should().Be("second error");
-        message.RetryCount.Should().Be(2);
-    }
-
-    [Fact]
-    public void OutboxMessage_Should_Implement_IOutboxMessage()
-    {
-        var message = new OutboxMessage(
-            Guid.NewGuid(), DateTime.UtcNow, "Practice", "T", "{}");
-
-        message.Should().BeAssignableTo<IOutboxMessage>();
-    }
+    private sealed record TestIntegrationEvent : IntegrationEvent;
 }

@@ -1,13 +1,13 @@
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
 using EnglishTutor.Practice.Domain.Aggregates.PracticeScenarioReadModel;
 using EnglishTutor.Practice.Domain.Aggregates.PracticeSession;
 using EnglishTutor.Practice.Domain.Aggregates.PracticeSession.Entities;
 using Microsoft.EntityFrameworkCore;
-using MassTransit;
 
 namespace EnglishTutor.Practice.Infrastructure.Persistence;
 
-public sealed class PracticeDbContext : DbContext
+public sealed class PracticeDbContext : DbContext, IOutboxDbContext
 {
     public const string SchemaName = "practice";
 
@@ -49,6 +49,7 @@ public sealed class PracticeDbContext : DbContext
     public DbSet<TranscriptMessage> TranscriptMessages => Set<TranscriptMessage>();
     public DbSet<SessionEvent> SessionEvents => Set<SessionEvent>();
     public DbSet<PracticeScenarioReadModel> ScenarioReadModels => Set<PracticeScenarioReadModel>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,9 +61,9 @@ public sealed class PracticeDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.SessionEventConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.PracticeScenarioReadModelConfiguration());
 
-        modelBuilder.AddInboxStateEntity(b => b.ToTable("inbox_state", SchemaName));
-        modelBuilder.AddOutboxMessageEntity(b => b.ToTable("outbox_message", SchemaName));
-        modelBuilder.AddOutboxStateEntity(b => b.ToTable("outbox_state", SchemaName));
+        modelBuilder.AddNativeOutbox();
+        modelBuilder.Entity<OutboxMessage>().ToTable("integration_outbox_messages", SchemaName);
+        modelBuilder.Entity<OutboxMessage>().Property(message => message.PayloadJson).HasColumnType("jsonb");
 
         // Soft-delete query filter convention
         modelBuilder.ApplyAggregateRootConventions();

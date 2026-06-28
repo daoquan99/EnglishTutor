@@ -26,7 +26,7 @@ namespace EnglishTutor.IntegrationTests.Identity;
 public class AuthSecurityContainmentTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
 
     private const string RefreshCookieName = "__Host-et_refresh";
     private const string CsrfCookieName = "__Host-et_csrf";

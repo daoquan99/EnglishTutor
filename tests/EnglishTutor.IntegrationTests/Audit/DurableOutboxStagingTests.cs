@@ -14,13 +14,11 @@ namespace EnglishTutor.IntegrationTests.Audit;
 public class DurableOutboxStagingTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
     private const string RefreshCookieName = "__Host-et_refresh";
 
     private sealed class OutboxStagingFactory : IntegrationTestFactory
     {
-        protected override bool KeepMessagingHostedServices => false;
-
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             base.ConfigureWebHost(builder);
@@ -47,15 +45,16 @@ public class DurableOutboxStagingTests
 
         var login = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequest(OwnerEmail, OwnerPassword));
-        login.StatusCode.Should().Be(HttpStatusCode.OK);
+        var loginBody = await login.Content.ReadAsStringAsync();
+        login.StatusCode.Should().Be(HttpStatusCode.OK, loginBody);
 
         var identityMessages = await DurableSecurityEventTestSupport.PollOutboxMessagesAsync<IdentityDbContext>(
             factory,
-            m => m.MessageType.Contains(nameof(EnglishTutor.Identity.Contracts.Events.IdentitySecurityEventRecordedV1)),
+            m => m.ContractName == "identity.security.recorded.v1",
             minCount: 1);
         var learningCount = await DurableSecurityEventTestSupport.CountOutboxMessagesAsync<LearningDbContext>(
             factory,
-            m => m.MessageType.Contains(nameof(EnglishTutor.Identity.Contracts.Events.IdentitySecurityEventRecordedV1)));
+            m => m.ContractName == "identity.security.recorded.v1");
 
         identityMessages.Should().HaveCount(1);
         learningCount.Should().Be(0);

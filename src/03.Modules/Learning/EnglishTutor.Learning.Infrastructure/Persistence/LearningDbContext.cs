@@ -1,4 +1,5 @@
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
 using EnglishTutor.Learning.Domain.Aggregates.Topics;
 using EnglishTutor.Learning.Domain.Aggregates.Topics.Entities;
 using EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions;
@@ -6,11 +7,10 @@ using EnglishTutor.Learning.Domain.Aggregates.Scenarios;
 using EnglishTutor.Learning.Domain.Aggregates.TopicVocabularies;
 using EnglishTutor.Learning.Domain.Aggregates.TopicPhrases;
 using Microsoft.EntityFrameworkCore;
-using MassTransit;
 
 namespace EnglishTutor.Learning.Infrastructure.Persistence;
 
-public sealed class LearningDbContext : DbContext
+public sealed class LearningDbContext : DbContext, IOutboxDbContext
 {
     public const string SchemaName = "learning";
 
@@ -24,6 +24,7 @@ public sealed class LearningDbContext : DbContext
     public DbSet<Scenario> Scenarios => Set<Scenario>();
     public DbSet<TopicVocabulary> TopicVocabularies => Set<TopicVocabulary>();
     public DbSet<TopicPhrase> TopicPhrases => Set<TopicPhrase>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,10 +38,9 @@ public sealed class LearningDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.TopicVocabularyConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.TopicPhraseConfiguration());
 
-        // MassTransit EF Outbox tables mapped to learning schema
-        modelBuilder.AddInboxStateEntity(b => b.ToTable("inbox_state", SchemaName));
-        modelBuilder.AddOutboxMessageEntity(b => b.ToTable("outbox_message", SchemaName));
-        modelBuilder.AddOutboxStateEntity(b => b.ToTable("outbox_state", SchemaName));
+        modelBuilder.AddNativeOutbox();
+        modelBuilder.Entity<OutboxMessage>().ToTable("integration_outbox_messages", SchemaName);
+        modelBuilder.Entity<OutboxMessage>().Property(message => message.PayloadJson).HasColumnType("jsonb");
 
         // Soft-delete query filter convention from BuildingBlocks.
         modelBuilder.ApplyAggregateRootConventions();

@@ -1,4 +1,5 @@
 using EnglishTutor.Identity.Domain.Aggregates.Users;
+using EnglishTutor.Identity.Domain.Aggregates.Users.Entities;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Repositories;
 using EnglishTutor.Identity.Domain.Aggregates.Users.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -48,7 +49,7 @@ internal sealed class UserRepository : IUserRepository
             .AsNoTracking()
             .Where(u => u.Email.Value == email.Value);
 
-        if (!includeDeleted)
+        if (includeDeleted)
         {
             query = query.IgnoreQueryFilters();
         }
@@ -76,4 +77,25 @@ internal sealed class UserRepository : IUserRepository
     }
 
     public void Add(User user) => _db.Users.Add(user);
+
+    public async Task ReplaceRolesAsync(
+        Guid userId,
+        IReadOnlyCollection<Guid> roleIds,
+        CancellationToken ct)
+    {
+        var existing = await _db.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .ToListAsync(ct);
+
+        _db.UserRoles.RemoveRange(existing);
+
+        foreach (var roleId in roleIds.Distinct())
+        {
+            _db.UserRoles.Add(new UserRole
+            {
+                UserId = userId,
+                RoleId = roleId
+            });
+        }
+    }
 }

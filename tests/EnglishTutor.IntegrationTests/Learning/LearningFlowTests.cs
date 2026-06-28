@@ -15,7 +15,6 @@ using EnglishTutor.Identity.Presentation.Endpoints.Dtos;
 using EnglishTutor.Learning.Infrastructure.Persistence;
 using EnglishTutor.Learning.Presentation.Dtos;
 using FluentAssertions;
-using MassTransit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +28,7 @@ namespace EnglishTutor.IntegrationTests.Learning;
 public class LearningFlowTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
 
     private sealed class LearningFlowTestFactory : IntegrationTestFactory
     {
@@ -284,12 +283,12 @@ public class LearningFlowTests
         using var scope = factory.Services.CreateScope();
         var learningDb = scope.ServiceProvider.GetRequiredService<LearningDbContext>();
         var identityDb = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-        var outboxMessages = await learningDb.Set<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>().ToListAsync();
+        var outboxMessages = await learningDb.OutboxMessages.ToListAsync();
         outboxMessages.Should().NotBeEmpty("Outbox messages should be saved to the outbox table upon commit");
-        outboxMessages.Any(o => o.MessageType.Contains("TopicCreatedIntegrationEvent")).Should().BeTrue();
+        outboxMessages.Any(o => o.ContractName == "learning.topic.created.v1").Should().BeTrue();
 
-        var identityTopicMessages = await identityDb.Set<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>()
-            .Where(o => o.MessageType.Contains("TopicCreatedIntegrationEvent"))
+        var identityTopicMessages = await identityDb.OutboxMessages
+            .Where(o => o.ContractName == "learning.topic.created.v1")
             .ToListAsync();
         identityTopicMessages.Should().BeEmpty();
     }

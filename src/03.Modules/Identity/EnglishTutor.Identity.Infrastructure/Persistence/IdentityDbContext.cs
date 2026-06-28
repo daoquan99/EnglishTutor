@@ -1,4 +1,5 @@
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
+using EnglishTutor.BuildingBlocks.Infrastructure.Outbox;
 using EnglishTutor.Identity.Application.Services;
 using EnglishTutor.Identity.Domain.Aggregates.Roles;
 using EnglishTutor.Identity.Domain.Aggregates.Roles.Entities;
@@ -7,11 +8,10 @@ using EnglishTutor.Identity.Domain.Aggregates.Sessions.Entities;
 using EnglishTutor.Identity.Domain.Aggregates.Users;
 using EnglishTutor.Identity.Domain.Aggregates.Users.Entities;
 using Microsoft.EntityFrameworkCore;
-using MassTransit;
 
 namespace EnglishTutor.Identity.Infrastructure.Persistence;
 
-public sealed class IdentityDbContext : DbContext
+public sealed class IdentityDbContext : DbContext, IOutboxDbContext
 {
     public const string SchemaName = "identity";
 
@@ -25,6 +25,7 @@ public sealed class IdentityDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<RefreshTokenFamily> RefreshTokenFamilies => Set<RefreshTokenFamily>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,10 +41,9 @@ public sealed class IdentityDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.RefreshTokenFamilyConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.UserSessionConfiguration());
 
-        // MassTransit EF Outbox tables mapped to identity schema
-        modelBuilder.AddInboxStateEntity(b => b.ToTable("inbox_state", SchemaName));
-        modelBuilder.AddOutboxMessageEntity(b => b.ToTable("outbox_message", SchemaName));
-        modelBuilder.AddOutboxStateEntity(b => b.ToTable("outbox_state", SchemaName));
+        modelBuilder.AddNativeOutbox();
+        modelBuilder.Entity<OutboxMessage>().ToTable("integration_outbox_messages", SchemaName);
+        modelBuilder.Entity<OutboxMessage>().Property(message => message.PayloadJson).HasColumnType("jsonb");
 
         // Soft-delete query filter convention from BuildingBlocks.
         modelBuilder.ApplyAggregateRootConventions();

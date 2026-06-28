@@ -4,13 +4,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Presentation\EnglishTutor.BuildingBlocks.Presentation.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Serilog.AspNetCore" />
-    <PackageReference Include="MassTransit" />
-    <PackageReference Include="MassTransit.EntityFrameworkCore" />
   </ItemGroup>
 
   <!-- BuildingBlocks -->

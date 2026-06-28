@@ -114,7 +114,7 @@ The project uses **Central Package Management (CPM)** to guarantee version consi
 | **Authentication** | JWT Bearer & BCrypt.Net | Cryptographically secure token issuer & BCrypt password hashing |
 | **Background Jobs** | Quartz.NET 3.18 | Powers outbox scheduling, email notifications, and automated progress streak decays |
 | **Structured Logging**| Serilog 4.3 | Configured to log clean console outputs and JSON files in production |
-| **API Documentation**| Swagger / OpenApi | High-performance OpenAPI contract builder via Swashbuckle |
+| **API Documentation**| .NET OpenAPI | Native ASP.NET Core OpenAPI document generation |
 | **Testing** | xUnit & NetArchTest | System includes comprehensive domain unit tests and automated architecture rule checks |
 
 ---
@@ -250,7 +250,9 @@ If you prefer using standard Docker containers and running the .NET projects dir
    ```bash
    dotnet run --project src/02.Hosts/EnglishTutor.Api/EnglishTutor.Api.csproj
    ```
-   *The Swagger API documentation will be available at:* `https://localhost:5001/swagger` (or `http://localhost:5000/swagger`)
+   *The Scalar API reference UI will be available at:* `https://localhost:7159/docs` (or `http://localhost:5091/docs`)
+
+   *The raw OpenAPI contract will be available at:* `https://localhost:7159/openapi/v1.json` (or `http://localhost:5091/openapi/v1.json`)
 
 4. **Launch the Worker Host**:
    ```bash

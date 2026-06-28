@@ -2,8 +2,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-    <PackageReference Include="MassTransit" />
-    <PackageReference Include="MassTransit.EntityFrameworkCore" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.Audit.Application\EnglishTutor.Audit.Application.csproj" />

@@ -22,7 +22,7 @@ namespace EnglishTutor.IntegrationTests.Identity;
 public class IdentityDurabilityTests
 {
     private const string OwnerEmail = "owner@englishtutor.local";
-    private const string OwnerPassword = "owner-test-password";
+    private const string OwnerPassword = IntegrationTestFactory.TestSeedOwnerPassword;
 
     private sealed class FailingPublisherFactory : IntegrationTestFactory
     {
@@ -119,7 +119,7 @@ public class IdentityDurabilityTests
         var sessions = await db.UserSessions.Where(s => s.UserId == owner!.Id).ToListAsync();
         sessions.Should().NotBeEmpty("session should be created on happy path");
 
-        var outboxMessages = await db.Set<MassTransit.EntityFrameworkCoreIntegration.OutboxMessage>().ToListAsync();
+        var outboxMessages = await db.OutboxMessages.ToListAsync();
         outboxMessages.Should().NotBeEmpty("outbox messages must contain recorded security event");
     }
 }

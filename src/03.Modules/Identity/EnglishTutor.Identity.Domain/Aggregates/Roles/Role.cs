@@ -24,6 +24,17 @@ public sealed class Role : EnglishTutor.BuildingBlocks.Domain.Entities.Entity
         Priority = priority;
     }
 
+    public void Update(string displayName, int priority)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new ArgumentException("Role display name is required.", nameof(displayName));
+        }
+
+        DisplayName = displayName.Trim();
+        Priority = priority;
+    }
+
     public static class WellKnownNames
     {
         public const string Owner = "Owner";

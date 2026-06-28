@@ -37,6 +37,19 @@ public interface IRoleRepository
         IReadOnlyCollection<Guid> roleIds,
         CancellationToken ct);
 
+    Task<IReadOnlyList<Role>> GetByNamesAsync(
+        IReadOnlyCollection<string> names,
+        CancellationToken ct);
+
+    Task<IReadOnlyList<Entities.Permission>> GetPermissionsByCodesAsync(
+        IReadOnlyCollection<string> codes,
+        CancellationToken ct);
+
+    Task ReplacePermissionsAsync(
+        Guid roleId,
+        IReadOnlyCollection<Guid> permissionIds,
+        CancellationToken ct);
+
     /// <summary>Stages a new role for insertion.</summary>
     void Add(Role role);
 }

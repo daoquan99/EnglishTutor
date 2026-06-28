@@ -1,14 +1,16 @@
-using System;
-using System.Threading.Tasks;
+using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.Feedback.Contracts;
 using EnglishTutor.Feedback.Contracts.Events;
 using EnglishTutor.Realtime.Application.Abstractions;
-using MassTransit;
 
 namespace EnglishTutor.Realtime.Infrastructure.Consumers;
 
-public sealed class FeedbackReadyIntegrationEventConsumer : IConsumer<FeedbackReadyIntegrationEventV1>
+public sealed class FeedbackReadyIntegrationEventConsumer
+    : RabbitMqMessageHandler<FeedbackReadyIntegrationEventV1>
 {
+    public const string ConsumerName = "realtime.feedback-ready.v1";
+    public const string QueueName = "english.realtime.feedback-ready.v1";
+
     private readonly IFeedbackModule _feedbackModule;
     private readonly IRealtimeNotifier _notifier;
 
@@ -20,12 +22,22 @@ public sealed class FeedbackReadyIntegrationEventConsumer : IConsumer<FeedbackRe
         _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
     }
 
-    public async Task Consume(ConsumeContext<FeedbackReadyIntegrationEventV1> context)
+    public override MessageConsumerDescriptor Descriptor { get; } = new(
+        ConsumerName,
+        QueueName,
+        typeof(FeedbackReadyIntegrationEventV1),
+        PrefetchCount: 32,
+        Concurrency: 4);
+
+    protected override async Task HandleAsync(
+        FeedbackReadyIntegrationEventV1 message,
+        MessageDeliveryContext context,
+        CancellationToken cancellationToken)
     {
-        var message = context.Message;
-        
-        // Retrieve the feedback using the cross-module Contract
-        var result = await _feedbackModule.GetSessionFeedbackAsync(message.UserId, message.SessionId, context.CancellationToken);
+        var result = await _feedbackModule.GetSessionFeedbackAsync(
+            message.UserId,
+            message.SessionId,
+            cancellationToken);
         if (result != null && result.Status == "Success")
         {
             await _notifier.NotifyFeedbackReadyAsync(
@@ -33,7 +45,7 @@ public sealed class FeedbackReadyIntegrationEventConsumer : IConsumer<FeedbackRe
                 message.CorrelationId,
                 result.Score?.ToString() ?? "0",
                 result.Summary ?? string.Empty,
-                context.CancellationToken);
+                cancellationToken);
         }
     }
 }

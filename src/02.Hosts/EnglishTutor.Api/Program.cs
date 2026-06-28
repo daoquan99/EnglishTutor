@@ -6,9 +6,9 @@ using EnglishTutor.Practice.Infrastructure.Extensions;
 using EnglishTutor.Practice.Presentation;
 using EnglishTutor.Feedback.Presentation;
 using EnglishTutor.Realtime.Infrastructure.Extensions;
+using EnglishTutor.Realtime.Infrastructure.Messaging;
 using EnglishTutor.Realtime.Presentation;
 using EnglishTutor.Audit.Infrastructure;
-using EnglishTutor.Audit.Infrastructure.Messaging;
 using EnglishTutor.Audit.Infrastructure.Persistence;
 using EnglishTutor.Audit.Presentation;
 using EnglishTutor.BuildingBlocks.Infrastructure.Correlation;
@@ -18,7 +18,6 @@ using EnglishTutor.BuildingBlocks.Infrastructure.Options;
 using EnglishTutor.BuildingBlocks.Presentation.Responses;
 using EnglishTutor.Identity.Application;
 using EnglishTutor.Identity.Infrastructure;
-using EnglishTutor.Identity.Infrastructure.Messaging;
 using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Identity.Presentation;
 using EnglishTutor.Learning.Infrastructure;
@@ -28,12 +27,10 @@ using EnglishTutor.Quota.Infrastructure.Extensions;
 using EnglishTutor.Quota.Infrastructure.Persistence;
 using EnglishTutor.Feedback.Infrastructure.Extensions;
 using EnglishTutor.Feedback.Infrastructure.Persistence;
-using EnglishTutor.Feedback.Infrastructure.Messaging;
-using EnglishTutor.Realtime.Infrastructure.Messaging;
 using EnglishTutor.Practice.Infrastructure.Persistence;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Scalar.AspNetCore;
 using Serilog;
 
 RepositoryEnvironment.LoadIntoProcess();
@@ -48,7 +45,9 @@ builder.Host.UseSerilog((context, loggerConfig) =>
 
 // Strongly-typed options + startup validation
 builder.Services.AddBaseOptions(builder.Configuration);
+builder.Services.AddNativeMessagingRegistry();
 builder.Services.AddApiPresentation();
+builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(DefaultCorsPolicy, policy =>
@@ -61,7 +60,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -84,57 +84,8 @@ builder.Services.AddFeedbackModule(builder.Configuration);
 builder.Services.AddFeedbackPresentation(builder.Configuration);
 builder.Services.AddRealtimeInfrastructure(builder.Configuration);
 builder.Services.AddRealtimePresentation(builder.Configuration);
-
-var inProcessAuditConsumer = builder.Configuration.GetValue<bool>("Messaging:InProcessAuditConsumer");
-
-builder.Services.AddApiOutboxMessaging<IIdentityBus>(
-    x =>
-    {
-        x.AddEntityFrameworkOutbox<AuditDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddEntityFrameworkOutbox<LearningDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddEntityFrameworkOutbox<PracticeDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddEntityFrameworkOutbox<FeedbackDbContext>(o =>
-        {
-            o.UsePostgres();
-            o.UseBusOutbox();
-        });
-        x.AddFeedbackConsumers();
-        x.AddRealtimeConsumers();
-    },
-    x =>
-    {
-        x.AddEntityFrameworkOutbox<IIdentityBus, IdentityDbContext>(o =>
-        {
-            o.UsePostgres();
-            if (inProcessAuditConsumer)
-            {
-                o.QueryDelay = TimeSpan.FromMilliseconds(250);
-            }
-            o.UseBusOutbox();
-        });
-
-        if (inProcessAuditConsumer)
-        {
-            x.AddAuditSecurityEventConsumers();
-        }
-    });
-
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<MassTransit.IBus, EnglishTutor.Learning.Infrastructure.Persistence.LearningDbContext>>();
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<MassTransit.IBus, EnglishTutor.Practice.Infrastructure.Persistence.PracticeDbContext>>();
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<MassTransit.IBus, EnglishTutor.Feedback.Infrastructure.Persistence.FeedbackDbContext>>();
-builder.Services.AddScoped<MassTransit.EntityFrameworkCoreIntegration.EntityFrameworkScopedBusContext<EnglishTutor.Identity.Infrastructure.Messaging.IIdentityBus, EnglishTutor.Identity.Infrastructure.Persistence.IdentityDbContext>>();
+builder.Services.AddRealtimeConsumers();
+builder.Services.AddNativeRabbitMqConsumerRuntime(builder.Configuration);
 
 var app = builder.Build();
 
@@ -177,6 +128,8 @@ app.UseRateLimiter();
 
 // Health Checks
 app.MapBaseHealthChecks();
+app.MapOpenApi().AllowAnonymous();
+app.MapScalarApiReference("/docs").AllowAnonymous();
 
 // Identity endpoints
 app.MapIdentityEndpoints();
