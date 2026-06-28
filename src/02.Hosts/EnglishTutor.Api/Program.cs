@@ -16,6 +16,7 @@ using EnglishTutor.BuildingBlocks.Infrastructure.HealthChecks;
 using EnglishTutor.BuildingBlocks.Infrastructure.Messaging;
 using EnglishTutor.BuildingBlocks.Infrastructure.Options;
 using EnglishTutor.BuildingBlocks.Presentation.Responses;
+using EnglishTutor.Api.Configuration;
 using EnglishTutor.Identity.Application;
 using EnglishTutor.Identity.Infrastructure;
 using EnglishTutor.Identity.Infrastructure.Persistence;
@@ -48,20 +49,39 @@ builder.Services.AddBaseOptions(builder.Configuration);
 builder.Services.AddNativeMessagingRegistry();
 builder.Services.AddApiPresentation();
 builder.Services.AddOpenApi();
+var corsSection = builder.Configuration.GetSection(CorsOptions.SectionName);
+var corsOptions = corsSection.Get<CorsOptions>() ?? new CorsOptions();
+
+builder.Services
+    .AddOptions<CorsOptions>()
+    .Bind(corsSection)
+    .Validate(
+        options => builder.Environment.IsDevelopment()
+            ? options.AllowAnyOriginInDevelopment || options.AllowedOrigins.Length > 0
+            : options.AllowedOrigins.Length > 0,
+        "Cors:AllowedOrigins must contain at least one origin outside unrestricted Development mode.")
+    .ValidateOnStart();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(DefaultCorsPolicy, policy =>
     {
-        var allowedOrigins = builder.Configuration
-            .GetSection("Cors:AllowedOrigins")
-            .Get<string[]>()
-            ?? [];
-
-        policy
-            .WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+        if (builder.Environment.IsDevelopment() && corsOptions.AllowAnyOriginInDevelopment)
+        {
+            policy
+                .SetIsOriginAllowed(_ => true)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
+        else
+        {
+            policy
+                .WithOrigins(corsOptions.AllowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
     });
 });
 
