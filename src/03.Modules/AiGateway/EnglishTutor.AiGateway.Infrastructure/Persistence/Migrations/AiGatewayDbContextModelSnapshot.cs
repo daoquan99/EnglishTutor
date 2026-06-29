@@ -30,7 +30,7 @@ namespace EnglishTutor.AiGateway.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.PrimitiveCollection<string[]>("Capabilities")
+                    b.Property<string[]>("Capabilities")
                         .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("capabilities");
@@ -57,6 +57,12 @@ namespace EnglishTutor.AiGateway.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by_user_id");
 
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_name");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -67,15 +73,25 @@ namespace EnglishTutor.AiGateway.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Lifecycle")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("lifecycle");
 
                     b.Property<Guid>("ProviderId")
                         .HasColumnType("uuid")
                         .HasColumnName("provider_id");
+
+                    b.Property<string>("ProviderModelId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("provider_model_id");
+
+                    b.Property<bool?>("ThinkingEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("thinking_enabled");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -96,6 +112,11 @@ namespace EnglishTutor.AiGateway.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("ProviderId");
+
+                    b.HasIndex("ProviderId", "ProviderModelId")
+                        .IsUnique();
+
+                    b.HasIndex("ProviderId", "IsActive", "Lifecycle");
 
                     b.ToTable("ai_models", "aigateway");
                 });
@@ -413,6 +434,120 @@ namespace EnglishTutor.AiGateway.Infrastructure.Persistence.Migrations
                     b.HasIndex("ActivityType", "TopicCode", "ScenarioCode", "IsActive");
 
                     b.ToTable("ai_routing_rules", "aigateway");
+                });
+
+            modelBuilder.Entity("EnglishTutor.AiGateway.Domain.Aggregates.AiVoice.AiVoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at_utc");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("gender");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("provider_id");
+
+                    b.Property<string>("Style")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("style");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.Property<string>("VoiceId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("voice_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderId", "VoiceId")
+                        .IsUnique();
+
+                    b.HasIndex("ProviderId", "IsActive", "DisplayName", "Id");
+
+                    b.ToTable("ai_voices", "aigateway");
+                });
+
+            modelBuilder.Entity("EnglishTutor.AiGateway.Domain.Aggregates.AiModel.AiModel", b =>
+                {
+                    b.OwnsMany("EnglishTutor.AiGateway.Domain.Aggregates.AiModel.Entities.AiModelVoice", "ModelVoices", b1 =>
+                        {
+                            b1.Property<Guid>("ModelId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("model_id");
+
+                            b1.Property<Guid>("VoiceId")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("voice_id");
+
+                            b1.Property<bool>("IsDefault")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_default");
+
+                            b1.HasKey("ModelId", "VoiceId");
+
+                            b1.HasIndex("ModelId", "IsDefault");
+
+                            b1.ToTable("ai_model_voices", "aigateway");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ModelId");
+                        });
+
+                    b.Navigation("ModelVoices");
                 });
 #pragma warning restore 612, 618
         }

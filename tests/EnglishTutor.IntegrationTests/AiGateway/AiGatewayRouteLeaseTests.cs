@@ -76,7 +76,12 @@ public class AiGatewayRouteLeaseTests
         var module = scope.ServiceProvider.GetRequiredService<IAiGatewayModule>();
 
         var providerId = (await admin.CreateProviderAsync(new CreateProviderInput("Mock", "mock", true), null, CancellationToken.None)).Value;
-        var modelId = (await admin.CreateModelAsync(new CreateModelInput(providerId, "Mock Model", "mock-model", ["roleplay"], true), null, CancellationToken.None)).Value;
+        var modelId = (await admin.CreateModelAsync(new CreateModelInput(
+            providerId,
+            "Mock Model",
+            "mock-model",
+            ["content-generation"],
+            true), null, CancellationToken.None)).Value;
         await admin.CreateProviderKeyAsync(new CreateProviderKeyInput(providerId, "low", "sk-low", 10, true), null, CancellationToken.None);
         var highKey = (await admin.CreateProviderKeyAsync(new CreateProviderKeyInput(providerId, "high", "sk-high", 0, true), null, CancellationToken.None)).Value;
         await admin.CreateRoutingRuleAsync(new CreateRoutingRuleInput("Rule", Activity, Topic, Scenario, modelId, null, true), null, CancellationToken.None);

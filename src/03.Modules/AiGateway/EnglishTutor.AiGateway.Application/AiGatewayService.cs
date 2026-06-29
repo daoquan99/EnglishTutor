@@ -8,6 +8,7 @@ using EnglishTutor.AiGateway.Application.RouteLeases.Commands.CreateRouteLease;
 using EnglishTutor.AiGateway.Application.RouteLeases.Commands.ConfirmRouteUsage;
 using EnglishTutor.AiGateway.Application.RouteLeases.Commands.ReleaseRouteLease;
 using EnglishTutor.AiGateway.Application.ChatCompletions.Commands.ExecuteChatCompletion;
+using EnglishTutor.AiGateway.Application.LiveAccess.Commands.CreateLiveAccessGrant;
 
 namespace EnglishTutor.AiGateway.Application;
 
@@ -77,5 +78,47 @@ public sealed class AiGatewayService : IAiGatewayModule
             };
         }
         return result.Value!;
+    }
+
+    public async Task<GenerateContentResult> GenerateContentAsync(GenerateContentRequest request, CancellationToken ct)
+    {
+        var result = await ExecuteChatCompletionAsync(
+            new ExecuteChatCompletionRequest
+            {
+                LeaseId = request.LeaseId,
+                SystemPrompt = request.SystemInstruction,
+                UserPrompt = request.UserContent,
+                ResponseJsonSchema = request.ResponseJsonSchema,
+                CorrelationId = request.CorrelationId
+            },
+            ct);
+
+        var structured = !string.IsNullOrWhiteSpace(request.ResponseJsonSchema);
+        return new GenerateContentResult
+        {
+            Status = result.Status,
+            Text = structured ? null : result.ResponseText,
+            Json = structured ? result.ResponseText : null,
+            SchemaCode = structured ? request.SchemaCode : null,
+            SchemaVersion = structured ? request.SchemaVersion : null,
+            PromptTokens = result.PromptTokens,
+            CompletionTokens = result.CompletionTokens,
+            LatencyMs = result.LatencyMs,
+            ErrorCode = result.ErrorCode
+        };
+    }
+
+    public async Task<CreateLiveAccessGrantResult> CreateLiveAccessGrantAsync(
+        CreateLiveAccessGrantRequest request,
+        CancellationToken ct)
+    {
+        var result = await _sender.Send(new CreateLiveAccessGrantCommand(request), ct);
+        return result.IsSuccess
+            ? result.Value!
+            : new CreateLiveAccessGrantResult
+            {
+                Status = CreateLiveAccessGrantStatus.ValidationError,
+                ErrorCode = "aigateway.live.validation"
+            };
     }
 }

@@ -349,7 +349,13 @@ public class RealtimeTests
     {
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var providerId = (await sender.Send(new CreateProviderCommand("Mock", "mock", true, null), CancellationToken.None)).Value;
-        var modelId = (await sender.Send(new CreateModelCommand(providerId, "Mock Model", "mock-model", [ModeCode], true, null), CancellationToken.None)).Value;
+        var modelId = (await sender.Send(new CreateModelCommand(
+            providerId,
+            "Mock Model",
+            "mock-model",
+            ["content-generation"],
+            true,
+            null), CancellationToken.None)).Value;
         await sender.Send(new CreateProviderKeyCommand(providerId, "primary", "sk-mock-123456", 0, true, null), CancellationToken.None);
         await sender.Send(new CreateRoutingRuleCommand("Practice Rule", ModeCode, TopicCode, scenarioId.ToString("N"), modelId, null, true, null), CancellationToken.None);
     }

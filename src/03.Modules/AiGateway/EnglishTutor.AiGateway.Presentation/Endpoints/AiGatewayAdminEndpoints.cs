@@ -21,6 +21,9 @@ using EnglishTutor.AiGateway.Application.Admin.Models.Commands.UpdateModel;
 using EnglishTutor.AiGateway.Application.Admin.Models.Commands.SetModelActive;
 using EnglishTutor.AiGateway.Application.Admin.Models.Queries.ListModels;
 using EnglishTutor.AiGateway.Application.Admin.Models.Queries.GetModel;
+using EnglishTutor.AiGateway.Application.Admin.Models.Commands.SetModelVoices;
+using EnglishTutor.AiGateway.Application.Admin.Voices.Commands.UpdateVoice;
+using EnglishTutor.AiGateway.Application.Admin.Voices.Queries.ListVoices;
 
 using EnglishTutor.AiGateway.Application.Admin.ProviderKeys.Commands.CreateProviderKey;
 using EnglishTutor.AiGateway.Application.Admin.ProviderKeys.Commands.DisableProviderKey;
@@ -40,9 +43,43 @@ public static class AiGatewayAdminEndpoints
     {
         MapProviders(routes);
         MapModels(routes);
+        MapVoices(routes);
         MapProviderKeys(routes);
         MapRoutingRules(routes);
         return routes;
+    }
+
+    private static void MapVoices(IEndpointRouteBuilder routes)
+    {
+        var group = routes.MapGroup("/api/admin/ai-gateway/voices")
+            .WithTags("AiGateway Voices")
+            .RequireAuthorization(p => p.RequireRole(AiGatewayEndpointAuthorization.AdminRoles));
+
+        group.MapGet("/", async (
+            Guid providerId,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            var result = await sender.Send(new ListVoicesQuery(providerId), ct);
+            return result.IsSuccess ? ApiResults.Ok(result.Value) : MapError(result.Error!);
+        });
+
+        group.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateVoiceRequest request,
+            ISender sender,
+            ICurrentUser user,
+            CancellationToken ct) =>
+        {
+            var result = await sender.Send(new UpdateVoiceCommand(
+                VoiceId: id,
+                DisplayName: request.DisplayName,
+                Style: request.Style,
+                Gender: request.Gender,
+                IsActive: request.IsActive,
+                ActorUserId: user.UserId), ct);
+            return result.IsSuccess ? ApiResults.Empty() : MapError(result.Error!);
+        });
     }
 
     private static void MapProviders(IEndpointRouteBuilder routes)
@@ -85,6 +122,7 @@ public static class AiGatewayAdminEndpoints
                 new SetProviderActiveCommand(id, request.IsActive, user.UserId), ct);
             return result.IsSuccess ? ApiResults.Empty() : MapError(result.Error!);
         });
+
     }
 
     private static void MapModels(IEndpointRouteBuilder routes)
@@ -96,7 +134,16 @@ public static class AiGatewayAdminEndpoints
         group.MapPost("/", async (CreateModelRequest request, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
             var result = await sender.Send(
-                new CreateModelCommand(request.ProviderId, request.Name, request.Code, request.Capabilities ?? [], request.IsActive, user.UserId), ct);
+                new CreateModelCommand(
+                    ProviderId: request.ProviderId,
+                    DisplayName: request.DisplayName,
+                    Code: request.Code,
+                    ProviderModelId: request.ProviderModelId,
+                    Capabilities: request.Capabilities ?? [],
+                    ThinkingEnabled: request.ThinkingEnabled,
+                    Lifecycle: request.Lifecycle,
+                    IsActive: request.IsActive,
+                    ActorUserId: user.UserId), ct);
             return result.IsSuccess
                 ? ApiResults.Created($"/api/admin/ai-gateway/models/{result.Value}", new { id = result.Value })
                 : MapError(result.Error!);
@@ -117,7 +164,15 @@ public static class AiGatewayAdminEndpoints
         group.MapPut("/{id:guid}", async (Guid id, UpdateModelRequest request, ISender sender, ICurrentUser user, CancellationToken ct) =>
         {
             var result = await sender.Send(
-                new UpdateModelCommand(id, request.Name, request.Capabilities ?? [], request.IsActive, user.UserId), ct);
+                new UpdateModelCommand(
+                    Id: id,
+                    DisplayName: request.DisplayName,
+                    ProviderModelId: request.ProviderModelId,
+                    Capabilities: request.Capabilities ?? [],
+                    ThinkingEnabled: request.ThinkingEnabled,
+                    Lifecycle: request.Lifecycle,
+                    IsActive: request.IsActive,
+                    ActorUserId: user.UserId), ct);
             return result.IsSuccess ? ApiResults.Empty() : MapError(result.Error!);
         });
 
@@ -125,6 +180,21 @@ public static class AiGatewayAdminEndpoints
         {
             var result = await sender.Send(
                 new SetModelActiveCommand(id, request.IsActive, user.UserId), ct);
+            return result.IsSuccess ? ApiResults.Empty() : MapError(result.Error!);
+        });
+
+        group.MapPut("/{id:guid}/voices", async (
+            Guid id,
+            SetModelVoicesRequest request,
+            ISender sender,
+            ICurrentUser user,
+            CancellationToken ct) =>
+        {
+            var result = await sender.Send(new SetModelVoicesCommand(
+                ModelId: id,
+                VoiceIds: request.VoiceIds,
+                DefaultVoiceId: request.DefaultVoiceId,
+                ActorUserId: user.UserId), ct);
             return result.IsSuccess ? ApiResults.Empty() : MapError(result.Error!);
         });
     }

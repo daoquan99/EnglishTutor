@@ -32,7 +32,7 @@ public class AiModelRepository : IAiModelRepository
     {
         return await _context.Models
             .AsNoTracking()
-            .OrderBy(m => m.Name).ThenBy(m => m.Id)
+            .OrderBy(m => m.DisplayName).ThenBy(m => m.Id)
             .ToListAsync(ct);
     }
 
@@ -41,7 +41,7 @@ public class AiModelRepository : IAiModelRepository
         return await _context.Models
             .AsNoTracking()
             .Where(m => m.ProviderId == providerId)
-            .OrderBy(m => m.Name).ThenBy(m => m.Id)
+            .OrderBy(m => m.DisplayName).ThenBy(m => m.Id)
             .ToListAsync(ct);
     }
 

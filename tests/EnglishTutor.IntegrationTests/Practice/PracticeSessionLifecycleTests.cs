@@ -438,7 +438,12 @@ public class PracticeSessionLifecycleTests
     {
         var admin = new TestAdminFacade(scope.ServiceProvider.GetRequiredService<ISender>());
         var providerId = (await admin.CreateProviderAsync(new CreateProviderInput("Mock", "mock", true), null, CancellationToken.None)).Value;
-        var modelId = (await admin.CreateModelAsync(new CreateModelInput(providerId, "Mock Model", "mock-model", [ModeCode], true), null, CancellationToken.None)).Value;
+        var modelId = (await admin.CreateModelAsync(new CreateModelInput(
+            providerId,
+            "Mock Model",
+            "mock-model",
+            ["content-generation"],
+            true), null, CancellationToken.None)).Value;
         await admin.CreateProviderKeyAsync(new CreateProviderKeyInput(providerId, "primary", "sk-mock-123456", 0, true), null, CancellationToken.None);
 
         if (includeRoutingRule)

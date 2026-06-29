@@ -34,11 +34,28 @@ internal sealed class CreateModelCommandHandler : ICommandHandler<CreateModelCom
             return Result.Failure<Guid>(AiGatewayAdminErrors.Conflict("A model with this code already exists."));
         }
 
-        var model = AiModel.Create(Guid.NewGuid(), command.ProviderId, command.Name, command.Code, command.Capabilities ?? [], command.IsActive);
+        if (!AiModelCapabilityParser.TryParse(command.Capabilities, out var capabilities) ||
+            !Enum.TryParse<AiModelLifecycle>(command.Lifecycle, true, out var lifecycle))
+        {
+            return Result.Failure<Guid>(AiGatewayAdminErrors.Validation("Invalid model capability or lifecycle."));
+        }
+
+        var model = AiModel.Create(
+            id: Guid.NewGuid(),
+            providerId: command.ProviderId,
+            displayName: command.DisplayName,
+            code: command.Code,
+            providerModelId: command.ProviderModelId,
+            capabilities: capabilities,
+            thinkingEnabled: command.ThinkingEnabled,
+            lifecycle: lifecycle,
+            isActive: command.IsActive);
         await _unitOfWork.Models.AddAsync(model, ct);
         await _unitOfWork.SaveChangesAsync(ct);
         await _audit.RecordAsync(AiGatewayAuditActions.ModelCreated, "AiModel", model.Id.ToString(),
-            new { model.ProviderId, model.Name, model.Code, model.IsActive }, command.ActorUserId, ct);
+            new { model.ProviderId, model.DisplayName, model.Code, model.ProviderModelId, model.ThinkingEnabled, model.Lifecycle, model.IsActive },
+            command.ActorUserId,
+            ct);
 
         return Result.Success(model.Id);
     }

@@ -31,6 +31,9 @@ public static class AiGatewayAuditActions
     public const string ModelCreated = "aigateway.model.created";
     public const string ModelUpdated = "aigateway.model.updated";
     public const string ModelActiveChanged = "aigateway.model.active_changed";
+    public const string ModelVoicesChanged = "aigateway.model.voices_changed";
+
+    public const string VoiceUpdated = "aigateway.voice.updated";
 
     public const string KeyCreated = "aigateway.key.created";
     public const string KeyDisabled = "aigateway.key.disabled";

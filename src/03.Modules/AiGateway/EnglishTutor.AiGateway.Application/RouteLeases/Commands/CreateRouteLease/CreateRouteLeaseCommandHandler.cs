@@ -61,10 +61,28 @@ internal sealed class CreateRouteLeaseCommandHandler : ICommandHandler<CreateRou
         }
 
         var nowUtc = _clock.UtcNow;
-        var selection = await TrySelectModelAndKeyAsync(rule.PrimaryModelId, nowUtc, ct);
+        var requiredCapability = ParseCapability(request.RequiredCapability);
+        if (requiredCapability is null)
+        {
+            return Result.Success(new CreateRouteLeaseResult
+            {
+                Status = CreateRouteLeaseStatus.ModelUnavailable,
+                ErrorCode = "aigateway.route_lease.invalid_capability"
+            });
+        }
+
+        var selection = await TrySelectModelAndKeyAsync(
+            rule.PrimaryModelId,
+            requiredCapability.Value,
+            nowUtc,
+            ct);
         if (selection is null && rule.FallbackModelId is Guid fallbackId)
         {
-            selection = await TrySelectModelAndKeyAsync(fallbackId, nowUtc, ct);
+            selection = await TrySelectModelAndKeyAsync(
+                fallbackId,
+                requiredCapability.Value,
+                nowUtc,
+                ct);
         }
 
         if (selection is null)
@@ -95,10 +113,16 @@ internal sealed class CreateRouteLeaseCommandHandler : ICommandHandler<CreateRou
     }
 
     private async Task<(AiModel Model, AiProviderKey Key, string ProviderCode)?> TrySelectModelAndKeyAsync(
-        Guid modelId, DateTime nowUtc, CancellationToken ct)
+        Guid modelId,
+        AiModelCapability requiredCapability,
+        DateTime nowUtc,
+        CancellationToken ct)
     {
         var model = await _unitOfWork.Models.GetByIdAsync(modelId, ct);
-        if (model is null || !model.IsActive)
+        if (model is null ||
+            !model.IsActive ||
+            model.Lifecycle == AiModelLifecycle.Deprecated ||
+            !model.Supports(requiredCapability))
         {
             return null;
         }
@@ -117,5 +141,13 @@ internal sealed class CreateRouteLeaseCommandHandler : ICommandHandler<CreateRou
         }
 
         return (model, key, provider.Code);
+    }
+
+    private static AiModelCapability? ParseCapability(string value)
+    {
+        var normalized = value.Replace("-", string.Empty, StringComparison.Ordinal);
+        return Enum.TryParse<AiModelCapability>(normalized, true, out var capability)
+            ? capability
+            : null;
     }
 }

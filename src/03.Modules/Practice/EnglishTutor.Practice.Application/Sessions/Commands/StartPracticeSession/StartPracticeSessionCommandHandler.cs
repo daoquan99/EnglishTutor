@@ -72,6 +72,7 @@ public sealed class StartPracticeSessionCommandHandler : ICommandHandler<StartPr
         {
             UserId = request.UserId,
             ActivityType = snapshot.ModeCode,
+            RequiredCapability = PracticeAiCapabilityPolicy.ForMode(snapshot.ModeCode),
             TopicCode = snapshot.TopicCode,
             ScenarioCode = request.ScenarioId.ToString("N"),
             IdempotencyKey = request.IdempotencyKey,

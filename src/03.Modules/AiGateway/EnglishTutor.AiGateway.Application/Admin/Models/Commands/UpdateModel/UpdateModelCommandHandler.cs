@@ -29,11 +29,25 @@ internal sealed class UpdateModelCommandHandler : ICommandHandler<UpdateModelCom
             return Result.Failure(AiGatewayAdminErrors.NotFound("Model"));
         }
 
-        model.Update(command.Name, command.Capabilities ?? [], command.IsActive);
+        if (!AiModelCapabilityParser.TryParse(command.Capabilities, out var capabilities) ||
+            !Enum.TryParse<Domain.Aggregates.AiModel.AiModelLifecycle>(command.Lifecycle, true, out var lifecycle))
+        {
+            return Result.Failure(AiGatewayAdminErrors.Validation("Invalid model capability or lifecycle."));
+        }
+
+        model.Update(
+            displayName: command.DisplayName,
+            providerModelId: command.ProviderModelId,
+            capabilities: capabilities,
+            thinkingEnabled: command.ThinkingEnabled,
+            lifecycle: lifecycle,
+            isActive: command.IsActive);
         _unitOfWork.Models.Update(model);
         await _unitOfWork.SaveChangesAsync(ct);
         await _audit.RecordAsync(AiGatewayAuditActions.ModelUpdated, "AiModel", model.Id.ToString(),
-            new { model.Name, model.IsActive }, command.ActorUserId, ct);
+            new { model.DisplayName, model.ProviderModelId, model.ThinkingEnabled, model.Lifecycle, model.IsActive },
+            command.ActorUserId,
+            ct);
 
         return Result.Success();
     }

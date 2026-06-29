@@ -3,6 +3,7 @@ using EnglishTutor.AiGateway.Domain.Aggregates.AiProvider;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiProviderKey;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRouteLease;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRoutingRule;
+using EnglishTutor.AiGateway.Domain.Aggregates.AiVoice;
 using EnglishTutor.BuildingBlocks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +25,7 @@ public sealed class AiGatewayDbContext : DbContext
     public DbSet<AiProviderKey> ProviderKeys => Set<AiProviderKey>();
     public DbSet<AiRoutingRule> RoutingRules => Set<AiRoutingRule>();
     public DbSet<AiRouteLease> RouteLeases => Set<AiRouteLease>();
+    public DbSet<AiVoice> Voices => Set<AiVoice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

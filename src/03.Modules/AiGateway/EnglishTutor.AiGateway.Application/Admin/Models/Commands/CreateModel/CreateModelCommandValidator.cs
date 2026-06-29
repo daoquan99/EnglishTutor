@@ -7,8 +7,10 @@ public sealed class CreateModelCommandValidator : AbstractValidator<CreateModelC
     public CreateModelCommandValidator()
     {
         RuleFor(x => x.ProviderId).NotEmpty().WithMessage("Provider ID is required.");
-        RuleFor(x => x.Name).NotEmpty().WithMessage("Model name is required.");
+        RuleFor(x => x.DisplayName).NotEmpty().WithMessage("Model display name is required.");
         RuleFor(x => x.Code).NotEmpty().WithMessage("Model code is required.");
-        RuleFor(x => x.Capabilities).NotNull().WithMessage("Capabilities cannot be null.");
+        RuleFor(x => x.ProviderModelId).NotEmpty().WithMessage("Provider model ID is required.");
+        RuleFor(x => x.Capabilities).NotEmpty().WithMessage("At least one capability is required.");
+        RuleFor(x => x.Lifecycle).NotEmpty().WithMessage("Lifecycle is required.");
     }
 }

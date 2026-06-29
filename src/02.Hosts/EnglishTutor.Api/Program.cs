@@ -121,6 +121,7 @@ using (var scope = app.Services.CreateScope())
         if (databaseStartup.ApplySeedDataOnStartup)
         {
             await scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>().SeedAsync();
+            await scope.ServiceProvider.GetRequiredService<GoogleAiCatalogSeeder>().SeedAsync();
         }
     }
     catch (Npgsql.NpgsqlException ex)

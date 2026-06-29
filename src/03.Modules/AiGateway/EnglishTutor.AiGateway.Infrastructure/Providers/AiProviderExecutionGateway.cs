@@ -68,7 +68,13 @@ internal sealed class AiProviderExecutionGateway : IAiProviderExecutionGateway
         var plaintextKey = _keyProtector.Decrypt(key.EncryptedKey);
         var stopwatch = Stopwatch.StartNew();
         var adapterResponse = await adapter.ExecuteChatAsync(
-            new AiProviderAdapterRequest(model.Code, plaintextKey, request.SystemPrompt, request.UserPrompt),
+            new AiProviderAdapterRequest(
+                ModelCode: model.ProviderModelId,
+                Credential: plaintextKey,
+                SystemPrompt: request.SystemPrompt,
+                UserPrompt: request.UserPrompt,
+                ThinkingEnabled: model.ThinkingEnabled,
+                ResponseJsonSchema: request.ResponseJsonSchema),
             ct);
         stopwatch.Stop();
 

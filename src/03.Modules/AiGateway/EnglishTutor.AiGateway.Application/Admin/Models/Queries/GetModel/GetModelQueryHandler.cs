@@ -24,6 +24,15 @@ internal sealed class GetModelQueryHandler : IQueryHandler<GetModelQuery, ModelV
             return Result.Failure<ModelView>(AiGatewayAdminErrors.NotFound("Model"));
         }
 
-        return Result.Success(new ModelView(m.Id, m.ProviderId, m.Name, m.Code, m.Capabilities, m.IsActive));
+        return Result.Success(new ModelView(
+            m.Id,
+            m.ProviderId,
+            m.DisplayName,
+            m.Code,
+            m.ProviderModelId,
+            m.Capabilities.Select(AiModelCapabilityParser.ToContractValue).ToArray(),
+            m.ThinkingEnabled,
+            m.Lifecycle.ToString(),
+            m.IsActive));
     }
 }

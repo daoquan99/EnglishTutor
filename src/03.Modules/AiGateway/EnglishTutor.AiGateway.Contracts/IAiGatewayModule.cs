@@ -37,4 +37,12 @@ public interface IAiGatewayModule
     Task<ExecuteChatCompletionResult> ExecuteChatCompletionAsync(
         ExecuteChatCompletionRequest request,
         CancellationToken ct);
+
+    Task<GenerateContentResult> GenerateContentAsync(
+        GenerateContentRequest request,
+        CancellationToken ct);
+
+    Task<CreateLiveAccessGrantResult> CreateLiveAccessGrantAsync(
+        CreateLiveAccessGrantRequest request,
+        CancellationToken ct);
 }

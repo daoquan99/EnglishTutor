@@ -7,6 +7,7 @@ using EnglishTutor.AiGateway.Domain.Aggregates.AiProvider.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiProviderKey.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRouteLease.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRoutingRule.Repositories;
+using EnglishTutor.AiGateway.Domain.Aggregates.AiVoice.Repositories;
 using EnglishTutor.AiGateway.Infrastructure.Persistence.Repositories;
 
 namespace EnglishTutor.AiGateway.Infrastructure.Persistence;
@@ -22,6 +23,7 @@ public class AiGatewayUnitOfWork : IAiGatewayUnitOfWork
     private IAiProviderKeyRepository? _providerKeys;
     private IAiRoutingRuleRepository? _routingRules;
     private IAiRouteLeaseRepository? _routeLeases;
+    private IAiVoiceRepository? _voices;
 
     public AiGatewayUnitOfWork(AiGatewayDbContext context)
     {
@@ -37,6 +39,7 @@ public class AiGatewayUnitOfWork : IAiGatewayUnitOfWork
     public IAiRoutingRuleRepository RoutingRules => _routingRules ??= new AiRoutingRuleRepository(_context);
 
     public IAiRouteLeaseRepository RouteLeases => _routeLeases ??= new AiRouteLeaseRepository(_context);
+    public IAiVoiceRepository Voices => _voices ??= new AiVoiceRepository(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

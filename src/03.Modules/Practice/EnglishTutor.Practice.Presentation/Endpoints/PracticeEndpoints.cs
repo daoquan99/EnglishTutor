@@ -10,6 +10,7 @@ using EnglishTutor.Practice.Application.Sessions.Commands.AppendPracticeMessage;
 using EnglishTutor.Practice.Application.Sessions.Commands.EndPracticeSession;
 using EnglishTutor.Practice.Application.Sessions.Commands.CancelPracticeSession;
 using EnglishTutor.Practice.Application.Sessions.Commands.CompletePracticeScenario;
+using EnglishTutor.Practice.Application.Sessions.Commands.CreatePracticeLiveAccess;
 using EnglishTutor.Practice.Application.Sessions.Queries.GetPracticeSession;
 using EnglishTutor.Practice.Application.Sessions.Queries.ListPracticeSessions;
 using EnglishTutor.Practice.Application.Sessions.Queries.GetPracticeTranscript;
@@ -128,6 +129,38 @@ public static class PracticeEndpoints
                 AppendTranscriptStatus.SessionNotActive => Problem(StatusCodes.Status409Conflict, "Session not active", dto.ErrorCode),
                 AppendTranscriptStatus.ValidationError => Problem(StatusCodes.Status400BadRequest, "Validation error", dto.ErrorCode),
                 _ => Problem(StatusCodes.Status502BadGateway, "AI execution failed", dto.ErrorCode),
+            };
+        });
+
+        group.MapPost("/{sessionId:guid}/live-access", async (
+            Guid sessionId,
+            CreatePracticeLiveAccessRequest request,
+            ISender sender,
+            ICurrentUser user,
+            CancellationToken ct) =>
+        {
+            if (user.UserId is not Guid userId) return Unauthorized();
+
+            var result = await sender.Send(new CreatePracticeLiveAccessCommand(
+                UserId: userId,
+                SessionId: sessionId,
+                VoiceId: request.VoiceId,
+                NativeLanguageCode: request.NativeLanguageCode,
+                TargetLanguageCode: request.TargetLanguageCode), ct);
+
+            if (!result.IsSuccess)
+            {
+                return Problem(StatusCodes.Status400BadRequest, "Validation error", result.Error?.Code);
+            }
+
+            var response = result.Value!;
+            return response.Status switch
+            {
+                "Success" => ApiResults.Ok(response),
+                "NotFound" => Problem(StatusCodes.Status404NotFound, "Session not found", response.ErrorCode),
+                "Forbidden" => Problem(StatusCodes.Status403Forbidden, "Forbidden", response.ErrorCode),
+                "SessionNotActive" => Problem(StatusCodes.Status409Conflict, "Session not active", response.ErrorCode),
+                _ => Problem(StatusCodes.Status502BadGateway, "Live access unavailable", response.ErrorCode)
             };
         });
 

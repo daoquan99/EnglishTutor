@@ -48,6 +48,7 @@ internal sealed class ExecuteChatCompletionCommandHandler : ICommandHandler<Exec
                 LeaseId = lease.Id,
                 SystemPrompt = request.SystemPrompt ?? string.Empty,
                 UserPrompt = request.UserPrompt ?? string.Empty,
+                ResponseJsonSchema = request.ResponseJsonSchema,
                 CorrelationId = request.CorrelationId,
             },
             ct);

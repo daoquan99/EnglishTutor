@@ -3,6 +3,7 @@ using EnglishTutor.AiGateway.Application;
 using EnglishTutor.AiGateway.Application.Abstractions;
 using EnglishTutor.AiGateway.Application.Abstractions.Audit;
 using EnglishTutor.AiGateway.Application.Abstractions.Persistence;
+using EnglishTutor.AiGateway.Application.Abstractions.Live;
 using EnglishTutor.AiGateway.Application.Abstractions.Providers;
 using EnglishTutor.AiGateway.Application.Abstractions.Security;
 using EnglishTutor.AiGateway.Contracts;
@@ -12,6 +13,7 @@ using EnglishTutor.AiGateway.Domain.Aggregates.AiProvider.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiProviderKey.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRouteLease.Repositories;
 using EnglishTutor.AiGateway.Domain.Aggregates.AiRoutingRule.Repositories;
+using EnglishTutor.AiGateway.Domain.Aggregates.AiVoice.Repositories;
 using EnglishTutor.AiGateway.Infrastructure.Audit;
 using EnglishTutor.AiGateway.Infrastructure.Persistence;
 using EnglishTutor.AiGateway.Infrastructure.Persistence.Repositories;
@@ -65,8 +67,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAiProviderKeyRepository, AiProviderKeyRepository>();
         services.AddScoped<IAiRoutingRuleRepository, AiRoutingRuleRepository>();
         services.AddScoped<IAiRouteLeaseRepository, AiRouteLeaseRepository>();
+        services.AddScoped<IAiVoiceRepository, AiVoiceRepository>();
 
         services.AddScoped<IAiGatewayUnitOfWork, AiGatewayUnitOfWork>();
+        services.AddScoped<GoogleAiCatalogSeeder>();
 
         // Provider key protection (AES-GCM at rest) + audit forwarding.
         services.AddSingleton<IAiKeyProtector, AesGcmAiKeyProtector>();
@@ -75,8 +79,10 @@ public static class ServiceCollectionExtensions
         // Provider adapters + execution gateway. The mock adapter is the safe
         // in-process baseline; real provider adapters register the same interface.
         services.AddSingleton<IAiProviderAdapter, MockProviderAdapter>();
+        services.AddSingleton<IAiProviderAdapter, GoogleProviderAdapter>();
         services.AddSingleton<IAiProviderAdapterRegistry, AiProviderAdapterRegistry>();
         services.AddScoped<IAiProviderExecutionGateway, AiProviderExecutionGateway>();
+        services.AddScoped<IAiLiveAccessGateway, GoogleLiveAccessGateway>();
 
         return services;
     }

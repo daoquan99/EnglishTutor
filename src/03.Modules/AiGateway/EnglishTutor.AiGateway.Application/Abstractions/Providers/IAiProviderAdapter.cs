@@ -26,7 +26,9 @@ public sealed record AiProviderAdapterRequest(
     string ModelCode,
     string Credential,
     string SystemPrompt,
-    string UserPrompt);
+    string UserPrompt,
+    bool? ThinkingEnabled = null,
+    string? ResponseJsonSchema = null);
 
 /// <summary>Adapter call output. Carries no secret material.</summary>
 public sealed record AiProviderAdapterResponse(

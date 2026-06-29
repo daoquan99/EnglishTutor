@@ -11,5 +11,6 @@ public class ProviderExecutionRequest
     public Guid LeaseId { get; set; }
     public string SystemPrompt { get; set; } = default!;
     public string UserPrompt { get; set; } = default!;
+    public string? ResponseJsonSchema { get; set; }
     public Guid? CorrelationId { get; set; }
 }

@@ -56,7 +56,11 @@ public class AiGatewayPersistenceTests
         await aiDb.Database.MigrateAsync();
 
         var providerId = Guid.NewGuid();
-        var provider = AiProvider.Create(providerId, "Google Gemini", "google", true);
+        var provider = AiProvider.Create(
+            providerId,
+            "Google Gemini Test",
+            $"google-test-{providerId:N}",
+            true);
         await aiDb.Providers.AddAsync(provider);
         await aiDb.SaveChangesAsync();
 

@@ -3,20 +3,69 @@ using System.Collections.Generic;
 
 namespace EnglishTutor.AiGateway.Application.Admin;
 
-// Safe read/write models for AiGateway administration. Provider key secrets are
-// only ever accepted as input; responses expose the mask, never the raw or
-// encrypted secret.
-
 public sealed record ProviderView(Guid Id, string Name, string Code, bool IsActive);
 
 public sealed record CreateProviderInput(string Name, string Code, bool IsActive);
 public sealed record UpdateProviderInput(string Name, bool IsActive);
 
 public sealed record ModelView(
-    Guid Id, Guid ProviderId, string Name, string Code, IReadOnlyList<string> Capabilities, bool IsActive);
+    Guid Id,
+    Guid ProviderId,
+    string DisplayName,
+    string Code,
+    string ProviderModelId,
+    IReadOnlyList<string> Capabilities,
+    bool? ThinkingEnabled,
+    string Lifecycle,
+    bool IsActive);
 
-public sealed record CreateModelInput(Guid ProviderId, string Name, string Code, string[] Capabilities, bool IsActive);
-public sealed record UpdateModelInput(string Name, string[] Capabilities, bool IsActive);
+public sealed record CreateModelInput(
+    Guid ProviderId,
+    string DisplayName,
+    string Code,
+    string ProviderModelId,
+    string[] Capabilities,
+    bool? ThinkingEnabled,
+    string Lifecycle,
+    bool IsActive)
+{
+    public string Name => DisplayName;
+
+    public CreateModelInput(
+        Guid providerId,
+        string name,
+        string code,
+        string[] capabilities,
+        bool isActive)
+        : this(
+            providerId,
+            name,
+            code,
+            code,
+            capabilities.Length == 0 ? ["content-generation"] : capabilities,
+            null,
+            "Stable",
+            isActive)
+    {
+    }
+}
+
+public sealed record UpdateModelInput(
+    string DisplayName,
+    string ProviderModelId,
+    string[] Capabilities,
+    bool? ThinkingEnabled,
+    string Lifecycle,
+    bool IsActive);
+
+public sealed record VoiceView(
+    Guid Id,
+    Guid ProviderId,
+    string VoiceId,
+    string DisplayName,
+    string Style,
+    string Gender,
+    bool IsActive);
 
 public sealed record ProviderKeyView(
     Guid Id, Guid ProviderId, string Name, string KeyMask, int Priority, bool IsActive, DateTime? CooldownUntilUtc);

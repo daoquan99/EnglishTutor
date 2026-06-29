@@ -24,7 +24,16 @@ internal sealed class ListModelsQueryHandler : IQueryHandler<ListModelsQuery, IR
             ? await _unitOfWork.Models.ListByProviderAsync(pid, ct)
             : await _unitOfWork.Models.ListAsync(ct);
 
-        var views = models.Select(m => new ModelView(m.Id, m.ProviderId, m.Name, m.Code, m.Capabilities, m.IsActive)).ToList();
+        var views = models.Select(m => new ModelView(
+            m.Id,
+            m.ProviderId,
+            m.DisplayName,
+            m.Code,
+            m.ProviderModelId,
+            m.Capabilities.Select(AiModelCapabilityParser.ToContractValue).ToArray(),
+            m.ThinkingEnabled,
+            m.Lifecycle.ToString(),
+            m.IsActive)).ToList();
         return Result.Success<IReadOnlyList<ModelView>>(views);
     }
 }
