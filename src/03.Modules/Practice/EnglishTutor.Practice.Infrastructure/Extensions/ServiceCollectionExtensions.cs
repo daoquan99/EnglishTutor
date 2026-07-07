@@ -71,11 +71,16 @@ public static class ServiceCollectionExtensions
             "practice.session.ended.v1",
             MessageTopologyNames.IntegrationExchange,
             "practice.session.ended.v1");
+        services.AddNativeMessageContract<PracticeSessionEndedIntegrationEventV2>(
+            "practice.session.ended.v2",
+            MessageTopologyNames.IntegrationExchange,
+            "practice.session.ended.v2");
 
         // Domain Event Handlers & Dispatcher
         services.AddDomainEventDispatcher();
         services.AddDomainEventHandler<PracticeSessionStartedDomainEvent, PracticeSessionStartedDomainEventHandler>();
         services.AddDomainEventHandler<PracticeSessionEndedDomainEvent, PracticeSessionEndedDomainEventHandler>();
+        services.AddDomainEventHandler<PracticeSessionEndedDomainEvent, PracticeSessionEndedV2DomainEventHandler>();
 
         return services;
     }

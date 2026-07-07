@@ -18,6 +18,7 @@ using EnglishTutor.Feedback.Infrastructure.Persistence;
 using EnglishTutor.Feedback.Infrastructure.Messaging;
 using EnglishTutor.Practice.Infrastructure.Extensions;
 using EnglishTutor.Practice.Infrastructure.Persistence;
+using EnglishTutor.Progress.Infrastructure;
 using EnglishTutor.Worker.HostedServices;
 using EnglishTutor.Worker.Jobs;
 using EnglishTutor.Worker.Options;
@@ -80,6 +81,7 @@ builder.Services.AddQuotaModule(builder.Configuration);
 builder.Services.AddAiGatewayModule(builder.Configuration);
 builder.Services.AddPracticeModule(builder.Configuration);
 builder.Services.AddFeedbackModule(builder.Configuration);
+builder.Services.AddProgressModule(builder.Configuration);
 
 // Schema readiness and background jobs hosted services
 builder.Services.AddHostedService<WorkerSchemaReadinessHostedService>();
@@ -89,6 +91,7 @@ builder.Services.AddHostedService<ExpireAiRouteLeasesHostedService>();
 
 builder.Services.AddAuditSecurityEventConsumers();
 builder.Services.AddFeedbackConsumers();
+builder.Services.AddProgressConsumers();
 builder.Services.AddNativeRabbitMqWorker(builder.Configuration);
 
 var host = builder.Build();

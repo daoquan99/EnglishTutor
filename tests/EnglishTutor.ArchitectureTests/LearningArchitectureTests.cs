@@ -181,7 +181,7 @@ public class LearningArchitectureTests
     }
 
     [Fact]
-    public void Learning_Domain_Should_Have_Exactly_Five_Aggregate_Folders()
+    public void Learning_Domain_Should_Have_Approved_Aggregate_Folders()
     {
         var assembly = typeof(Topic).Assembly;
 
@@ -205,8 +205,21 @@ public class LearningArchitectureTests
             .Distinct()
             .ToList();
 
-        distinctTopLevelAggregates.Should().HaveCount(5, "Learning.Domain must have exactly five aggregate folders: Topics, ModeDefinitions, Scenarios, TopicVocabularies, and TopicPhrases. Found: " + string.Join(", ", distinctTopLevelAggregates));
-        distinctTopLevelAggregates.Should().Contain(new[] { "Topics", "ModeDefinitions", "Scenarios", "TopicVocabularies", "TopicPhrases" });
+        var approvedAggregates = new[]
+        {
+            "Topics",
+            "ModeDefinitions",
+            "Scenarios",
+            "TopicVocabularies",
+            "TopicPhrases",
+            "LanguageDefinitions",
+            "LearnerLanguagePortfolios"
+        };
+
+        distinctTopLevelAggregates.Should().BeEquivalentTo(
+            approvedAggregates,
+            "Learning.Domain aggregate folders must match the approved ownership map. Found: "
+            + string.Join(", ", distinctTopLevelAggregates));
     }
 
     [Fact]

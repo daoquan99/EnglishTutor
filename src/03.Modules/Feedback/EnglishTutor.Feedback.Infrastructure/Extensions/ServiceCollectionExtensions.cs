@@ -62,6 +62,10 @@ public static class ServiceCollectionExtensions
             "feedback.session.ready.v1",
             MessageTopologyNames.IntegrationExchange,
             "feedback.session.ready.v1");
+        services.AddNativeMessageContract<FeedbackReadyIntegrationEventV2>(
+            "feedback.session.ready.v2",
+            MessageTopologyNames.IntegrationExchange,
+            "feedback.session.ready.v2");
         services.AddNativeMessageContract<GenerateSessionFeedbackRequestedV1>(
             "feedback.generate-session.v1",
             MessageTopologyNames.CommandExchange,
@@ -74,6 +78,7 @@ public static class ServiceCollectionExtensions
         // Domain Event Handlers
         services.AddDomainEventDispatcher();
         services.AddDomainEventHandler<FeedbackCompletedDomainEvent, FeedbackCompletedDomainEventHandler>();
+        services.AddDomainEventHandler<FeedbackCompletedDomainEvent, FeedbackCompletedV2DomainEventHandler>();
 
         return services;
     }

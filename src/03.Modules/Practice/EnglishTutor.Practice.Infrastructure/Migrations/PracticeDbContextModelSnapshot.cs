@@ -367,6 +367,45 @@ namespace EnglishTutor.Practice.Infrastructure.Migrations
 
             modelBuilder.Entity("EnglishTutor.Practice.Domain.Aggregates.PracticeSession.PracticeSession", b =>
                 {
+                    b.OwnsOne("EnglishTutor.Practice.Domain.Aggregates.PracticeSession.ValueObjects.PracticeSessionLanguageSnapshot", "LanguageSnapshot", b1 =>
+                        {
+                            b1.Property<Guid>("PracticeSessionId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("ExplanationLanguageCode")
+                                .IsRequired()
+                                .HasMaxLength(35)
+                                .HasColumnType("character varying(35)")
+                                .HasColumnName("explanation_language_code");
+
+                            b1.Property<Guid>("LanguagePairId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("language_pair_id");
+
+                            b1.Property<long>("LanguagePairVersion")
+                                .HasColumnType("bigint")
+                                .HasColumnName("language_pair_version");
+
+                            b1.Property<string>("NativeLanguageCode")
+                                .IsRequired()
+                                .HasMaxLength(35)
+                                .HasColumnType("character varying(35)")
+                                .HasColumnName("native_language_code");
+
+                            b1.Property<string>("TargetLanguageCode")
+                                .IsRequired()
+                                .HasMaxLength(35)
+                                .HasColumnType("character varying(35)")
+                                .HasColumnName("target_language_code");
+
+                            b1.HasKey("PracticeSessionId");
+
+                            b1.ToTable("practice_sessions", "practice");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PracticeSessionId");
+                        });
+
                     b.OwnsOne("EnglishTutor.Practice.Domain.Aggregates.PracticeSession.ValueObjects.PracticeSessionScenarioSnapshot", "ScenarioSnapshot", b1 =>
                         {
                             b1.Property<Guid>("PracticeSessionId")
@@ -420,6 +459,9 @@ namespace EnglishTutor.Practice.Infrastructure.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("PracticeSessionId");
                         });
+
+                    b.Navigation("LanguageSnapshot")
+                        .IsRequired();
 
                     b.Navigation("ScenarioSnapshot")
                         .IsRequired();

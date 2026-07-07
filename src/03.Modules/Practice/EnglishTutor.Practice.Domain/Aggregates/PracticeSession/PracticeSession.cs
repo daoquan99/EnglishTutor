@@ -21,6 +21,7 @@ public class PracticeSession : AggregateRoot
     public DateTime? EndedAtUtc { get; private set; }
     public DateTime ExpiresAtUtc { get; private set; }
     public PracticeSessionScenarioSnapshot ScenarioSnapshot { get; private set; }
+    public PracticeSessionLanguageSnapshot LanguageSnapshot { get; private set; }
 
     public IReadOnlyCollection<TranscriptMessage> TranscriptMessages => _transcriptMessages.AsReadOnly();
     public IReadOnlyCollection<SessionEvent> SessionEvents => _sessionEvents.AsReadOnly();
@@ -29,6 +30,7 @@ public class PracticeSession : AggregateRoot
     private PracticeSession() : base()
     {
         ScenarioSnapshot = null!;
+        LanguageSnapshot = null!;
     }
 
     public PracticeSession(
@@ -38,12 +40,19 @@ public class PracticeSession : AggregateRoot
         Guid routeLeaseId,
         PracticeSessionScenarioSnapshot scenarioSnapshot,
         DateTime startedAtUtc,
-        TimeSpan sessionDuration) : base(id)
+        TimeSpan sessionDuration,
+        PracticeSessionLanguageSnapshot? languageSnapshot = null) : base(id)
     {
         UserId = userId;
         QuotaReservationId = quotaReservationId;
         RouteLeaseId = routeLeaseId;
         ScenarioSnapshot = scenarioSnapshot ?? throw new ArgumentNullException(nameof(scenarioSnapshot));
+        LanguageSnapshot = languageSnapshot ?? new PracticeSessionLanguageSnapshot(
+            Guid.Parse("00000000-0000-0000-0000-000000000001"),
+            "vi",
+            "en",
+            "vi",
+            1);
         Status = PracticeSessionStatus.Active;
         StartedAtUtc = startedAtUtc;
         ExpiresAtUtc = startedAtUtc.Add(sessionDuration);
@@ -87,14 +96,7 @@ public class PracticeSession : AggregateRoot
 
         int durationSeconds = (int)(EndedAtUtc.Value - StartedAtUtc).TotalSeconds;
 
-        RaiseDomainEvent(new PracticeSessionEndedDomainEvent(
-            Id,
-            UserId,
-            QuotaReservationId,
-            RouteLeaseId,
-            Status,
-            durationSeconds,
-            EndReason.Value.ToString()));
+        RaiseDomainEvent(CreateEndedDomainEvent(durationSeconds));
     }
 
     public void CancelByUser(DateTime endedAtUtc)
@@ -112,14 +114,7 @@ public class PracticeSession : AggregateRoot
 
         int durationSeconds = (int)(EndedAtUtc.Value - StartedAtUtc).TotalSeconds;
 
-        RaiseDomainEvent(new PracticeSessionEndedDomainEvent(
-            Id,
-            UserId,
-            QuotaReservationId,
-            RouteLeaseId,
-            Status,
-            durationSeconds,
-            EndReason.Value.ToString()));
+        RaiseDomainEvent(CreateEndedDomainEvent(durationSeconds));
     }
 
     public void Expire(DateTime expiredAtUtc)
@@ -137,14 +132,7 @@ public class PracticeSession : AggregateRoot
 
         int durationSeconds = (int)(EndedAtUtc.Value - StartedAtUtc).TotalSeconds;
 
-        RaiseDomainEvent(new PracticeSessionEndedDomainEvent(
-            Id,
-            UserId,
-            QuotaReservationId,
-            RouteLeaseId,
-            Status,
-            durationSeconds,
-            EndReason.Value.ToString()));
+        RaiseDomainEvent(CreateEndedDomainEvent(durationSeconds));
     }
 
     public void MarkFailed(DateTime failedAtUtc, string reasonCode)
@@ -162,14 +150,7 @@ public class PracticeSession : AggregateRoot
 
         int durationSeconds = (int)(EndedAtUtc.Value - StartedAtUtc).TotalSeconds;
 
-        RaiseDomainEvent(new PracticeSessionEndedDomainEvent(
-            Id,
-            UserId,
-            QuotaReservationId,
-            RouteLeaseId,
-            Status,
-            durationSeconds,
-            EndReason.Value.ToString()));
+        RaiseDomainEvent(CreateEndedDomainEvent(durationSeconds));
     }
 
     public void CompleteScenario(DateTime completedAtUtc)
@@ -187,14 +168,7 @@ public class PracticeSession : AggregateRoot
 
         int durationSeconds = (int)(EndedAtUtc.Value - StartedAtUtc).TotalSeconds;
 
-        RaiseDomainEvent(new PracticeSessionEndedDomainEvent(
-            Id,
-            UserId,
-            QuotaReservationId,
-            RouteLeaseId,
-            Status,
-            durationSeconds,
-            EndReason.Value.ToString()));
+        RaiseDomainEvent(CreateEndedDomainEvent(durationSeconds));
     }
 
     public bool CheckExpiry(DateTime currentUtc)
@@ -225,4 +199,18 @@ public class PracticeSession : AggregateRoot
         var sessionEvent = new SessionEvent(Guid.NewGuid(), Id, eventType, payload);
         _sessionEvents.Add(sessionEvent);
     }
+
+    private PracticeSessionEndedDomainEvent CreateEndedDomainEvent(int durationSeconds) =>
+        new(
+            SessionId: Id,
+            UserId: UserId,
+            QuotaReservationId: QuotaReservationId,
+            RouteLeaseId: RouteLeaseId,
+            FinalStatus: Status,
+            DurationSeconds: durationSeconds,
+            EndReason: EndReason!.Value.ToString(),
+            LanguagePairId: LanguageSnapshot.LanguagePairId,
+            NativeLanguageCode: LanguageSnapshot.NativeLanguageCode,
+            TargetLanguageCode: LanguageSnapshot.TargetLanguageCode,
+            ExplanationLanguageCode: LanguageSnapshot.ExplanationLanguageCode);
 }

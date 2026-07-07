@@ -29,6 +29,9 @@ using EnglishTutor.Quota.Infrastructure.Persistence;
 using EnglishTutor.Feedback.Infrastructure.Extensions;
 using EnglishTutor.Feedback.Infrastructure.Persistence;
 using EnglishTutor.Practice.Infrastructure.Persistence;
+using EnglishTutor.Progress.Infrastructure;
+using EnglishTutor.Progress.Infrastructure.Persistence;
+using EnglishTutor.Progress.Presentation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
@@ -104,6 +107,8 @@ builder.Services.AddFeedbackModule(builder.Configuration);
 builder.Services.AddFeedbackPresentation(builder.Configuration);
 builder.Services.AddRealtimeInfrastructure(builder.Configuration);
 builder.Services.AddRealtimePresentation(builder.Configuration);
+builder.Services.AddProgressModule(builder.Configuration);
+builder.Services.AddProgressPresentation();
 builder.Services.AddRealtimeConsumers();
 builder.Services.AddNativeRabbitMqConsumerRuntime(builder.Configuration);
 
@@ -122,6 +127,8 @@ using (var scope = app.Services.CreateScope())
         {
             await scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>().SeedAsync();
             await scope.ServiceProvider.GetRequiredService<GoogleAiCatalogSeeder>().SeedAsync();
+            await scope.ServiceProvider.GetRequiredService<LearningLanguageCatalogSeeder>().SeedAsync();
+            await scope.ServiceProvider.GetRequiredService<LearningContentCatalogSeeder>().SeedAsync();
         }
     }
     catch (Npgsql.NpgsqlException ex)
@@ -160,6 +167,7 @@ app.MapAiGatewayEndpoints();
 app.MapPracticeModuleEndpoints();
 app.MapFeedbackModuleEndpoints();
 app.MapRealtimeHubs();
+app.MapProgressEndpoints();
 
 // Minimal API root
 app.MapGet("/", () => ApiResults.Ok(new
@@ -194,7 +202,8 @@ static async Task ApplyStartupMigrationsAsync(
         (DatabaseStartupModuleNames.AiGateway, sp => sp.GetRequiredService<AiGatewayDbContext>()),
         (DatabaseStartupModuleNames.Quota, sp => sp.GetRequiredService<QuotaDbContext>()),
         (DatabaseStartupModuleNames.Practice, sp => sp.GetRequiredService<PracticeDbContext>()),
-        (DatabaseStartupModuleNames.Feedback, sp => sp.GetRequiredService<FeedbackDbContext>())
+        (DatabaseStartupModuleNames.Feedback, sp => sp.GetRequiredService<FeedbackDbContext>()),
+        ("Progress", sp => sp.GetRequiredService<ProgressDbContext>())
     ];
 
     foreach (var module in modules)

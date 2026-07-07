@@ -335,6 +335,12 @@ namespace EnglishTutor.Feedback.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("deleted_by_user_id");
 
+                    b.Property<string>("ExplanationLanguageCode")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("explanation_language_code");
+
                     b.Property<string>("FailureReasonCode")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -351,6 +357,16 @@ namespace EnglishTutor.Feedback.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
+
+                    b.Property<Guid>("LanguagePairId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("language_pair_id");
+
+                    b.Property<string>("NativeLanguageCode")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("native_language_code");
 
                     b.Property<Guid>("PracticeSessionId")
                         .HasColumnType("uuid")
@@ -376,6 +392,12 @@ namespace EnglishTutor.Feedback.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("summary");
 
+                    b.Property<string>("TargetLanguageCode")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("target_language_code");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
@@ -398,6 +420,9 @@ namespace EnglishTutor.Feedback.Infrastructure.Migrations
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_session_feedbacks_user_id");
+
+                    b.HasIndex("UserId", "LanguagePairId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_session_feedbacks_user_language_pair_created");
 
                     b.ToTable("session_feedbacks", "feedback");
                 });

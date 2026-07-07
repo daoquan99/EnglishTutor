@@ -21,11 +21,17 @@ internal sealed class SessionFeedbackConfiguration : IEntityTypeConfiguration<Se
         b.Property(s => s.CefrLevel).HasColumnName("cefr_level").HasMaxLength(10);
         b.Property(s => s.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(50).IsRequired();
         b.Property(s => s.FailureReasonCode).HasColumnName("failure_reason_code").HasMaxLength(100);
+        b.Property(s => s.LanguagePairId).HasColumnName("language_pair_id").IsRequired();
+        b.Property(s => s.NativeLanguageCode).HasColumnName("native_language_code").HasMaxLength(35).IsRequired();
+        b.Property(s => s.TargetLanguageCode).HasColumnName("target_language_code").HasMaxLength(35).IsRequired();
+        b.Property(s => s.ExplanationLanguageCode).HasColumnName("explanation_language_code").HasMaxLength(35).IsRequired();
 
         // Indexes
         b.HasIndex(s => s.UserId).HasDatabaseName("ix_session_feedbacks_user_id");
         b.HasIndex(s => s.PracticeSessionId).HasDatabaseName("ix_session_feedbacks_practice_session_id");
         b.HasIndex(s => s.Status).HasDatabaseName("ix_session_feedbacks_status");
+        b.HasIndex(s => new { s.UserId, s.LanguagePairId, s.CreatedAtUtc })
+            .HasDatabaseName("ix_session_feedbacks_user_language_pair_created");
 
         // Collections
         b.HasMany(s => s.Corrections)

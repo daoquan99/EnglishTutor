@@ -321,9 +321,7 @@ public class LearningFlowTests
         tables.Should().Contain("topic_modes");
         tables.Should().Contain("mode_definitions");
         tables.Should().Contain("scenarios");
-        tables.Should().Contain("outbox_message");
-        tables.Should().Contain("outbox_state");
-        tables.Should().Contain("inbox_state");
+        tables.Should().Contain("integration_outbox_messages");
 
         // Verify Vocabulary and Phrases tables exist
         tables.Should().Contain("topic_vocabularies");

@@ -25,6 +25,10 @@ using EnglishTutor.Learning.Domain.Aggregates.Topics.Events;
 using EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions.Events;
 using EnglishTutor.Learning.Domain.Aggregates.Scenarios.Events;
 using EnglishTutor.Learning.Application.Messaging.DomainEventHandlers;
+using EnglishTutor.Learning.Application.LanguagePairs.Services;
+using EnglishTutor.Learning.Contracts;
+using EnglishTutor.Learning.Domain.Aggregates.LanguageDefinitions.Repositories;
+using EnglishTutor.Learning.Domain.Aggregates.LearnerLanguagePortfolios.Repositories;
 
 namespace EnglishTutor.Learning.Infrastructure;
 
@@ -54,6 +58,12 @@ public static class LearningInfrastructureServiceCollectionExtensions
         services.AddScoped<IScenarioRepository, ScenarioRepository>();
         services.AddScoped<ITopicVocabularyRepository, TopicVocabularyRepository>();
         services.AddScoped<ITopicPhraseRepository, TopicPhraseRepository>();
+        services.AddScoped<ILanguageDefinitionRepository, LanguageDefinitionRepository>();
+        services.AddScoped<ILearnerLanguagePortfolioRepository, LearnerLanguagePortfolioRepository>();
+        services.AddScoped<ILearningLanguageModule, LearningLanguageModuleService>();
+        services.AddScoped<LearningLanguageCatalogSeeder>();
+        services.AddScoped<LearningContentCatalogSeeder>();
+        services.AddScoped<LanguagePairPolicy>();
 
         // Register Unit of Work as scoped
         services.AddScoped<ILearningUnitOfWork, LearningUnitOfWork>();

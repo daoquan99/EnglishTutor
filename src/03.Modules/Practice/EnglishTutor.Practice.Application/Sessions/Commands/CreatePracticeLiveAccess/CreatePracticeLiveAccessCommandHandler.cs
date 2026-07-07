@@ -58,8 +58,9 @@ internal sealed class CreatePracticeLiveAccessCommandHandler
                 LeaseId = session.RouteLeaseId,
                 Capability = capability,
                 VoiceId = command.VoiceId,
-                NativeLanguageCode = command.NativeLanguageCode,
-                TargetLanguageCode = command.TargetLanguageCode
+                NativeLanguageCode = session.LanguageSnapshot.NativeLanguageCode,
+                TargetLanguageCode = session.LanguageSnapshot.TargetLanguageCode,
+                ExplanationLanguageCode = session.LanguageSnapshot.ExplanationLanguageCode
             },
             cancellationToken);
 

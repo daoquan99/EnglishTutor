@@ -58,7 +58,11 @@ public sealed class ListPracticeSessionsHandler : IQueryHandler<ListPracticeSess
                 s.StartedAtUtc,
                 endedAt,
                 s.ExpiresAtUtc,
-                s.TranscriptMessages.Count));
+                s.TranscriptMessages.Count,
+                s.LanguageSnapshot.LanguagePairId,
+                s.LanguageSnapshot.NativeLanguageCode,
+                s.LanguageSnapshot.TargetLanguageCode,
+                s.LanguageSnapshot.ExplanationLanguageCode));
         }
 
         return Result.Success(new PracticeSessionPage(items, page, pageSize, total));

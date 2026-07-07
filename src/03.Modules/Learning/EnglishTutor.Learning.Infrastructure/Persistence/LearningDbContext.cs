@@ -6,6 +6,8 @@ using EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions;
 using EnglishTutor.Learning.Domain.Aggregates.Scenarios;
 using EnglishTutor.Learning.Domain.Aggregates.TopicVocabularies;
 using EnglishTutor.Learning.Domain.Aggregates.TopicPhrases;
+using EnglishTutor.Learning.Domain.Aggregates.LanguageDefinitions;
+using EnglishTutor.Learning.Domain.Aggregates.LearnerLanguagePortfolios;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishTutor.Learning.Infrastructure.Persistence;
@@ -24,6 +26,8 @@ public sealed class LearningDbContext : DbContext, IOutboxDbContext
     public DbSet<Scenario> Scenarios => Set<Scenario>();
     public DbSet<TopicVocabulary> TopicVocabularies => Set<TopicVocabulary>();
     public DbSet<TopicPhrase> TopicPhrases => Set<TopicPhrase>();
+    public DbSet<LanguageDefinition> LanguageDefinitions => Set<LanguageDefinition>();
+    public DbSet<LearnerLanguagePortfolio> LearnerLanguagePortfolios => Set<LearnerLanguagePortfolio>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,6 +41,8 @@ public sealed class LearningDbContext : DbContext, IOutboxDbContext
         modelBuilder.ApplyConfiguration(new Configurations.ScenarioConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.TopicVocabularyConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.TopicPhraseConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.LanguageDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.LearnerLanguagePortfolioConfiguration());
 
         modelBuilder.AddNativeOutbox();
         modelBuilder.Entity<OutboxMessage>().ToTable("integration_outbox_messages", SchemaName);

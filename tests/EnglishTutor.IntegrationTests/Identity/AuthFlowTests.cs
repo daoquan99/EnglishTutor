@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -99,6 +100,23 @@ public class AuthFlowTests
         lower.Should().Contain("httponly");
         lower.Should().Contain("samesite=strict");
         lower.Should().NotContain("domain=");
+    }
+
+    [Fact]
+    public async Task Login_RefreshCookieExpiry_Should_Use_RefreshTokenLifetime()
+    {
+        await using var factory = new AuthFlowTestFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest(OwnerEmail, OwnerPassword));
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadApiDataAsync<LoginResponse>();
+        var setCookie = ExtractRawSetCookie(response, RefreshCookieName);
+        var cookieExpiresAt = ExtractCookieExpiry(setCookie!);
+
+        cookieExpiresAt.Should().BeAfter(payload.ExpiresAt.AddDays(6));
     }
 
     [Fact]
@@ -328,7 +346,12 @@ public class AuthFlowTests
 
         var rawJson = await response.Content.ReadAsStringAsync();
         rawJson.Should().NotContain("refreshToken");
-        ExtractRawSetCookie(response, RefreshCookieName).Should().NotBeNull();
+        var setCookie = ExtractRawSetCookie(response, RefreshCookieName);
+        setCookie.Should().NotBeNull();
+
+        var payload = await response.Content.ReadApiDataAsync<RefreshResponse>();
+        var cookieExpiresAt = ExtractCookieExpiry(setCookie!);
+        cookieExpiresAt.Should().BeAfter(payload.ExpiresAt.AddDays(6));
     }
 
     // ---- helpers ----
@@ -361,6 +384,18 @@ public class AuthFlowTests
         var value = raw.Substring(cookieName.Length + 1);
         var semi = value.IndexOf(';');
         return semi >= 0 ? value.Substring(0, semi) : value;
+    }
+
+    private static DateTimeOffset ExtractCookieExpiry(string setCookie)
+    {
+        var expires = setCookie
+            .Split(';', StringSplitOptions.TrimEntries)
+            .Single(part => part.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
+
+        return DateTimeOffset.Parse(
+            expires["expires=".Length..],
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal);
     }
 
     private static async Task<(HttpClient Client, LoginResponse Auth, string RefreshToken)> LoginOwnerAsync(

@@ -11,7 +11,11 @@ public record PracticeSessionEndedDomainEvent(
     Guid RouteLeaseId,
     PracticeSessionStatus FinalStatus,
     int DurationSeconds,
-    string EndReason) : IDomainEvent
+    string EndReason,
+    Guid LanguagePairId,
+    string NativeLanguageCode,
+    string TargetLanguageCode,
+    string ExplanationLanguageCode) : IDomainEvent
 {
     public Guid EventId { get; } = Guid.NewGuid();
     public DateTime OccurredAtUtc { get; } = DateTime.UtcNow;

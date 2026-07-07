@@ -8,4 +8,5 @@ namespace EnglishTutor.Identity.Application.Commands.Login;
 public sealed record LoginResult(
     string AccessToken,
     string RefreshToken,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset AccessTokenExpiresAt,
+    DateTimeOffset RefreshTokenExpiresAt);

@@ -5,6 +5,7 @@ using EnglishTutor.Identity.Infrastructure.Persistence;
 using EnglishTutor.Learning.Infrastructure.Persistence;
 using EnglishTutor.Practice.Infrastructure.Persistence;
 using EnglishTutor.Quota.Infrastructure.Persistence;
+using EnglishTutor.Progress.Infrastructure.Persistence;
 using EnglishTutor.Worker.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -56,7 +57,8 @@ public sealed class WorkerSchemaReadinessHostedService : IHostedService
                 ("AiGateway", scope.ServiceProvider.GetRequiredService<AiGatewayDbContext>()),
                 ("Quota", scope.ServiceProvider.GetRequiredService<QuotaDbContext>()),
                 ("Practice", scope.ServiceProvider.GetRequiredService<PracticeDbContext>()),
-                ("Feedback", scope.ServiceProvider.GetRequiredService<FeedbackDbContext>())
+                ("Feedback", scope.ServiceProvider.GetRequiredService<FeedbackDbContext>()),
+                ("Progress", scope.ServiceProvider.GetRequiredService<ProgressDbContext>())
             ];
 
             foreach (var module in modules)

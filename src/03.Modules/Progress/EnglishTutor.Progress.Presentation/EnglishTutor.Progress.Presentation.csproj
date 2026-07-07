@@ -5,5 +5,6 @@
   <ItemGroup>
     <ProjectReference Include="..\EnglishTutor.Progress.Application\EnglishTutor.Progress.Application.csproj" />
     <ProjectReference Include="..\EnglishTutor.Progress.Contracts\EnglishTutor.Progress.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\04.BuildingBlocks\EnglishTutor.BuildingBlocks.Presentation\EnglishTutor.BuildingBlocks.Presentation.csproj" />
   </ItemGroup>
 </Project>

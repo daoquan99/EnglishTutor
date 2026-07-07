@@ -7,5 +7,6 @@ public sealed class CreateLiveAccessGrantRequest
     public string? VoiceId { get; init; }
     public string NativeLanguageCode { get; init; } = "vi";
     public string TargetLanguageCode { get; init; } = "en";
+    public string ExplanationLanguageCode { get; init; } = "vi";
     public Guid? CorrelationId { get; init; }
 }

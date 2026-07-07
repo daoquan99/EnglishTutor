@@ -40,6 +40,17 @@ internal sealed class PracticeSessionConfiguration : IEntityTypeConfiguration<Pr
         });
         b.Navigation(s => s.ScenarioSnapshot).IsRequired();
 
+        b.OwnsOne(s => s.LanguageSnapshot, language =>
+        {
+            language.Property(x => x.LanguagePairId).HasColumnName("language_pair_id").IsRequired();
+            language.Property(x => x.NativeLanguageCode).HasColumnName("native_language_code").HasMaxLength(35).IsRequired();
+            language.Property(x => x.TargetLanguageCode).HasColumnName("target_language_code").HasMaxLength(35).IsRequired();
+            language.Property(x => x.ExplanationLanguageCode).HasColumnName("explanation_language_code").HasMaxLength(35).IsRequired();
+            language.Property(x => x.LanguagePairVersion).HasColumnName("language_pair_version").IsRequired();
+            language.WithOwner();
+        });
+        b.Navigation(s => s.LanguageSnapshot).IsRequired();
+
         // Collections
         b.HasMany(s => s.TranscriptMessages)
             .WithOne()

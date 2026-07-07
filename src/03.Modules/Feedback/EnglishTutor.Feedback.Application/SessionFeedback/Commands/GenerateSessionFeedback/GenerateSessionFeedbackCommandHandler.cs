@@ -61,7 +61,11 @@ public sealed class GenerateSessionFeedbackCommandHandler : ICommandHandler<Gene
         var feedback = Domain.Aggregates.SessionFeedback.SessionFeedback.CreatePending(
             id: Guid.NewGuid(),
             practiceSessionId: request.SessionId,
-            userId: request.UserId);
+            userId: request.UserId,
+            languagePairId: sessionSummary.LanguagePairId,
+            nativeLanguageCode: sessionSummary.NativeLanguageCode,
+            targetLanguageCode: sessionSummary.TargetLanguageCode,
+            explanationLanguageCode: sessionSummary.ExplanationLanguageCode);
 
         await _feedbackRepository.AddAsync(feedback, ct);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -112,7 +116,10 @@ public sealed class GenerateSessionFeedbackCommandHandler : ICommandHandler<Gene
         }
 
         // 6. Build the prompts (no secrets included)
-        var systemPrompt = @"You are an expert English tutor. Analyze the conversation transcript and return a detailed feedback JSON object.
+        var systemPrompt = $"You are an expert language tutor. The learner is practicing {sessionSummary.TargetLanguageCode}.\n" +
+            $"Write corrected and natural examples in {sessionSummary.TargetLanguageCode}.\n" +
+            $"Write summaries, meanings, and explanations in {sessionSummary.ExplanationLanguageCode}.\n" +
+            @"Analyze the conversation transcript and return a detailed feedback JSON object.
 You MUST output ONLY valid raw JSON matching this schema:
 {
   ""summary"": ""overall session summary"",

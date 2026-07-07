@@ -20,19 +20,6 @@ using EnglishTutor.BuildingBlocks.Application.DateTime;
 
 namespace EnglishTutor.Identity.Application.Commands.Login;
 
-/// <summary>
-/// Handles <see cref="LoginCommand"/>: validates credentials, raises a
-/// <see cref="UserLoggedInDomainEvent"/>, issues a short-lived access token
-/// + a first refresh-token row, and persists via the unit-of-work.
-/// <para>
-/// Persistence-agnostic: this handler depends only on Application
-/// abstractions (<c>IUserRepository</c>, <c>IRoleRepository</c>,
-/// <c>IUserSessionRepository</c>, <c>IIdentityUnitOfWork</c>,
-/// <c>IPasswordHasher</c>, <c>IJwtTokenService</c>, and the
-/// refresh-token Application abstractions). It does NOT reference
-/// <c>the DbContext abstraction</c> or any other Infrastructure type.
-/// </para>
-/// </summary>
 public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginResult>
 {
     private readonly IUserRepository _userRepository;
@@ -139,9 +126,6 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
 
         if (!ok)
         {
-            // Stage the failed-login event BEFORE the single SaveChanges so the
-            // updated FailedLoginAttempts / lockout state AND the durable
-            // security-event outbox row commit atomically (H-07).
             await _securityEventService.TrackLoginFailedAsync(
                 userId: user.Id,
                 reasonCode: "invalid_password",
@@ -160,39 +144,28 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, LoginRes
         var jwt = _jwtTokenService.IssueAccessToken(
             user.Id, user.Email.Value, user.DisplayName, roleNames, permissionCodes);
 
-        // Build DeviceInfo (no raw PII is stored; user-agent + IP are SHA-256-hashed).
-        // userAgent is required by DeviceInfo.Create — default to a sentinel when
-        // the HTTP boundary did not supply one.
         var userAgent = string.IsNullOrWhiteSpace(request.UserAgent) ? "unknown" : request.UserAgent;
         var deviceId = string.IsNullOrWhiteSpace(request.DeviceId) ? Guid.NewGuid().ToString() : request.DeviceId;
         var deviceName = string.IsNullOrWhiteSpace(request.DeviceName) ? null : request.DeviceName;
         var deviceInfo = DeviceInfo.Create(deviceId, deviceName, userAgent, request.IpAddress);
 
-        // Create the UserSession (which internally creates a bound RefreshTokenFamily).
         var session = UserSession.Create(user.Id, deviceInfo, _clock.UtcNow);
 
-        // Issue the first refresh token (raw + hash + lifetime via Application abstractions)
-        // and bind it to the newly-created family.
         var refreshValue = _refreshTokenGenerator.Generate();
         var refreshTokenHashHex = _refreshTokenHasher.Hash(refreshValue);
         var refreshExpiresAt = _clock.UtcNow.Add(_refreshTokenLifetime.RefreshTokenLifetime);
         var firstToken = RefreshToken.Issue(
             user.Id, session.Family!.Id, refreshTokenHashHex, refreshExpiresAt, request.IpAddress);
         session.Family.AddToken(firstToken);
-
-        // Stage the aggregate via the repository. EF cascade tracking handles
-        // the family (1:1) and the first token (1:N via the family's
-        // Tokens collection) automatically — explicit Add calls for the
-        // family and the token would be redundant and risk duplicate
-        // inserts.
         _userSessionRepository.Add(session);
-
-        // Raise UserLoggedIn event via the AggregateRoot internal hook
-        // (handled by EF SaveChangesInterceptor + outbox later).
         user.RaiseDomainEventPublic(new UserLoggedInDomainEvent(user.Id, request.IpAddress));
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(new LoginResult(jwt.Token, refreshValue, jwt.ExpiresAt));
+        return Result.Success(new LoginResult(
+            AccessToken: jwt.Token,
+            RefreshToken: refreshValue,
+            AccessTokenExpiresAt: jwt.ExpiresAt,
+            RefreshTokenExpiresAt: refreshExpiresAt));
     }
 }

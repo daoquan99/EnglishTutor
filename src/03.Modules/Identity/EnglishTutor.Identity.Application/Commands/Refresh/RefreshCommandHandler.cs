@@ -183,6 +183,10 @@ public sealed class RefreshCommandHandler : ICommandHandler<RefreshCommand, Refr
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(new RefreshResult(jwt.Token, newValue, jwt.ExpiresAt));
+        return Result.Success(new RefreshResult(
+            AccessToken: jwt.Token,
+            RefreshToken: newValue,
+            AccessTokenExpiresAt: jwt.ExpiresAt,
+            RefreshTokenExpiresAt: newExpires));
     }
 }

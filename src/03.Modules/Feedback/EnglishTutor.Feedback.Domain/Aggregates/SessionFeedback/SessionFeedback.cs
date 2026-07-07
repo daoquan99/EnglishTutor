@@ -19,6 +19,10 @@ public class SessionFeedback : AggregateRoot
     public string CefrLevel { get; private set; }
     public FeedbackStatus Status { get; private set; }
     public string FailureReasonCode { get; private set; }
+    public Guid LanguagePairId { get; private set; }
+    public string NativeLanguageCode { get; private set; } = string.Empty;
+    public string TargetLanguageCode { get; private set; } = string.Empty;
+    public string ExplanationLanguageCode { get; private set; } = string.Empty;
 
     public IReadOnlyCollection<Correction> Corrections => _corrections.AsReadOnly();
     public IReadOnlyCollection<ExtractedVocabulary> Vocabulary => _vocabulary.AsReadOnly();
@@ -36,7 +40,11 @@ public class SessionFeedback : AggregateRoot
     public static SessionFeedback CreatePending(
         Guid id,
         Guid practiceSessionId,
-        Guid userId)
+        Guid userId,
+        Guid? languagePairId = null,
+        string nativeLanguageCode = "vi",
+        string targetLanguageCode = "en",
+        string explanationLanguageCode = "vi")
     {
         if (practiceSessionId == Guid.Empty)
             throw new ArgumentException("Practice session ID is required.", nameof(practiceSessionId));
@@ -48,6 +56,10 @@ public class SessionFeedback : AggregateRoot
             Id = id,
             PracticeSessionId = practiceSessionId,
             UserId = userId,
+            LanguagePairId = languagePairId ?? Guid.Parse("00000000-0000-0000-0000-000000000001"),
+            NativeLanguageCode = nativeLanguageCode,
+            TargetLanguageCode = targetLanguageCode,
+            ExplanationLanguageCode = explanationLanguageCode,
             Summary = string.Empty,
             Strengths = string.Empty,
             ImprovementAreas = string.Empty,
@@ -95,7 +107,15 @@ public class SessionFeedback : AggregateRoot
             _mistakePatterns.AddRange(mistakePatterns);
         }
 
-        RaiseDomainEvent(new Events.FeedbackCompletedDomainEvent(Id, UserId, PracticeSessionId));
+        RaiseDomainEvent(new Events.FeedbackCompletedDomainEvent(
+            Id,
+            UserId,
+            PracticeSessionId,
+            LanguagePairId,
+            NativeLanguageCode,
+            TargetLanguageCode,
+            Score,
+            CefrLevel));
     }
 
     public void CompleteFailed(string failureReasonCode)

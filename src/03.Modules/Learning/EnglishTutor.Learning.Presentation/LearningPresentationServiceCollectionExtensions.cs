@@ -23,6 +23,7 @@ public static class LearningPresentationServiceCollectionExtensions
         routes.MapScenariosEndpoints();
         routes.MapVocabularyEndpoints();
         routes.MapPhrasesEndpoints();
+        routes.MapLanguageEndpoints();
         return routes;
     }
 }

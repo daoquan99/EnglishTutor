@@ -104,6 +104,150 @@ namespace EnglishTutor.Learning.Infrastructure.Persistence.Migrations
                     b.ToTable("integration_outbox_messages", "learning");
                 });
 
+            modelBuilder.Entity("EnglishTutor.Learning.Domain.Aggregates.LanguageDefinitions.LanguageDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at_utc");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<string>("EnglishName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("english_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsAvailableAsNative")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_available_as_native");
+
+                    b.Property<bool>("IsAvailableAsTarget")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_available_as_target");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("NativeName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("native_name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive", "SortOrder", "EnglishName", "Id");
+
+                    b.ToTable("language_definitions", "learning");
+                });
+
+            modelBuilder.Entity("EnglishTutor.Learning.Domain.Aggregates.LearnerLanguagePortfolios.LearnerLanguagePortfolio", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActiveLanguagePairId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("active_language_pair_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at_utc");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("learner_language_portfolios", "learning");
+                });
+
             modelBuilder.Entity("EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions.ModeDefinition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -535,6 +679,83 @@ namespace EnglishTutor.Learning.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("topics", "learning");
+                });
+
+            modelBuilder.Entity("EnglishTutor.Learning.Domain.Aggregates.LearnerLanguagePortfolios.LearnerLanguagePortfolio", b =>
+                {
+                    b.OwnsMany("EnglishTutor.Learning.Domain.Aggregates.LearnerLanguagePortfolios.Entities.LearnerLanguagePair", "LanguagePairs", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTime>("CreatedAtUtc")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("created_at_utc");
+
+                            b1.Property<Guid?>("CreatedByUserId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("created_by_user_id");
+
+                            b1.Property<string>("ExplanationLanguageCode")
+                                .IsRequired()
+                                .HasMaxLength(35)
+                                .HasColumnType("character varying(35)")
+                                .HasColumnName("explanation_language_code");
+
+                            b1.Property<string>("NativeLanguageCode")
+                                .IsRequired()
+                                .HasMaxLength(35)
+                                .HasColumnType("character varying(35)")
+                                .HasColumnName("native_language_code");
+
+                            b1.Property<Guid>("PortfolioId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("portfolio_id");
+
+                            b1.Property<string>("Status")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("status");
+
+                            b1.Property<string>("TargetLanguageCode")
+                                .IsRequired()
+                                .HasMaxLength(35)
+                                .HasColumnType("character varying(35)")
+                                .HasColumnName("target_language_code");
+
+                            b1.Property<DateTime>("UpdatedAtUtc")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("updated_at_utc");
+
+                            b1.Property<Guid?>("UpdatedByUserId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("updated_by_user_id");
+
+                            b1.Property<long>("Version")
+                                .IsConcurrencyToken()
+                                .HasColumnType("bigint")
+                                .HasColumnName("version");
+
+                            b1.HasKey("Id");
+
+                        b1.HasIndex("PortfolioId", "Status")
+                            .IsUnique()
+                            .HasFilter("\"status\" = 'Active'");
+
+                        b1.HasIndex("PortfolioId", "NativeLanguageCode", "TargetLanguageCode")
+                            .IsUnique()
+                            .HasFilter("\"status\" <> 'Archived'");
+
+                            b1.ToTable("learner_language_pairs", "learning");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PortfolioId");
+                        });
+
+                    b.Navigation("LanguagePairs");
                 });
 
             modelBuilder.Entity("EnglishTutor.Learning.Domain.Aggregates.ModeDefinitions.ModeDefinition", b =>

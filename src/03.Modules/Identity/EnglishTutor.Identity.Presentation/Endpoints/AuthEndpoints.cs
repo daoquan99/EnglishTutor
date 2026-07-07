@@ -67,10 +67,10 @@ public static class AuthEndpoints
 
             // Refresh token is transported ONLY via the HttpOnly cookie (H-01).
             RefreshTokenCookieHelper.SetRefreshTokenCookie(
-                httpContext.Response,
-                result.Value!.RefreshToken,
-                result.Value.ExpiresAt,
-                options);
+                response: httpContext.Response,
+                rawRefreshToken: result.Value!.RefreshToken,
+                expiresAtUtc: result.Value.RefreshTokenExpiresAt,
+                options: options);
 
             // Issue a CSRF token so the client can immediately call refresh.
             CsrfProtection.IssueToken(httpContext.Response, csrfOptions.Value);
@@ -115,10 +115,10 @@ public static class AuthEndpoints
 
             // Rotate: set the new refresh cookie.
             RefreshTokenCookieHelper.SetRefreshTokenCookie(
-                httpContext.Response,
-                result.Value!.RefreshToken,
-                result.Value.ExpiresAt,
-                options);
+                response: httpContext.Response,
+                rawRefreshToken: result.Value!.RefreshToken,
+                expiresAtUtc: result.Value.RefreshTokenExpiresAt,
+                options: options);
 
             return ApiResults.Ok(ToRefreshResponse(result.Value!));
         }).RequireRateLimiting(AuthRateLimitPolicies.Refresh);
@@ -265,10 +265,10 @@ public static class AuthEndpoints
 
     // ----- Application result -> Presentation DTO mapping (HTTP boundary) -----
     private static LoginResponse ToLoginResponse(LoginResult r) =>
-        new(r.AccessToken, r.ExpiresAt);
+        new(r.AccessToken, r.AccessTokenExpiresAt);
 
     private static RefreshResponse ToRefreshResponse(RefreshResult r) =>
-        new(r.AccessToken, r.ExpiresAt);
+        new(r.AccessToken, r.AccessTokenExpiresAt);
 
     private static UserSessionResponse ToUserSessionResponse(UserSessionResult s) =>
         new(s.Id, s.DeviceId, s.DeviceName, s.UserAgentHash, s.IpAddressHash, s.CreatedAtUtc, s.LastSeenAtUtc);

@@ -16,6 +16,7 @@ using EnglishTutor.Quota.Contracts;
 using EnglishTutor.Quota.Contracts.Dtos;
 using EnglishTutor.AiGateway.Contracts;
 using EnglishTutor.AiGateway.Contracts.Dtos;
+using EnglishTutor.Learning.Contracts;
 
 namespace EnglishTutor.Practice.Application.Sessions.Commands.StartPracticeSession;
 
@@ -28,6 +29,7 @@ public sealed class StartPracticeSessionCommandHandler : ICommandHandler<StartPr
     private readonly IAiGatewayModule _aiGateway;
     private readonly IDateTimeProvider _clock;
     private readonly IPracticeSessionResourceFinalizer _finalizer;
+    private readonly ILearningLanguageModule _learningLanguages;
 
     public StartPracticeSessionCommandHandler(
         IPracticeSessionRepository sessions,
@@ -36,7 +38,8 @@ public sealed class StartPracticeSessionCommandHandler : ICommandHandler<StartPr
         IQuotaModule quota,
         IAiGatewayModule aiGateway,
         IDateTimeProvider clock,
-        IPracticeSessionResourceFinalizer finalizer)
+        IPracticeSessionResourceFinalizer finalizer,
+        ILearningLanguageModule learningLanguages)
     {
         _sessions = sessions;
         _snapshots = snapshots;
@@ -45,10 +48,15 @@ public sealed class StartPracticeSessionCommandHandler : ICommandHandler<StartPr
         _aiGateway = aiGateway;
         _clock = clock;
         _finalizer = finalizer;
+        _learningLanguages = learningLanguages;
     }
 
     public async Task<Result<StartSessionResult>> Handle(StartPracticeSessionCommand request, CancellationToken ct)
     {
+        var languageContext = await _learningLanguages.EnsureActiveLanguageContextAsync(
+            request.UserId,
+            ct);
+
         var snapshot = await _snapshots.GetByIdAsync(request.ScenarioId, ct);
         if (snapshot is null)
         {
@@ -92,7 +100,13 @@ public sealed class StartPracticeSessionCommandHandler : ICommandHandler<StartPr
         var startedAt = _clock.UtcNow;
         var session = new PracticeSession(
             Guid.NewGuid(), request.UserId, reservationId, leaseId, scenarioSnapshot,
-            startedAt, TimeSpan.FromMinutes(request.RequestedMinutes));
+            startedAt, TimeSpan.FromMinutes(request.RequestedMinutes),
+            new PracticeSessionLanguageSnapshot(
+                languagePairId: languageContext.LanguagePairId,
+                nativeLanguageCode: languageContext.NativeLanguageCode,
+                targetLanguageCode: languageContext.TargetLanguageCode,
+                explanationLanguageCode: languageContext.ExplanationLanguageCode,
+                languagePairVersion: languageContext.Version));
 
         try
         {

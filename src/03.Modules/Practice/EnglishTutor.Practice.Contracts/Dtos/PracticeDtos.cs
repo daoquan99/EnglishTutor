@@ -82,7 +82,11 @@ public sealed record PracticeSessionSummary(
     DateTime StartedAtUtc,
     DateTime? EndedAtUtc,
     DateTime ExpiresAtUtc,
-    int TranscriptMessageCount);
+    int TranscriptMessageCount,
+    Guid LanguagePairId,
+    string NativeLanguageCode,
+    string TargetLanguageCode,
+    string ExplanationLanguageCode);
 
 public sealed record PracticeSessionPage(
     IReadOnlyList<PracticeSessionSummary> Items,

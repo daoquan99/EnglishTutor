@@ -60,7 +60,11 @@ public sealed class GetPracticeSessionHandler : IQueryHandler<GetPracticeSession
             session.StartedAtUtc,
             endedAt,
             session.ExpiresAtUtc,
-            session.TranscriptMessages.Count);
+            session.TranscriptMessages.Count,
+            session.LanguageSnapshot.LanguagePairId,
+            session.LanguageSnapshot.NativeLanguageCode,
+            session.LanguageSnapshot.TargetLanguageCode,
+            session.LanguageSnapshot.ExplanationLanguageCode);
 
         return Result.Success(new GetSessionResult(PracticeQueryStatus.Success, summary));
     }
