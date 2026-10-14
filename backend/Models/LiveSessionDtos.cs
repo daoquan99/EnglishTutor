@@ -5,7 +5,21 @@ public sealed record CreateConversationRequest(
     string CefrLevel = "B1",
     bool ExtendedThinking = false,
     string VoiceName = "Aoede",
-    double SpeechSpeed = 1.0
+    double SpeechSpeed = 1.0,
+    string ConversationMode = "daily_conversation",
+    string Topic = "",
+    string? CustomSystemPrompt = null
+);
+
+public sealed record UpdateConversationSettingsRequest(
+    string? Title,
+    string CefrLevel = "B1",
+    bool ExtendedThinking = false,
+    string VoiceName = "Aoede",
+    double SpeechSpeed = 1.0,
+    string ConversationMode = "daily_conversation",
+    string Topic = "",
+    string? CustomSystemPrompt = null
 );
 
 public sealed record StartTutorSessionRequest(
@@ -15,7 +29,10 @@ public sealed record StartTutorSessionRequest(
     bool ExtendedThinking = false,
     string ThinkingLevel = "medium",
     string VoiceName = "Aoede",
-    double SpeechSpeed = 1.0
+    double SpeechSpeed = 1.0,
+    string ConversationMode = "daily_conversation",
+    string Topic = "",
+    string? CustomSystemPrompt = null
 );
 
 public sealed record StartSubHubSessionRequest(

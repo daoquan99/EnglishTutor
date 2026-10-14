@@ -148,7 +148,10 @@ public sealed class GeminiLiveConnectionManager
             req.CefrLevel,
             req.ExtendedThinking,
             req.VoiceName,
-            req.SpeechSpeed);
+            req.SpeechSpeed,
+            req.ConversationMode,
+            req.Topic,
+            req.CustomSystemPrompt);
 
         var state = await GetOrInitTurnStateAsync(req.ConversationId, req.CefrLevel);
         var existingConv = await _repo.GetConversationWithHistoryAsync(req.ConversationId);
@@ -163,6 +166,9 @@ public sealed class GeminiLiveConnectionManager
             req.ExtendedThinking,
             req.VoiceName,
             req.SpeechSpeed,
+            req.ConversationMode,
+            req.Topic,
+            req.CustomSystemPrompt,
             previousMessages);
 
         var generationConfig = new Dictionary<string, object>

@@ -23,6 +23,23 @@ public sealed class ConversationEntity
 
     public double SpeechSpeed { get; set; } = 1.0;
 
+    /// <summary>
+    /// One of the 19 supported modes (12 Interview/Coaching modes + 7 Communication/Workplace modes).
+    /// </summary>
+    [MaxLength(64)]
+    public string ConversationMode { get; set; } = "daily_conversation";
+
+    /// <summary>
+    /// Topic or scenario of the conversation (e.g. ".NET 10 & SQL Server Performance", "Daily Standup Sprint 12").
+    /// </summary>
+    [MaxLength(512)]
+    public string Topic { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional custom system prompt defined specifically for this conversation (e.g. CV summary, JD, custom rules).
+    /// </summary>
+    public string? CustomSystemPrompt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 

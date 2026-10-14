@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CefrLevel, TeacherVoiceName } from './types/live';
+import {
+  CefrLevel,
+  ConversationModeId,
+  ConversationModeOption,
+  TeacherVoiceName,
+} from './types/live';
 import { useThreeHubLiveSession } from './hooks/useThreeHubLiveSession';
+import { DailyVocabularyWorkspace } from './components/DailyVocabularyWorkspace';
 
 const CEFR_LEVELS: { level: CefrLevel; label: string; desc: string }[] = [
   { level: 'A1', label: 'A1 · Beginner', desc: 'Câu ngắn 5-8 từ, tốc độ chậm' },
@@ -28,6 +34,145 @@ const SPEECH_SPEEDS: { value: number; label: string }[] = [
   { value: 1.25, label: '1.25x' },
 ];
 
+export const CONVERSATION_MODES: ConversationModeOption[] = [
+  // --- 12 INTERVIEW & COACHING MODES ---
+  {
+    id: 'practice_interview',
+    group: 'interview',
+    name: '1. Practice Mode',
+    descVi: 'Phỏng vấn và sửa ngữ pháp, từ vựng sau mỗi câu trả lời.',
+    suggestedTopics: ['Backend .NET Developer Interview', 'Fullstack React & .NET Interview', 'Self-Introduction & Strengths'],
+  },
+  {
+    id: 'real_interview',
+    group: 'interview',
+    name: '2. Real Interview Mode',
+    descVi: 'Phỏng vấn như thực tế, không ngắt lời, đánh giá cuối buổi.',
+    suggestedTopics: ['Senior Software Engineer Mock Interview', 'Product Engineer Final Round', 'Remote Global Team Interview'],
+  },
+  {
+    id: 'hr_interview',
+    group: 'interview',
+    name: '3. HR Interview Mode',
+    descVi: 'Hỏi về bản thân, kinh nghiệm, mức lương, lý do nghỉ việc, mục tiêu nghề nghiệp.',
+    suggestedTopics: ['Salary Negotiation & Career Goals', 'Why Are You Leaving Your Current Job?', 'Culture Fit & Work Style'],
+  },
+  {
+    id: 'technical_interview',
+    group: 'interview',
+    name: '4. Technical Interview Mode',
+    descVi: 'Hỏi chuyên sâu về C#, .NET, SQL Server, API, Architecture...',
+    suggestedTopics: ['C# .NET 10, EF Core & SQL Server Indexing', 'SignalR, WebSockets & Async/Await Internals', 'Clean Architecture, SOLID & DI'],
+  },
+  {
+    id: 'system_design',
+    group: 'interview',
+    name: '5. System Design Mode',
+    descVi: 'Yêu cầu thiết kế hệ thống, thảo luận kiến trúc, scalability, database.',
+    suggestedTopics: ['Design a Real-Time Chat & Voice Streaming System', 'High-Traffic E-Commerce Checkout & Caching', 'Distributed Rate Limiter & Notification Service'],
+  },
+  {
+    id: 'behavioral_star',
+    group: 'interview',
+    name: '6. Behavioral Interview Mode (STAR)',
+    descVi: 'Hỏi tình huống teamwork, conflict, leadership theo phương pháp STAR.',
+    suggestedTopics: ['Resolving Disagreement with a Teammate', 'Handling a Critical Production Outage Under Pressure', 'Leading a Feature with Tight Deadlines'],
+  },
+  {
+    id: 'stress_interview',
+    group: 'interview',
+    name: '7. Stress Interview Mode',
+    descVi: 'Đặt câu hỏi khó, phản biện và gây áp lực như một buổi phỏng vấn căng thẳng.',
+    suggestedTopics: ['Defending Your Architecture Under 10x Traffic', 'Why Should We Hire You Over More Experienced Candidates?', 'Handling Scope Creep & Missed Deadlines'],
+  },
+  {
+    id: 'rapid_fire',
+    group: 'interview',
+    name: '8. Rapid Fire Mode',
+    descVi: 'Hỏi liên tục những câu ngắn, yêu cầu trả lời nhanh trong 15–30 giây.',
+    suggestedTopics: ['Quick Backend & Database Concepts', 'Rapid Workplace & Daily Q&A', 'Elevator Pitch & Quick Reflexes'],
+  },
+  {
+    id: 'deep_dive',
+    group: 'interview',
+    name: '9. Deep Dive Mode',
+    descVi: 'Đào sâu câu trả lời bằng các câu hỏi "Why?", "How?", "What if?".',
+    suggestedTopics: ['Database Query Optimization & Locking', 'Microservices vs Modular Monolith Trade-offs', 'Authentication, JWT & Security Best Practices'],
+  },
+  {
+    id: 'english_coach',
+    group: 'interview',
+    name: '10. English Coach Mode',
+    descVi: 'Tập trung sửa ngữ pháp, từ vựng, độ trôi chảy và diễn đạt chuyên nghiệp.',
+    suggestedTopics: ['Speaking Fluently About My Workday', 'Upgrading Basic Sentences to Business English', 'Using Natural Idioms & Collocations'],
+  },
+  {
+    id: 'pronunciation_coach',
+    group: 'interview',
+    name: '11. Pronunciation Mode',
+    descVi: 'Luyện phát âm, trọng âm, ngữ điệu và độ rõ ràng khi trả lời.',
+    suggestedTopics: ['Ending Sounds (/s/, /z/, /t/, /d/) & Linking', 'Word Stress in Technical Vocabulary', 'Natural Intonation & Sentence Rhythm'],
+  },
+  {
+    id: 'resume_deep_dive',
+    group: 'interview',
+    name: '12. Resume Deep Dive Mode',
+    descVi: 'AI đóng vai nhà tuyển dụng, phỏng vấn dựa trên CV và các dự án bạn từng làm.',
+    suggestedTopics: ['My Recent .NET & React Project Architecture', 'Most Challenging Bug & Performance Bottleneck I Solved', 'My Role, Tech Stack & Team Impact'],
+  },
+
+  // --- 7 COMMUNICATION & WORKPLACE MODES ---
+  {
+    id: 'daily_conversation',
+    group: 'communication',
+    name: '13. Daily Conversation',
+    descVi: 'Trò chuyện tự nhiên về cuộc sống hằng ngày, sở thích, du lịch.',
+    suggestedTopics: ['Travel, Food & Exploring New Places', 'Weekend Plans, Sports & Video Games', 'Morning Routine & Work-Life Balance'],
+  },
+  {
+    id: 'daily_standup',
+    group: 'communication',
+    name: '14. Daily Standup (Scrum)',
+    descVi: 'Giả lập họp Scrum hằng ngày: báo cáo hôm qua, hôm nay và các blocker.',
+    suggestedTopics: ['Sprint 14 Backend API Progress & DB Blocker', 'Frontend UI Release & QA Bug Triage', 'Pre-Release Deployment Sync'],
+  },
+  {
+    id: 'technical_discussion',
+    group: 'communication',
+    name: '15. Technical Discussion',
+    descVi: 'Tranh luận về giải pháp kỹ thuật và code review với đồng nghiệp.',
+    suggestedTopics: ['Choosing Between Redis Cache & In-Memory Cache', 'Refactoring Legacy SQL Stored Procedures', 'Code Review: Async Streaming & Memory Allocation'],
+  },
+  {
+    id: 'problem_solving',
+    group: 'communication',
+    name: '16. Problem Solving',
+    descVi: 'Cùng AI phân tích bug, sự cố hệ thống và tìm hướng giải quyết.',
+    suggestedTopics: ['Investigating High CPU & Slow SQL Queries in Production', 'Fixing WebSocket Disconnection After 10 Minutes', 'Debugging Memory Leak in Background Worker'],
+  },
+  {
+    id: 'client_meeting',
+    group: 'communication',
+    name: '17. Client Meeting',
+    descVi: 'Trao đổi yêu cầu và giải thích vấn đề kỹ thuật với khách hàng.',
+    suggestedTopics: ['Clarifying New Feature Requirements with US Client', 'Explaining Why a Technical Migration Takes 2 Weeks', 'Demoing New Product Release to Stakeholders'],
+  },
+  {
+    id: 'debate_mode',
+    group: 'communication',
+    name: '18. Debate Mode',
+    descVi: 'Tranh luận đa chiều để luyện phản xạ và lập luận tiếng Anh sắc bén.',
+    suggestedTopics: ['Will AI Replace Software Engineers or Empower Them?', 'Remote Work vs Office Work for Engineering Teams', 'Speed of Delivery vs Code Quality in Startups'],
+  },
+  {
+    id: 'roleplay_mode',
+    group: 'communication',
+    name: '19. Roleplay Mode',
+    descVi: 'AI đóng vai khách hàng, quản lý, đồng nghiệp hoặc người lạ theo kịch bản.',
+    suggestedTopics: ['1-on-1 Performance Review with Engineering Manager', 'Checking In at an International Hotel & Airport', 'Onboarding a New Foreign Teammate'],
+  },
+];
+
 export default function App() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('lingomint_api_key') || '');
   const [showKey, setShowKey] = useState(false);
@@ -36,7 +181,13 @@ export default function App() {
   const [voiceName, setVoiceName] = useState<TeacherVoiceName>('Leda');
   const [speechSpeed, setSpeechSpeed] = useState<number>(0.9);
 
-  // Requirement 1: No Navbar; Left Menu toggles between Expanded and Icon-Only Rail
+  // New v7 State: Conversation Mode (19 modes), Topic, and Optional Custom System Prompt
+  const [conversationMode, setConversationMode] = useState<ConversationModeId>('practice_interview');
+  const [topic, setTopic] = useState<string>('Backend .NET Developer Interview');
+  const [customSystemPrompt, setCustomSystemPrompt] = useState<string>('');
+  const [showCustomPromptBox, setShowCustomPromptBox] = useState<boolean>(false);
+
+  const [activeWorkspace, setActiveWorkspace] = useState<'live_tutor' | 'daily_vocab'>('live_tutor');
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
@@ -74,6 +225,17 @@ export default function App() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [turns]);
 
+  const activeModeObj =
+    CONVERSATION_MODES.find((m) => m.id === conversationMode) || CONVERSATION_MODES[0];
+
+  const handleModeChange = (newModeId: ConversationModeId) => {
+    setConversationMode(newModeId);
+    const found = CONVERSATION_MODES.find((m) => m.id === newModeId);
+    if (found && found.suggestedTopics.length > 0 && !topic.trim()) {
+      setTopic(found.suggestedTopics[0]);
+    }
+  };
+
   const handleSelectOldConversation = async (convId: string) => {
     if (isConnected) {
       await disconnectAll();
@@ -84,6 +246,10 @@ export default function App() {
       if (typeof loaded.extendedThinking === 'boolean') setExtendedThinking(loaded.extendedThinking);
       if (loaded.voiceName) setVoiceName(loaded.voiceName as TeacherVoiceName);
       if (loaded.speechSpeed) setSpeechSpeed(Number(loaded.speechSpeed));
+      if (loaded.conversationMode) setConversationMode(loaded.conversationMode as ConversationModeId);
+      setTopic(loaded.topic || '');
+      setCustomSystemPrompt(loaded.customSystemPrompt || '');
+      if (loaded.customSystemPrompt) setShowCustomPromptBox(true);
     }
     setIsHistoryDrawerOpen(false);
   };
@@ -92,7 +258,15 @@ export default function App() {
     if (isConnected) {
       await disconnectAll();
     }
-    await createNewConversation(cefrLevel, extendedThinking, voiceName, speechSpeed);
+    await createNewConversation(
+      cefrLevel,
+      extendedThinking,
+      voiceName,
+      speechSpeed,
+      conversationMode,
+      topic,
+      customSystemPrompt
+    );
     setIsHistoryDrawerOpen(false);
   };
 
@@ -104,24 +278,27 @@ export default function App() {
   const filteredConversations = conversations.filter(
     (c) =>
       c.title.toLowerCase().includes(historySearch.toLowerCase()) ||
+      (c.topic || '').toLowerCase().includes(historySearch.toLowerCase()) ||
       c.lastMessagePreview.toLowerCase().includes(historySearch.toLowerCase())
   );
 
   return (
     <div className="learnerTheme min-h-screen flex flex-col lg:flex-row">
       {/* =====================================================================
-          LEFT MENU: Expanded Full Setup OR Collapsed Icon-Only Rail (No Top Navbar!)
+          LEFT MENU: Expanded Full Setup OR Collapsed Icon-Only Rail
       ====================================================================== */}
       <aside
         className={`bg-[var(--bg-surface)] border-b lg:border-b-0 lg:border-r border-[var(--border-strong)] flex flex-col justify-between transition-all duration-200 shrink-0 lg:h-screen lg:sticky lg:top-0 ${
-          isSidebarExpanded ? 'w-full lg:w-84 xl:w-90 p-4' : 'w-full lg:w-20 p-3 items-center'
+          isSidebarExpanded ? 'w-full lg:w-92 xl:w-96 p-4' : 'w-full lg:w-20 p-3 items-center'
         }`}
         style={{ boxShadow: 'var(--shadow-sm)' }}
       >
         {/* TOP BRAND LOGO + ICON TOGGLE BUTTON */}
         <div
           className={`w-full flex items-center ${
-            isSidebarExpanded ? 'justify-between pb-3.5 border-b border-[var(--border-subtle)]' : 'flex-col gap-3 pb-3 border-b border-[var(--border-subtle)]'
+            isSidebarExpanded
+              ? 'justify-between pb-3.5 border-b border-[var(--border-subtle)]'
+              : 'flex-col gap-3 pb-3 border-b border-[var(--border-subtle)]'
           }`}
         >
           {isSidebarExpanded ? (
@@ -140,7 +317,6 @@ export default function App() {
             />
           )}
 
-          {/* Button Icon Toggle for Left Menu */}
           <button
             type="button"
             onClick={() => setIsSidebarExpanded((prev) => !prev)}
@@ -171,11 +347,39 @@ export default function App() {
         </div>
 
         {/* =================================================================
-            COLLAPSED ICON-ONLY RAIL VIEW ("ẩn thì left menu chỉ show icon thôi")
+            COLLAPSED ICON-ONLY RAIL VIEW
         ================================================================== */}
         {!isSidebarExpanded ? (
           <div className="flex-1 flex flex-row lg:flex-col items-center justify-between py-3 gap-2.5 w-full overflow-x-auto lg:overflow-x-visible">
             <div className="flex flex-row lg:flex-col items-center gap-2.5">
+              {/* 0. Workspace Switcher Icon Buttons: Live Tutor vs Daily Vocabulary Flashcards */}
+              <button
+                type="button"
+                onClick={() => setActiveWorkspace('live_tutor')}
+                title="Hội thoại trực tiếp với AI Teacher (19 Modes)"
+                className={`w-11 h-11 flex items-center justify-center border cursor-pointer ${
+                  activeWorkspace === 'live_tutor'
+                    ? 'bg-[var(--bg-subtle)] border-[var(--learner-primary-action)] ring-2 ring-[var(--learner-primary-action)]'
+                    : 'bg-[var(--bg-app)] border-[var(--border-strong)]'
+                }`}
+                style={{ borderRadius: 'var(--radius-sm)' }}
+              >
+                <img src="/assets/icons/navigation/nav-conversations.svg" alt="Live Tutor" className="w-6 h-6" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveWorkspace('daily_vocab')}
+                title="Daily Vocabulary Flashcards & Chấm phát âm AI"
+                className={`w-11 h-11 flex items-center justify-center border cursor-pointer ${
+                  activeWorkspace === 'daily_vocab'
+                    ? 'bg-[var(--bg-subtle)] border-[var(--learner-primary-action)] ring-2 ring-[var(--learner-primary-action)]'
+                    : 'bg-[var(--bg-app)] border-[var(--border-strong)]'
+                }`}
+                style={{ borderRadius: 'var(--radius-sm)' }}
+              >
+                <img src="/assets/icons/navigation/nav-today.svg" alt="Daily Vocab" className="w-6 h-6" />
+              </button>
               {/* 1. Connect / Mic Icon Button */}
               {!isConnected ? (
                 <button
@@ -188,6 +392,9 @@ export default function App() {
                           extendedThinking,
                           voiceName,
                           speechSpeed,
+                          conversationMode,
+                          topic,
+                          customSystemPrompt,
                           activeConversationId
                         )
                       : expandAndFocusKey()
@@ -242,7 +449,18 @@ export default function App() {
                 </span>
               </button>
 
-              {/* 4. API Key Setup Icon Button */}
+              {/* 4. Mode & Topic Icon Button */}
+              <button
+                type="button"
+                onClick={() => setIsSidebarExpanded(true)}
+                title={`Chế độ: ${activeModeObj.name} | Chủ đề: ${topic || 'Tự do'}`}
+                className="w-11 h-11 flex items-center justify-center border border-[var(--learner-mint-border)] bg-[var(--color-primary-50)] hover:bg-[var(--bg-subtle)] cursor-pointer"
+                style={{ borderRadius: 'var(--radius-sm)' }}
+              >
+                <img src="/assets/icons/navigation/nav-catalog.svg" alt="Mode & Topic" className="w-6 h-6" />
+              </button>
+
+              {/* 5. API Key Setup Icon Button */}
               <button
                 type="button"
                 onClick={expandAndFocusKey}
@@ -258,7 +476,7 @@ export default function App() {
                 />
               </button>
 
-              {/* 5. Teacher Voice & Speed Icon Button */}
+              {/* 6. Teacher Voice & Speed Icon Button */}
               <button
                 type="button"
                 onClick={() => setIsSidebarExpanded(true)}
@@ -272,7 +490,7 @@ export default function App() {
                 </span>
               </button>
 
-              {/* 6. Extended Thinking Toggle Icon Button */}
+              {/* 7. Extended Thinking Toggle Icon Button */}
               <button
                 type="button"
                 onClick={() => setExtendedThinking((v) => !v)}
@@ -290,7 +508,7 @@ export default function App() {
                 </span>
               </button>
 
-              {/* 7. CEFR Level Icon Button */}
+              {/* 8. CEFR Level Icon Button */}
               <button
                 type="button"
                 onClick={() => setIsSidebarExpanded(true)}
@@ -305,7 +523,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Bottom 3 Hub Status Dots in Icon Rail */}
             <div
               className="hidden lg:flex flex-col items-center gap-1.5 p-2 border border-[var(--learner-mint-border)] bg-[var(--color-primary-50)]"
               style={{ borderRadius: 'var(--radius-xs)' }}
@@ -332,7 +549,39 @@ export default function App() {
           /* =================================================================
               EXPANDED LEFT MENU VIEW
           ================================================================== */
-          <div className="flex-1 overflow-y-auto py-3 space-y-4 pr-1">
+          <div className="flex-1 overflow-y-auto py-3 space-y-3.5 pr-1">
+            {/* Workspace Feature Switcher: Live AI Tutor vs. Daily Vocabulary Flashcards */}
+            <div
+              className="p-1 bg-[var(--bg-app)] border border-[var(--border-strong)] grid grid-cols-2 gap-1"
+              style={{ borderRadius: 'var(--radius-sm)' }}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveWorkspace('live_tutor')}
+                className={`py-2 px-2 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeWorkspace === 'live_tutor'
+                    ? 'bg-[var(--learner-primary-action)] text-[var(--text-on-primary)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--color-primary-50)]'
+                }`}
+                style={{ borderRadius: 'var(--radius-xs)' }}
+              >
+                <img src="/assets/icons/navigation/nav-study.svg" alt="" className="w-4 h-4" />
+                <span>Live AI Tutor</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspace('daily_vocab')}
+                className={`py-2 px-2 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeWorkspace === 'daily_vocab'
+                    ? 'bg-[var(--learner-primary-action)] text-[var(--text-on-primary)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--color-primary-50)]'
+                }`}
+                style={{ borderRadius: 'var(--radius-xs)' }}
+              >
+                <img src="/assets/icons/navigation/nav-today.svg" alt="" className="w-4 h-4" />
+                <span>Daily Flashcards</span>
+              </button>
+            </div>
             {/* Quick Actions: New Chat & Open Separate History Drawer */}
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -356,7 +605,102 @@ export default function App() {
               </button>
             </div>
 
-            {/* 1. Google AI Studio API Key */}
+            {/* 1. CONVERSATION MODE SELECTOR (19 Modes: 12 Interview + 7 Communication) */}
+            <div className="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
+              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                <img src="/assets/icons/navigation/nav-catalog.svg" alt="" className="w-4 h-4" />
+                <span>Chế độ luyện nói (19 Modes)</span>
+              </label>
+              <select
+                value={conversationMode}
+                onChange={(e) => handleModeChange(e.target.value as ConversationModeId)}
+                className="w-full px-3 py-2 text-xs font-semibold bg-[var(--bg-app)] border border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-[#26443c]"
+                style={{ borderRadius: 'var(--radius-sm)' }}
+              >
+                <optgroup label="🎯 Chế Độ Phỏng Vấn & Huấn Luyện (12 Modes)">
+                  {CONVERSATION_MODES.filter((m) => m.group === 'interview').map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="💬 Giao Tiếp & Công Việc Thực Tế (7 Modes)">
+                  {CONVERSATION_MODES.filter((m) => m.group === 'communication').map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <div
+                className="p-2 text-[11px] bg-[var(--color-primary-50)] text-[var(--learner-mint-text)] border border-[var(--learner-mint-border)] leading-snug"
+                style={{ borderRadius: 'var(--radius-xs)' }}
+              >
+                <strong>Chức năng:</strong> {activeModeObj.descVi}
+              </div>
+            </div>
+
+            {/* 2. CONVERSATION TOPIC + QUICK SUGGESTIONS */}
+            <div className="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
+              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                <img src="/assets/icons/navigation/nav-today.svg" alt="" className="w-4 h-4" />
+                <span>Chủ đề cuộc trò chuyện (Topic)</span>
+              </label>
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="Nhập chủ đề (VD: C# .NET 10, SQL Server, Daily Standup...)"
+                className="w-full px-3 py-2 text-xs bg-[var(--bg-app)] border border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-[#26443c]"
+                style={{ borderRadius: 'var(--radius-sm)' }}
+              />
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {activeModeObj.suggestedTopics.map((sug) => (
+                  <button
+                    key={sug}
+                    type="button"
+                    onClick={() => setTopic(sug)}
+                    className={`px-2 py-0.5 text-[10px] font-medium border transition-all cursor-pointer truncate max-w-full ${
+                      topic === sug
+                        ? 'bg-[var(--bg-subtle)] border-[var(--learner-primary-action)] text-[var(--learner-mint-text)] font-bold'
+                        : 'bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--color-primary-50)]'
+                    }`}
+                    style={{ borderRadius: 'var(--radius-full)' }}
+                  >
+                    + {sug}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. OPTIONAL CUSTOM SYSTEM PROMPT PER CONVERSATION */}
+            <div className="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                  <img src="/assets/icons/navigation/nav-sentences.svg" alt="" className="w-4 h-4" />
+                  <span>System Prompt riêng (Optional)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCustomPromptBox((prev) => !prev)}
+                  className="text-[11px] font-bold text-[var(--learner-mint-text)] underline cursor-pointer"
+                >
+                  {showCustomPromptBox ? 'Thu gọn' : '+ Thêm Prompt / CV / JD'}
+                </button>
+              </div>
+              {showCustomPromptBox && (
+                <textarea
+                  rows={3}
+                  value={customSystemPrompt}
+                  onChange={(e) => setCustomSystemPrompt(e.target.value)}
+                  placeholder="Tùy chọn: Dán tóm tắt CV, JD vị trí ứng tuyển hoặc chỉ dẫn riêng cho AI trong cuộc hội thoại này..."
+                  className="w-full p-2.5 text-xs bg-[var(--bg-app)] border border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-[#26443c] resize-y"
+                  style={{ borderRadius: 'var(--radius-sm)' }}
+                />
+              )}
+            </div>
+
+            {/* 4. Google AI Studio API Key */}
             <div className="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
               <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                 <img src="/assets/icons/navigation/nav-admin.svg" alt="" className="w-4 h-4" />
@@ -382,10 +726,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* 2. Teacher Voice & Speech Speed */}
-            <div className="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
+            {/* 5. Teacher Voice & Speech Speed */}
+            <div className="space-y-2.5 pt-2 border-t border-[var(--border-subtle)]">
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1">
                   <img src="/assets/icons/navigation/nav-account.svg" alt="" className="w-4 h-4" />
                   <span>Giọng nói của Teacher ({voiceName})</span>
                 </label>
@@ -404,9 +748,9 @@ export default function App() {
               </div>
 
               <div>
-                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1">
                   <img src="/assets/icons/navigation/nav-settings.svg" alt="" className="w-4 h-4" />
-                  <span>Tốc độ nói của Teacher ({speechSpeed}x)</span>
+                  <span>Tốc độ nói ({speechSpeed}x)</span>
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
                   {SPEECH_SPEEDS.map((s) => {
@@ -431,16 +775,16 @@ export default function App() {
               </div>
             </div>
 
-            {/* 3. Extended Thinking Toggle */}
+            {/* 6. Extended Thinking Toggle */}
             <div className="pt-2 border-t border-[var(--border-subtle)]">
-              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1">
                 <img src="/assets/icons/navigation/nav-reviews.svg" alt="" className="w-4 h-4" />
                 <span>Chế độ suy luận (Model Voice)</span>
               </label>
               <button
                 type="button"
                 onClick={() => setExtendedThinking((v) => !v)}
-                className={`w-full px-3 py-2.5 text-xs font-semibold border flex items-center justify-between transition-all cursor-pointer ${
+                className={`w-full px-3 py-2 text-xs font-semibold border flex items-center justify-between transition-all cursor-pointer ${
                   extendedThinking
                     ? 'bg-[var(--bg-subtle)] border-[var(--learner-accent)] text-[var(--learner-mint-text)]'
                     : 'bg-[var(--bg-app)] border-[var(--border-strong)] text-[var(--text-primary)]'
@@ -462,13 +806,13 @@ export default function App() {
               </button>
             </div>
 
-            {/* 4. CEFR Level Selector A1 -> C2 */}
+            {/* 7. CEFR Level Selector A1 -> C2 */}
             <div className="pt-2 border-t border-[var(--border-subtle)]">
-              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1">
                 <img src="/assets/icons/navigation/nav-lessons.svg" alt="" className="w-4 h-4" />
                 <span>Trình độ hiện tại (CEFR: {cefrLevel})</span>
               </label>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 {CEFR_LEVELS.map((item) => {
                   const active = cefrLevel === item.level;
                   return (
@@ -483,7 +827,7 @@ export default function App() {
                       }`}
                       style={{ borderRadius: 'var(--radius-xs)' }}
                     >
-                      <div className="font-bold text-xs text-[var(--text-primary)]">{item.label}</div>
+                      <div className="font-bold text-xs text-[var(--text-primary)]">{item.level}</div>
                       <div className="text-[10px] text-[var(--text-secondary)] truncate">{item.desc}</div>
                     </button>
                   );
@@ -491,8 +835,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* 5. 3 SignalR Hub Statuses & Connect Button */}
-            <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2.5">
+            {/* 8. 3 SignalR Hub Statuses & Connect Button */}
+            <div className="pt-2.5 border-t border-[var(--border-subtle)] space-y-2">
               <div className="space-y-1">
                 {[
                   { name: 'Hub 1: Tutor (3.8 Live)', state: hubStatuses.tutor },
@@ -527,6 +871,9 @@ export default function App() {
                       extendedThinking,
                       voiceName,
                       speechSpeed,
+                      conversationMode,
+                      topic,
+                      customSystemPrompt,
                       activeConversationId
                     )
                   }
@@ -568,6 +915,15 @@ export default function App() {
           MAIN WORKSPACE: Live Bilingual Messenger + Grammar & Spelling Corrections
       ====================================================================== */}
       <main className="flex-1 p-4 md:p-6 flex flex-col gap-4 max-w-7xl mx-auto w-full">
+        {activeWorkspace === 'daily_vocab' ? (
+          <DailyVocabularyWorkspace
+            apiKey={apiKey}
+            cefrLevel={cefrLevel}
+            defaultTopic={topic}
+            onFocusApiKey={expandAndFocusKey}
+          />
+        ) : (
+          <>
         {errorMessage && (
           <div
             className="p-4 bg-red-50 border border-red-200 text-red-800 flex items-center gap-4"
@@ -591,19 +947,28 @@ export default function App() {
             className="lg:col-span-7 p-5 md:p-6 bg-[var(--bg-surface)] border border-[var(--border-strong)] flex flex-col justify-between min-h-[680px] max-h-[calc(100vh-48px)]"
             style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-[var(--border-subtle)]">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3 min-w-0">
                 <img
                   src="/assets/mascot/cat/cat-avatar.svg"
                   alt="Teacher Avatar"
                   className="w-10 h-10 shrink-0"
                 />
-                <div>
-                  <h2 className="text-lg font-bold text-[var(--text-primary)]">
-                    Hội Thoại Trực Tiếp &amp; Phụ Đề Song Ngữ
-                  </h2>
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    {activeConversationTitle} · <strong>Dòng 1 (Chữ to)</strong>: Transcribe Live · <strong>Dòng 2 (Chữ nghiêng nhỏ)</strong>: Live Translate VI
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h2 className="text-base md:text-lg font-bold text-[var(--text-primary)] truncate">
+                      Hội Thoại Trực Tiếp &amp; Phụ Đề Song Ngữ
+                    </h2>
+                    <span
+                      className="px-2 py-0.5 text-[10px] font-bold bg-[var(--learner-primary-action)] text-[var(--text-on-primary)]"
+                      style={{ borderRadius: 'var(--radius-full)' }}
+                    >
+                      {activeModeObj.name}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)] truncate">
+                    <strong>Chủ đề:</strong> {topic || 'Giao tiếp tự do'}
+                    {customSystemPrompt.trim() ? ' · ✨ Có Custom System Prompt' : ''}
                   </p>
                 </div>
               </div>
@@ -627,10 +992,11 @@ export default function App() {
                     className="w-44 h-36 select-none"
                   />
                   <p className="font-bold text-base text-[var(--text-primary)]">
-                    Chào mừng bạn đến với phòng luyện nói 1-1!
+                    Sẵn sàng luyện nói: {activeModeObj.name}
                   </p>
                   <p className="text-xs max-w-md text-[var(--text-secondary)]">
-                    Nhấn <strong>&ldquo;Kết nối 3 Hubs &amp; Bắt đầu&rdquo;</strong> ở menu bên trái rồi bật Mic để trò chuyện trực tiếp với giáo viên AI, hoặc mở <strong>Lịch sử</strong> để tiếp tục bài học trước.
+                    {activeModeObj.descVi} <br />
+                    <strong>Chủ đề đang chọn:</strong> {topic || 'Tự do'}. Nhấn <strong>&ldquo;Kết nối 3 Hubs &amp; Bắt đầu&rdquo;</strong> để bắt đầu!
                   </p>
                 </div>
               ) : (
@@ -690,7 +1056,6 @@ export default function App() {
                         }`}
                         style={{ boxShadow: 'var(--shadow-sm)' }}
                       >
-                        {/* DÒNG 1: Gemini 3.5 Transcribe Live - Chữ to hơn */}
                         <p
                           className="font-semibold text-[var(--text-primary)] leading-snug"
                           style={{ fontSize: 'var(--font-size-study-body)' }}
@@ -698,7 +1063,6 @@ export default function App() {
                           {turn.transcriptLine1 || '...'}
                         </p>
 
-                        {/* DÒNG 2: Gemini 3.5 Live Translate - Chữ nghiêng nhỏ hơn, khóa chặt theo đúng TurnId */}
                         <p className="mt-1.5 text-sm italic text-[var(--text-secondary)] leading-relaxed border-t border-black/5 pt-1.5">
                           {turn.translationLine2 || 'Đang dịch sang tiếng Việt...'}
                         </p>
@@ -728,7 +1092,7 @@ export default function App() {
                     Sửa Lỗi Chính Tả, Từ Vựng &amp; Ngữ Pháp
                   </h2>
                   <p className="text-xs text-[var(--text-secondary)]">
-                    Phân tích tự động sau mỗi lượt nói &amp; lưu vào SQL Server (<code>LingoMint</code>)
+                    Chỉ hiển thị gợi ý tại đây · Không thay đổi tin nhắn gốc của bạn
                   </p>
                 </div>
               </div>
@@ -752,7 +1116,7 @@ export default function App() {
                     Chưa phát hiện lỗi ngữ pháp hay từ vựng nào
                   </p>
                   <p className="text-xs max-w-xs text-[var(--text-secondary)]">
-                    Khi bạn nói sai ngữ pháp, nhầm mạo từ (a/an), giới từ hoặc từ vựng, thẻ sửa lỗi chi tiết sẽ xuất hiện ngay tại đây.
+                    Khi bạn nói sai ngữ pháp, thiếu âm cuối số nhiều (-s/-es) hoặc dùng từ chưa tự nhiên, thẻ sửa lỗi chi tiết sẽ xuất hiện ngay tại đây.
                   </p>
                 </div>
               ) : (
@@ -793,10 +1157,12 @@ export default function App() {
             </div>
           </section>
         </div>
+          </>
+        )}
       </main>
 
       {/* =====================================================================
-          SEPARATE CONVERSATION HISTORY DRAWER (Separated from Left Setup Menu)
+          SEPARATE CONVERSATION HISTORY DRAWER
       ====================================================================== */}
       {isHistoryDrawerOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-xs">
@@ -842,7 +1208,7 @@ export default function App() {
                   type="text"
                   value={historySearch}
                   onChange={(e) => setHistorySearch(e.target.value)}
-                  placeholder="Tìm kiếm cuộc hội thoại..."
+                  placeholder="Tìm theo tiêu đề hoặc chủ đề..."
                   className="flex-1 px-3 py-2 text-xs bg-[var(--bg-app)] border border-[var(--border-strong)] focus:outline-none"
                   style={{ borderRadius: 'var(--radius-xs)' }}
                 />
@@ -870,6 +1236,10 @@ export default function App() {
               ) : (
                 filteredConversations.map((conv) => {
                   const isSelected = conv.id === activeConversationId;
+                  const modeLabel =
+                    CONVERSATION_MODES.find((m) => m.id === conv.conversationMode)?.name ||
+                    conv.conversationMode ||
+                    'Daily Conversation';
                   return (
                     <div
                       key={conv.id}
@@ -882,14 +1252,22 @@ export default function App() {
                       style={{ borderRadius: 'var(--radius-sm)' }}
                     >
                       <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           <span className="px-2 py-0.5 text-[10px] font-bold bg-[var(--learner-primary-action)] text-[var(--text-on-primary)] rounded">
                             {conv.cefrLevel}
                           </span>
-                          <span className="text-xs font-bold text-[var(--text-primary)] truncate">
-                            {conv.title}
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-[var(--color-primary-50)] text-[var(--learner-mint-text)] border border-[var(--learner-mint-border)] rounded">
+                            {modeLabel}
                           </span>
                         </div>
+                        <div className="text-xs font-bold text-[var(--text-primary)] truncate">
+                          {conv.title}
+                        </div>
+                        {conv.topic && (
+                          <div className="text-[11px] font-medium text-[var(--learner-mint-text)] truncate">
+                            📌 Topic: {conv.topic}
+                          </div>
+                        )}
                         <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
                           {conv.lastMessagePreview}
                         </p>
@@ -917,7 +1295,7 @@ export default function App() {
             </div>
 
             <div className="pt-3 border-t border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
-              Khi chọn lại một cuộc hội thoại cũ và nhấn <strong>Kết nối 3 Hubs</strong>, hệ thống sẽ tự động nạp các tin nhắn cũ vào <code>Gemini 3.8 Live</code> để giáo viên AI bắt nhịp tiếp câu chuyện.
+              Khi chọn lại cuộc hội thoại cũ, hệ thống tự động khôi phục cả <strong>Mode</strong>, <strong>Topic</strong>, <strong>System Prompt riêng</strong> và lịch sử tin nhắn để AI bắt nhịp ngay.
             </div>
           </div>
         </div>

@@ -1,12 +1,12 @@
-using EnglishLiveTutor.Api.Models;
-using EnglishLiveTutor.Api.Services;
+using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Infrastructure.Realtime;
 using Microsoft.AspNetCore.SignalR;
 
 namespace EnglishLiveTutor.Api.Hubs;
 
 /// <summary>
 /// Dedicated Hub #1: Connects Frontend <-> Backend <-> Gemini 3.5 Transcribe Live (models/gemini-3.5-transcribe-live).
-/// Receives 16kHz PCM audio directly from Frontend and delivers Line 1 (larger font) real-time English transcripts.
+/// Receives 16kHz PCM audio directly from Frontend and delivers Line 1 real-time English transcripts.
 /// </summary>
 public sealed class TranscribeLiveHub : Hub
 {

@@ -28,6 +28,9 @@ public sealed class ConversationRepository
                 c.ExtendedThinking,
                 c.VoiceName,
                 c.SpeechSpeed,
+                c.ConversationMode,
+                c.Topic,
+                c.CustomSystemPrompt,
                 c.CreatedAt,
                 c.UpdatedAt,
                 MessageCount = c.Messages.Count(m => m.TranscriptLine1 != "" || m.TranslationLine2 != ""),
@@ -71,7 +74,10 @@ public sealed class ConversationRepository
         string cefrLevel,
         bool extendedThinking,
         string voiceName,
-        double speechSpeed)
+        double speechSpeed,
+        string conversationMode = "daily_conversation",
+        string topic = "",
+        string? customSystemPrompt = null)
     {
         await _writeLock.WaitAsync();
         try
@@ -83,16 +89,27 @@ public sealed class ConversationRepository
                 conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id);
             }
 
+            string cleanMode = string.IsNullOrWhiteSpace(conversationMode) ? "daily_conversation" : conversationMode.Trim();
+            string cleanTopic = (topic ?? string.Empty).Trim();
+            string? cleanPrompt = string.IsNullOrWhiteSpace(customSystemPrompt) ? null : customSystemPrompt.Trim();
+
             if (conv is null)
             {
+                string defaultTitle = !string.IsNullOrWhiteSpace(cleanTopic)
+                    ? $"{cleanTopic} ({cefrLevel})"
+                    : $"Hội thoại {cefrLevel} ({DateTime.Now:dd/MM HH:mm})";
+
                 conv = new ConversationEntity
                 {
                     Id = string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N")[..12] : id,
-                    Title = string.IsNullOrWhiteSpace(title) ? $"Hội thoại {cefrLevel} ({DateTime.Now:dd/MM HH:mm})" : title,
+                    Title = string.IsNullOrWhiteSpace(title) ? defaultTitle : title,
                     CefrLevel = cefrLevel,
                     ExtendedThinking = extendedThinking,
                     VoiceName = voiceName,
                     SpeechSpeed = speechSpeed,
+                    ConversationMode = cleanMode,
+                    Topic = cleanTopic,
+                    CustomSystemPrompt = cleanPrompt,
                     CreatedAt = DateTimeOffset.UtcNow,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
@@ -104,10 +121,17 @@ public sealed class ConversationRepository
                 conv.ExtendedThinking = extendedThinking;
                 conv.VoiceName = voiceName;
                 conv.SpeechSpeed = speechSpeed;
+                conv.ConversationMode = cleanMode;
+                conv.Topic = cleanTopic;
+                conv.CustomSystemPrompt = cleanPrompt;
                 conv.UpdatedAt = DateTimeOffset.UtcNow;
                 if (!string.IsNullOrWhiteSpace(title))
                 {
                     conv.Title = title;
+                }
+                else if (!string.IsNullOrWhiteSpace(cleanTopic) && conv.Title.StartsWith("Hội thoại ", StringComparison.OrdinalIgnoreCase))
+                {
+                    conv.Title = $"{cleanTopic} ({cefrLevel})";
                 }
             }
 
@@ -167,7 +191,10 @@ public sealed class ConversationRepository
             if (conv is not null)
             {
                 conv.UpdatedAt = DateTimeOffset.UtcNow;
-                if (speaker == "user" && conv.Title.StartsWith("Hội thoại ", StringComparison.OrdinalIgnoreCase) && fullTranscript.Length > 6)
+                if (speaker == "user" &&
+                    string.IsNullOrWhiteSpace(conv.Topic) &&
+                    conv.Title.StartsWith("Hội thoại ", StringComparison.OrdinalIgnoreCase) &&
+                    fullTranscript.Length > 6)
                 {
                     conv.Title = fullTranscript.Length > 42 ? fullTranscript[..42] + "..." : fullTranscript;
                 }

@@ -5,6 +5,7 @@ import {
   ConversationSummary,
   DialogueTurnItem,
   LanguageCorrectionItem,
+  ConversationModeId,
   TeacherVoiceName,
 } from '../types/live';
 
@@ -120,13 +121,19 @@ export function useThreeHubLiveSession(speechSpeed: number) {
       cefrLevel: CefrLevel,
       extendedThinking: boolean,
       voiceName: TeacherVoiceName,
-      speed: number
+      speed: number,
+      conversationMode: ConversationModeId = 'daily_conversation',
+      topic: string = '',
+      customSystemPrompt: string = ''
     ) => {
       try {
-        const title = `Hội thoại ${cefrLevel} (${new Date().toLocaleTimeString('vi-VN', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })})`;
+        const trimmedTopic = topic.trim();
+        const title = trimmedTopic
+          ? `${trimmedTopic} (${cefrLevel})`
+          : `Hội thoại ${cefrLevel} (${new Date().toLocaleTimeString('vi-VN', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })})`;
         const res = await fetch(`${BACKEND_BASE_URL}/api/conversations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -136,6 +143,9 @@ export function useThreeHubLiveSession(speechSpeed: number) {
             extendedThinking,
             voiceName,
             speechSpeed: speed,
+            conversationMode,
+            topic: trimmedTopic,
+            customSystemPrompt: customSystemPrompt.trim() || null,
           }),
         });
         if (res.ok) {
@@ -290,6 +300,9 @@ export function useThreeHubLiveSession(speechSpeed: number) {
       extendedThinking: boolean,
       voiceName: TeacherVoiceName,
       speed: number,
+      conversationMode: ConversationModeId = 'daily_conversation',
+      topic: string = '',
+      customSystemPrompt: string = '',
       targetConversationId?: string
     ) => {
       if (isConnecting) return;
@@ -302,7 +315,15 @@ export function useThreeHubLiveSession(speechSpeed: number) {
 
         let convId = targetConversationId || activeConversationId;
         if (!convId) {
-          convId = await createNewConversation(cefrLevel, extendedThinking, voiceName, speed);
+          convId = await createNewConversation(
+            cefrLevel,
+            extendedThinking,
+            voiceName,
+            speed,
+            conversationMode,
+            topic,
+            customSystemPrompt
+          );
         } else {
           await selectConversation(convId);
         }
@@ -401,6 +422,9 @@ export function useThreeHubLiveSession(speechSpeed: number) {
           thinkingLevel: 'medium',
           voiceName,
           speechSpeed: speed,
+          conversationMode,
+          topic: topic.trim(),
+          customSystemPrompt: customSystemPrompt.trim() || null,
         });
         setHubStatuses((prev) => ({ ...prev, tutor: 'Connected' }));
 

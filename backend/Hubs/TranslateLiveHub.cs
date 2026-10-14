@@ -1,5 +1,5 @@
-using EnglishLiveTutor.Api.Models;
-using EnglishLiveTutor.Api.Services;
+using EnglishLiveTutor.Application.Common.Models;
+using EnglishLiveTutor.Infrastructure.Realtime;
 using Microsoft.AspNetCore.SignalR;
 
 namespace EnglishLiveTutor.Api.Hubs;
