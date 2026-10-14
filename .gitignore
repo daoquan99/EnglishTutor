@@ -1,62 +1,14 @@
-## .NET
+# .NET
 bin/
 obj/
+.vs/
 *.user
 *.suo
-*.userosscache
-*.sln.docstates
 
-## Visual Studio
-.vs/
-*.csproj.user
-
-## Rider
-.idea/
-
-## OS
-Thumbs.db
-.DS_Store
-
-## Logs
-logs/
-*.log
-
-## Environment
-.env
-appsettings.*.local.json
-
-## Docker
-docker-compose.override.local.yml
-
-## Node.js / Next.js
+# Node / Vite
 node_modules/
-.next/
-.turbo/
-out/
-*.tsbuildinfo
-
-## pnpm
-.pnpm-store/
-
-## Claude
-# .claude/
-# CLAUDE.md
-
-# .agents/
-# .antigravitycli/
-# AGENTS.md
-
-# plans/
-
-# docs/
-
-# CodexReviews/
-# ClaudeCodeReviews/
-# ClaudeCodePlan/
-# AntigravityReviews/
-# CodeReviews/
-
-# FILES_INCLUDED.txt
-
-# .env.example
-# plans.zip
+dist/
+.env
+.env.local
+*.log
+.DS_Store

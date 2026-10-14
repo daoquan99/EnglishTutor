@@ -1,0 +1,6 @@
+@echo off
+echo Starting .NET 10 Backend on http://localhost:5000 ...
+start "EnglishLiveTutor Backend (.NET 10)" cmd /k "cd backend && dotnet run --urls http://localhost:5000"
+
+echo Starting React + Vite Frontend on http://localhost:5173 ...
+start "EnglishLiveTutor Frontend (React + Vite)" cmd /k "cd frontend && npm install && npm run dev"
