@@ -2,11 +2,6 @@ using System.Buffers.Binary;
 
 namespace EnglishLiveTutor.Api.Services;
 
-/// <summary>
-/// Converts Gemini 3.8 Live 24kHz 16-bit mono PCM output into 16kHz 16-bit mono PCM
-/// so that AI speech can be streamed into Gemini 3.5 Transcribe Live and
-/// Gemini 3.5 Live Translate hubs alongside user microphone audio.
-/// </summary>
 public static class PcmAudioResampler
 {
     public static string Resample24kTo16kBase64(string base64Pcm24k)
@@ -19,13 +14,12 @@ public static class PcmAudioResampler
         if (inputSamples == 0)
             return string.Empty;
 
-        // 24000 Hz -> 16000 Hz ratio is 3:2
         int outputSamples = (int)((long)inputSamples * 16000 / 24000);
         byte[] outputBytes = new byte[outputSamples * 2];
 
         for (int i = 0; i < outputSamples; i++)
         {
-            double srcIndex = i * 1.5; // 24000.0 / 16000.0
+            double srcIndex = i * 1.5;
             int idx0 = (int)srcIndex;
             int idx1 = Math.Min(idx0 + 1, inputSamples - 1);
             double frac = srcIndex - idx0;

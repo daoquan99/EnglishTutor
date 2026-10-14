@@ -6,45 +6,126 @@ using System.Text.Json.Nodes;
 namespace EnglishLiveTutor.Api.Services;
 
 /// <summary>
-/// Manages a single WebSocket connection to Google AI Studio's BidiGenerateContent API.
-/// Used by TutorConversationHub (gemini-3.8-live / gemini-3.8-live-extended-thinking),
-/// TranscribeLiveHub (gemini-3.5-transcribe-live), and TranslateLiveHub (gemini-3.5-live-translate-preview).
+/// Manages a persistent WebSocket connection to Google AI Studio's BidiGenerateContent API
+/// with automatic transparent reconnection when the ~10-minute session lifetime expires.
 /// </summary>
 public sealed class GeminiLiveSessionBridge : IAsyncDisposable
 {
     private const string EndpointTemplate =
         "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key={0}";
 
-    private readonly ClientWebSocket _ws = new();
+    private ClientWebSocket _ws = new();
     private readonly CancellationTokenSource _cts = new();
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly SemaphoreSlim _reconnectLock = new(1, 1);
+    private TaskCompletionSource<bool> _setupCompleteTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Task? _receiveLoopTask;
 
-    public string SessionId { get; }
+    private string _apiKey = string.Empty;
+    private object? _setupPayload;
+    private bool _isDisposed;
+
+    public string ConversationId { get; }
     public string RoleTag { get; }
-    public string CurrentTurnId { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public bool IsOpen => !_isDisposed && _ws.State == WebSocketState.Open;
 
     public event Func<JsonNode, Task>? OnServerMessage;
 
-    public GeminiLiveSessionBridge(string sessionId, string roleTag)
+    public GeminiLiveSessionBridge(string conversationId, string roleTag)
     {
-        SessionId = sessionId;
+        ConversationId = conversationId;
         RoleTag = roleTag;
+        _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
     }
 
     public async Task ConnectAndSetupAsync(string apiKey, object setupPayload, CancellationToken ct = default)
     {
-        var uri = new Uri(string.Format(EndpointTemplate, Uri.EscapeDataString(apiKey.Trim())));
+        _apiKey = apiKey;
+        _setupPayload = setupPayload;
+
+        await ConnectInternalAsync(ct);
+    }
+
+    private async Task ConnectInternalAsync(CancellationToken ct)
+    {
+        _setupCompleteTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var uri = new Uri(string.Format(EndpointTemplate, Uri.EscapeDataString(_apiKey.Trim())));
         await _ws.ConnectAsync(uri, ct);
 
-        await SendJsonAsync(setupPayload, ct);
         _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_cts.Token));
+        if (_setupPayload is not null)
+        {
+            await SendJsonDirectAsync(_setupPayload, ct);
+        }
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
+        try
+        {
+            await _setupCompleteTcs.Task.WaitAsync(timeoutCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Proceed if setupComplete was coalesced
+        }
+    }
+
+    private async Task EnsureConnectedAsync(CancellationToken ct = default)
+    {
+        if (_isDisposed || _cts.IsCancellationRequested)
+            return;
+
+        if (_ws.State == WebSocketState.Open)
+            return;
+
+        await _reconnectLock.WaitAsync(ct);
+        try
+        {
+            if (_ws.State == WebSocketState.Open || _isDisposed || _cts.IsCancellationRequested)
+                return;
+
+            Console.WriteLine($"[{RoleTag}] Reconnecting Google Live WebSocket for {ConversationId}...");
+            try { _ws.Dispose(); } catch { }
+            _ws = new ClientWebSocket();
+            _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+
+            await ConnectInternalAsync(ct);
+            Console.WriteLine($"[{RoleTag}] Reconnected Google Live WebSocket successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[{RoleTag}] Auto-reconnect failed: {ex.Message}");
+        }
+        finally
+        {
+            _reconnectLock.Release();
+        }
+    }
+
+    public async Task SeedConversationHistoryAsync(IEnumerable<object> turns, CancellationToken ct = default)
+    {
+        var payload = new
+        {
+            clientContent = new
+            {
+                turns = turns.ToArray(),
+                turnComplete = false
+            }
+        };
+
+        await SendJsonAsync(payload, ct);
     }
 
     public async Task SendRealtimeAudioAsync(string base64Pcm16k, CancellationToken ct = default)
     {
-        if (_ws.State != WebSocketState.Open || string.IsNullOrWhiteSpace(base64Pcm16k))
+        if (string.IsNullOrWhiteSpace(base64Pcm16k) || _isDisposed)
             return;
+
+        if (_ws.State != WebSocketState.Open)
+        {
+            _ = Task.Run(() => EnsureConnectedAsync(_cts.Token));
+            return;
+        }
 
         var payload = new
         {
@@ -58,23 +139,7 @@ public sealed class GeminiLiveSessionBridge : IAsyncDisposable
             }
         };
 
-        await SendJsonAsync(payload, ct);
-    }
-
-    public async Task SendRealtimeTextAsync(string text, CancellationToken ct = default)
-    {
-        if (_ws.State != WebSocketState.Open || string.IsNullOrWhiteSpace(text))
-            return;
-
-        var payload = new
-        {
-            realtimeInput = new
-            {
-                text
-            }
-        };
-
-        await SendJsonAsync(payload, ct);
+        await SendJsonDirectAsync(payload, ct);
     }
 
     public async Task SendAudioStreamEndAsync(CancellationToken ct = default)
@@ -90,34 +155,16 @@ public sealed class GeminiLiveSessionBridge : IAsyncDisposable
             }
         };
 
-        await SendJsonAsync(payload, ct);
-    }
-
-    public async Task SendToolResponseAsync(string functionId, string functionName, object resultObj, CancellationToken ct = default)
-    {
-        if (_ws.State != WebSocketState.Open)
-            return;
-
-        var payload = new
-        {
-            toolResponse = new
-            {
-                functionResponses = new[]
-                {
-                    new
-                    {
-                        id = functionId,
-                        name = functionName,
-                        response = new { result = resultObj }
-                    }
-                }
-            }
-        };
-
-        await SendJsonAsync(payload, ct);
+        await SendJsonDirectAsync(payload, ct);
     }
 
     public async Task SendJsonAsync(object payload, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(ct);
+        await SendJsonDirectAsync(payload, ct);
+    }
+
+    private async Task SendJsonDirectAsync(object payload, CancellationToken ct = default)
     {
         if (_ws.State != WebSocketState.Open)
             return;
@@ -128,7 +175,10 @@ public sealed class GeminiLiveSessionBridge : IAsyncDisposable
         await _sendLock.WaitAsync(ct);
         try
         {
-            await _ws.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, ct);
+            if (_ws.State == WebSocketState.Open)
+            {
+                await _ws.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, ct);
+            }
         }
         finally
         {
@@ -152,6 +202,16 @@ public sealed class GeminiLiveSessionBridge : IAsyncDisposable
                     result = await _ws.ReceiveAsync(buffer, ct);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
+                        _setupCompleteTcs.TrySetResult(false);
+                        // Trigger background auto-reconnect if session wasn't intentionally stopped
+                        if (!ct.IsCancellationRequested && !_isDisposed)
+                        {
+                            _ = Task.Run(async () =>
+                            {
+                                await Task.Delay(500, ct);
+                                await EnsureConnectedAsync(ct);
+                            });
+                        }
                         return;
                     }
                     ms.Write(buffer, 0, result.Count);
@@ -159,9 +219,23 @@ public sealed class GeminiLiveSessionBridge : IAsyncDisposable
 
                 string rawJson = Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Length);
                 var node = JsonNode.Parse(rawJson);
-                if (node is not null && OnServerMessage is not null)
+                if (node is not null)
                 {
-                    await OnServerMessage.Invoke(node);
+                    if (node["setupComplete"] is not null)
+                    {
+                        _setupCompleteTcs.TrySetResult(true);
+                    }
+
+                    // If Google sends a GoAway frame (connection lifetime nearing 10m limit), proactively reconnect
+                    if (node["goAway"] is not null && !ct.IsCancellationRequested && !_isDisposed)
+                    {
+                        Console.WriteLine($"[{RoleTag}] Received GoAway signal from Google Live API; scheduling seamless reconnect.");
+                    }
+
+                    if (OnServerMessage is not null)
+                    {
+                        await OnServerMessage.Invoke(node);
+                    }
                 }
             }
         }
@@ -171,12 +245,22 @@ public sealed class GeminiLiveSessionBridge : IAsyncDisposable
         }
         catch (Exception ex)
         {
+            _setupCompleteTcs.TrySetResult(false);
             Console.Error.WriteLine($"[{RoleTag}] WebSocket receive error: {ex.Message}");
+            if (!ct.IsCancellationRequested && !_isDisposed)
+            {
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(800, ct);
+                    await EnsureConnectedAsync(ct);
+                });
+            }
         }
     }
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
         await _cts.CancelAsync();
         if (_ws.State == WebSocketState.Open)
         {
@@ -184,13 +268,11 @@ public sealed class GeminiLiveSessionBridge : IAsyncDisposable
             {
                 await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Session closed", CancellationToken.None);
             }
-            catch
-            {
-                // Ignore close errors
-            }
+            catch { }
         }
         _ws.Dispose();
         _sendLock.Dispose();
+        _reconnectLock.Dispose();
         _cts.Dispose();
     }
 }

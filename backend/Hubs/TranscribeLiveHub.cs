@@ -6,7 +6,7 @@ namespace EnglishLiveTutor.Api.Hubs;
 
 /// <summary>
 /// Dedicated Hub #1: Connects Frontend <-> Backend <-> Gemini 3.5 Transcribe Live (models/gemini-3.5-transcribe-live).
-/// Delivers Line 1 (larger font) real-time English transcripts for both User and AI turns.
+/// Receives 16kHz PCM audio directly from Frontend and delivers Line 1 (larger font) real-time English transcripts.
 /// </summary>
 public sealed class TranscribeLiveHub : Hub
 {
@@ -16,22 +16,22 @@ public sealed class TranscribeLiveHub : Hub
 
     public async Task InitializeTranscribeSession(StartSubHubSessionRequest request)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, request.SessionId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, request.ConversationId);
         await _manager.StartTranscribeHubSessionAsync(request);
         await Clients.Caller.SendAsync("TranscribeHubReady", new
         {
-            request.SessionId,
+            request.ConversationId,
             Model = "gemini-3.5-transcribe-live"
         });
     }
 
     public async Task StreamAudioForTranscription(AudioChunkPayload payload)
     {
-        await _manager.ForwardTranscribeOnlyAudioAsync(payload);
+        await _manager.ForwardTranscribeHubAudioAsync(payload.ConversationId, payload.Base64Pcm16k);
     }
 
-    public async Task EndAudioTurn(string sessionId, string speaker)
+    public async Task EndAudioTurn(string conversationId)
     {
-        await _manager.EndSpeakerTurnAsync(sessionId, speaker);
+        await _manager.EndUserSpeechAsync(conversationId);
     }
 }

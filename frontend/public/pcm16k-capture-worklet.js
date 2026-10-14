@@ -1,8 +1,3 @@
-/**
- * AudioWorkletProcessor that captures mono float32 audio frames, converts them
- * to 16-bit signed little-endian PCM (16kHz), and posts chunks (~100ms = 1600 samples)
- * back to the main thread.
- */
 class Pcm16kCaptureProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
@@ -21,7 +16,7 @@ class Pcm16kCaptureProcessor extends AudioWorkletProcessor {
 
       if (this._offset >= this._buffer.length) {
         const chunkCopy = new Int16Array(this._buffer);
-        this.port.postMessage(chunkCopy.buffer, [chunkCopy.buffer]);
+        this.port.postMessage({ pcmBuffer: chunkCopy.buffer }, [chunkCopy.buffer]);
         this._offset = 0;
       }
     }

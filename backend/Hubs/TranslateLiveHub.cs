@@ -6,7 +6,7 @@ namespace EnglishLiveTutor.Api.Hubs;
 
 /// <summary>
 /// Dedicated Hub #2: Connects Frontend <-> Backend <-> Gemini 3.5 Live Translate (models/gemini-3.5-live-translate-preview).
-/// Extracts ONLY Vietnamese text (Line 2 smaller italic font) and discards audio bytes.
+/// Receives 16kHz PCM audio directly from Frontend via StreamAudioForTranslation and returns ONLY Vietnamese text (Line 2).
 /// </summary>
 public sealed class TranslateLiveHub : Hub
 {
@@ -16,11 +16,11 @@ public sealed class TranslateLiveHub : Hub
 
     public async Task InitializeTranslateSession(StartSubHubSessionRequest request)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, request.SessionId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, request.ConversationId);
         await _manager.StartTranslateHubSessionAsync(request);
         await Clients.Caller.SendAsync("TranslateHubReady", new
         {
-            request.SessionId,
+            request.ConversationId,
             Model = "gemini-3.5-live-translate-preview",
             TargetLanguage = "vi",
             TextOnly = true
@@ -29,6 +29,11 @@ public sealed class TranslateLiveHub : Hub
 
     public async Task StreamAudioForTranslation(AudioChunkPayload payload)
     {
-        await _manager.ForwardTranslateOnlyAudioAsync(payload);
+        await _manager.ForwardTranslateHubAudioAsync(payload.ConversationId, payload.Base64Pcm16k);
+    }
+
+    public async Task EndTranslateAudioTurn(string conversationId)
+    {
+        await _manager.EndTranslateSpeechAsync(conversationId);
     }
 }

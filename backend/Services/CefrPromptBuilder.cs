@@ -1,8 +1,15 @@
+using EnglishLiveTutor.Api.Data;
+
 namespace EnglishLiveTutor.Api.Services;
 
 public static class CefrPromptBuilder
 {
-    public static string BuildSystemInstruction(string cefrLevel, bool extendedThinking)
+    public static string BuildSystemInstruction(
+        string cefrLevel,
+        bool extendedThinking,
+        string voiceName,
+        double speechSpeed,
+        IReadOnlyList<ChatMessageEntity>? previousMessages = null)
     {
         var normalizedLevel = (cefrLevel ?? "B1").Trim().ToUpperInvariant();
 
@@ -17,28 +24,49 @@ public static class CefrPromptBuilder
             _ => "Use clear conversational English tailored to an intermediate B1 learner."
         };
 
+        var speedInstruction = speechSpeed switch
+        {
+            <= 0.8 => "SPEAKING PACE: Speak slowly, articulating every syllable with deliberate pauses between clauses (approx 0.75x normal speed).",
+            <= 0.95 => "SPEAKING PACE: Speak at a relaxed, unhurried pace (approx 0.9x normal speed).",
+            >= 1.2 => "SPEAKING PACE: Speak briskly and energetically like a fast native speaker (approx 1.25x normal speed).",
+            >= 1.1 => "SPEAKING PACE: Speak at a lively, slightly faster-than-average conversational tempo (approx 1.15x normal speed).",
+            _ => "SPEAKING PACE: Speak at a natural 1.0x conversational rhythm."
+        };
+
         var thinkingNote = extendedThinking
-            ? "Extended Thinking mode is ACTIVE: reason deeply about subtle grammatical patterns, lexical collocations, and pedagogical scaffolding while keeping spoken conversation natural and fluid."
+            ? "Extended Thinking mode is ACTIVE: reason deeply about the learner's ideas and provide rich, well-structured conversational responses without saying filler phrases like 'Let me check on that' or 'Please wait a moment'."
             : "Respond with low-latency conversational warmth and immediate spoken feedback.";
 
-        return string.Join("\n", new[]
+        var lines = new List<string>
         {
-            "You are an empathetic, sharp, and encouraging professional English Teacher conducting a 1-on-1 live speaking session.",
+            $"You are an empathetic, sharp, and encouraging professional English Teacher (Voice Persona: {voiceName}) conducting a 1-on-1 live speaking session.",
             $"Target Student CEFR Level: {normalizedLevel}.",
             $"Level Adaptation Rule: {levelGuidance}",
+            speedInstruction,
             $"Mode Guidance: {thinkingNote}",
             "",
             "CORE TEACHING RULES:",
             $"1. Keep the conversation flowing naturally like a real human English tutor. Ask engaging open-ended questions suited to level {normalizedLevel}.",
-            "2. Whenever the user makes a grammar mistake, word-choice/spelling error in transcribed speech, unnatural collocation, or pronunciation error:",
-            "   - Immediately invoke the non-blocking tool `report_language_correction` with:",
-            "     * `originalText`: what the user said",
-            "     * `correctedText`: the natural, correct English phrasing with exact spelling",
-            "     * `errorCategory`: 'Spelling & Word Choice', 'Grammar', or 'Pronunciation'",
-            "     * `explanationVi`: concise explanation in Vietnamese so the learner understands why",
-            $"     * `cefrTip`: a practical tip tailored to level {normalizedLevel}",
-            "   - In your spoken reply, gently model the correct phrase naturally without breaking the conversational flow.",
-            "3. Always speak in English (only use Vietnamese inside the `explanationVi` field of `report_language_correction` unless the student explicitly asks for a spoken Vietnamese explanation at A1 level)."
-        });
+            "2. NEVER say 'Let me check on that', 'Please wait a moment', or 'I am looking into ways to...'—respond directly to the student as a human conversation partner.",
+            "3. Do NOT repeat the same sentence twice in a single turn.",
+            "4. When the student makes a noticeable grammar or vocabulary mistake, gently model the natural phrasing in your spoken reply while keeping the conversation encouraging.",
+            "5. Always speak in English."
+        };
+
+        if (previousMessages is { Count: > 0 })
+        {
+            lines.Add("");
+            lines.Add("PREVIOUS CONVERSATION HISTORY TO RESUME SEAMLESSLY (pick up naturally from where you and the student left off):");
+            foreach (var msg in previousMessages.TakeLast(16))
+            {
+                if (!string.IsNullOrWhiteSpace(msg.TranscriptLine1))
+                {
+                    string roleLabel = msg.Speaker == "user" ? "Student" : "Teacher (You)";
+                    lines.Add($"- {roleLabel}: {msg.TranscriptLine1}");
+                }
+            }
+        }
+
+        return string.Join("\n", lines);
     }
 }

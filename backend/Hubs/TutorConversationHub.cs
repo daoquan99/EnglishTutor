@@ -12,30 +12,36 @@ public sealed class TutorConversationHub : Hub
 
     public async Task InitializeTutorSession(StartTutorSessionRequest request)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, request.SessionId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, request.ConversationId);
         await _manager.StartTutorSessionAsync(request);
         await Clients.Caller.SendAsync("TutorSessionReady", new
         {
-            request.SessionId,
+            request.ConversationId,
             Model = request.ExtendedThinking ? "gemini-3.8-live-extended-thinking" : "gemini-3.8-live",
             request.CefrLevel,
-            request.ExtendedThinking
+            request.ExtendedThinking,
+            request.VoiceName,
+            request.SpeechSpeed
         });
     }
 
     public async Task StreamUserAudioToTutor(AudioChunkPayload payload)
     {
-        // Streams user audio to Tutor Hub (and optionally mirrors to Transcribe/Translate if FE doesn't send separately)
-        await _manager.ForwardAudioAsync(payload.SessionId, "user", payload.TurnId, payload.Base64Pcm16k, includeTutor: true);
+        await _manager.ForwardTutorHubAudioAsync(payload.ConversationId, payload.Base64Pcm16k);
     }
 
-    public async Task NotifyUserSpeechEnd(string sessionId)
+    public async Task NotifyUserSpeechEnd(string conversationId)
     {
-        await _manager.EndSpeakerTurnAsync(sessionId, "user");
+        await _manager.EndUserSpeechAsync(conversationId);
     }
 
-    public async Task StopSession(string sessionId)
+    public async Task AnalyzeTurnGrammar(string conversationId, string turnId, string transcriptText, string cefrLevel)
     {
-        await _manager.StopAllForSessionAsync(sessionId);
+        await _manager.AnalyzeTurnGrammarManualAsync(conversationId, turnId, transcriptText, cefrLevel);
+    }
+
+    public async Task StopSession(string conversationId)
+    {
+        await _manager.StopAllForConversationAsync(conversationId);
     }
 }
