@@ -22,6 +22,6 @@ for /d /r . %%d in (bin obj) do (
 )
 
 echo ========================================================
-echo Done! Successfully removed !COUNT! folder(s).
+echo Hoan tat: Da xoa !COUNT! thu muc bin va obj.
 echo ========================================================
 pause

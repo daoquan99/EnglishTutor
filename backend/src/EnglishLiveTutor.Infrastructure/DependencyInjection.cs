@@ -1,6 +1,10 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Application.Features.Identity;
+using EnglishLiveTutor.Domain.Identity;
+using EnglishLiveTutor.Infrastructure.Identity;
 using EnglishLiveTutor.Infrastructure.Ai;
 using EnglishLiveTutor.Infrastructure.Persistence;
+using EnglishLiveTutor.Infrastructure.Persistence.Interceptors;
 using EnglishLiveTutor.Infrastructure.Realtime;
 using EnglishLiveTutor.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -15,17 +19,20 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        string connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? configuration.GetConnectionString("SqlServer")
-            ?? "Server=localhost;Database=EnglishLiveTutorDb;Trusted_Connection=True;TrustServerCertificate=True;";
-
-        services.AddDbContextFactory<AppDbContext>(options =>
-            options.UseSqlServer(connectionString));
+        string connectionString = configuration.GetConnectionString("DefaultConnection")!;
+        // Never print database connection strings (may include credentials).
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<AuditingSaveChangesInterceptor>();
+        services.AddDbContextFactory<AppDbContext>((sp, options) =>
+        {
+            options.UseSqlServer(connectionString);
+            options.AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>());
+        });
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddSingleton<IAppDbContextFactory, AppDbContextFactoryWrapper>();
 
-        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddSingleton<IConversationRepository, ConversationRepository>();
 
         services.AddHttpClient();
 
@@ -34,6 +41,11 @@ public static class DependencyInjection
 
         services.AddScoped<IVocabularyAiGenerator, GeminiVocabularyAiGenerator>();
         services.AddScoped<IPronunciationAiAssessor, GeminiPronunciationAiAssessor>();
+
+        services.AddScoped<Microsoft.AspNetCore.Identity.IPasswordHasher<UserEntity>,
+            Microsoft.AspNetCore.Identity.PasswordHasher<UserEntity>>();
+        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddSingleton<ICefrPromptBuilder, CefrPromptBuilder>();
 
         services.AddSingleton<GeminiLiveConnectionManager>();
 

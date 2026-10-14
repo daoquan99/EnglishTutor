@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EnglishLiveTutor.Api/EnglishLiveTutor.Api.csproj" />
+    <Project Path="src/EnglishLiveTutor.Application/EnglishLiveTutor.Application.csproj" />
+    <Project Path="src/EnglishLiveTutor.Domain/EnglishLiveTutor.Domain.csproj" />
+    <Project Path="src/EnglishLiveTutor.Infrastructure/EnglishLiveTutor.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnglishLiveTutor.Domain.Tests/EnglishLiveTutor.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

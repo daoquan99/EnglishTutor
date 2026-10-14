@@ -4,6 +4,8 @@ using EnglishLiveTutor.Application.Common.Interfaces;
 using EnglishLiveTutor.Application.Common.Models;
 using EnglishLiveTutor.Domain.Conversations;
 using EnglishLiveTutor.Infrastructure.Ai;
+using EnglishLiveTutor.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLiveTutor.Infrastructure.Realtime;
 
@@ -36,6 +38,8 @@ public sealed class GeminiLiveConnectionManager
     private readonly IConversationRepository _repo;
     private readonly FastTextTranslatorFallback _translator;
     private readonly GrammarCorrectionAnalyzerService _grammarAnalyzer;
+    private readonly ICefrPromptBuilder _promptBuilder;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
 
     private readonly ConcurrentDictionary<string, GeminiLiveSessionBridge> _bridges = new();
     private readonly ConcurrentDictionary<string, string> _sessionApiKeys = new();
@@ -45,12 +49,16 @@ public sealed class GeminiLiveConnectionManager
         ILiveSessionRealtimeNotifier notifier,
         IConversationRepository repo,
         FastTextTranslatorFallback translator,
-        GrammarCorrectionAnalyzerService grammarAnalyzer)
+        GrammarCorrectionAnalyzerService grammarAnalyzer,
+        ICefrPromptBuilder promptBuilder,
+        IDbContextFactory<AppDbContext> dbFactory)
     {
         _notifier = notifier;
         _repo = repo;
         _translator = translator;
         _grammarAnalyzer = grammarAnalyzer;
+        _promptBuilder = promptBuilder;
+        _dbFactory = dbFactory;
     }
 
     private async Task<ConversationTurnState> GetOrInitTurnStateAsync(string conversationId, string? cefrLevel = null)
@@ -133,6 +141,15 @@ public sealed class GeminiLiveConnectionManager
     // -------------------------------------------------------------------------
     public async Task StartTutorSessionAsync(StartTutorSessionRequest req)
     {
+        string selectedVoice = string.IsNullOrWhiteSpace(req.VoiceName) ? "Aoede" : req.VoiceName;
+        await using (var catalogDb = await _dbFactory.CreateDbContextAsync())
+        {
+            var voice = await catalogDb.TeacherVoices.AsNoTracking()
+                .SingleOrDefaultAsync(v => v.Code == selectedVoice && v.IsEnabled);
+            if (voice is null || !string.Equals(voice.Code, selectedVoice, StringComparison.Ordinal))
+                throw new ArgumentException("Unsupported or disabled Google teacher voice.", nameof(req.VoiceName));
+        }
+
         string key = $"{req.ConversationId}:tutor";
         await RemoveBridgeIfExistsAsync(key);
         _sessionApiKeys[req.ConversationId] = req.ApiKey;
@@ -142,7 +159,7 @@ public sealed class GeminiLiveConnectionManager
             title: null,
             req.CefrLevel,
             req.ExtendedThinking,
-            req.VoiceName,
+            selectedVoice,
             req.SpeechSpeed,
             req.ConversationMode,
             req.Topic,
@@ -156,10 +173,10 @@ public sealed class GeminiLiveConnectionManager
             ? "models/gemini-3.8-live-extended-thinking"
             : "models/gemini-3.8-live";
 
-        string systemInstruction = CefrPromptBuilder.BuildSystemInstruction(
+        string systemInstruction = await _promptBuilder.BuildSystemInstructionAsync(
             req.CefrLevel,
             req.ExtendedThinking,
-            req.VoiceName,
+            selectedVoice,
             req.SpeechSpeed,
             req.ConversationMode,
             req.Topic,
@@ -175,7 +192,7 @@ public sealed class GeminiLiveConnectionManager
                 {
                     prebuiltVoiceConfig = new
                     {
-                        voiceName = string.IsNullOrWhiteSpace(req.VoiceName) ? "Aoede" : req.VoiceName
+                        voiceName = selectedVoice
                     }
                 }
             }

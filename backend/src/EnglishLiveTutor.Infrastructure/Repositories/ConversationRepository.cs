@@ -10,10 +10,12 @@ public sealed class ConversationRepository : IConversationRepository
 {
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
+    private readonly ICurrentUser _currentUser;
 
-    public ConversationRepository(IDbContextFactory<AppDbContext> dbFactory)
+    public ConversationRepository(IDbContextFactory<AppDbContext> dbFactory, ICurrentUser currentUser)
     {
         _dbFactory = dbFactory;
+        _currentUser = currentUser;
     }
 
     public async Task<List<object>> ListConversationsAsync()
@@ -65,7 +67,8 @@ public sealed class ConversationRepository : IConversationRepository
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
         return await db.Messages
-            .Where(m => m.ConversationId == conversationId)
+            .Where(m => m.ConversationId == conversationId &&
+                        db.Conversations.Any(c => c.Id == m.ConversationId))
             .Select(m => (int?)m.SequenceOrder)
             .MaxAsync() ?? 0;
     }
@@ -88,7 +91,9 @@ public sealed class ConversationRepository : IConversationRepository
             ConversationEntity? conv = null;
             if (!string.IsNullOrWhiteSpace(id))
             {
-                conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id);
+                conv = await db.Conversations.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == id);
+                if (conv?.IsDeleted == true)
+                    throw new InvalidOperationException("Cannot modify a deleted conversation.");
             }
 
             string cleanMode = string.IsNullOrWhiteSpace(conversationMode) ? "daily_conversation" : conversationMode.Trim();
@@ -161,6 +166,10 @@ public sealed class ConversationRepository : IConversationRepository
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync();
+            // Do not create orphan transcripts for soft-deleted conversations.
+            if (!await db.Conversations.AnyAsync(c => c.Id == conversationId))
+                return;
+
             var msg = await db.Messages.FirstOrDefaultAsync(
                 m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker);
 
@@ -224,6 +233,10 @@ public sealed class ConversationRepository : IConversationRepository
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync();
+            // Do not create orphan transcripts for soft-deleted conversations.
+            if (!await db.Conversations.AnyAsync(c => c.Id == conversationId))
+                return;
+
             var msg = await db.Messages.FirstOrDefaultAsync(
                 m => m.ConversationId == conversationId && m.TurnId == turnId && m.Speaker == speaker);
 
@@ -270,6 +283,9 @@ public sealed class ConversationRepository : IConversationRepository
         try
         {
             await using var db = await _dbFactory.CreateDbContextAsync();
+            if (!await db.Conversations.AnyAsync(c => c.Id == dto.ConversationId))
+                return;
+
             db.Corrections.Add(new LanguageCorrectionEntity
             {
                 Id = dto.Id,
@@ -298,7 +314,7 @@ public sealed class ConversationRepository : IConversationRepository
             await using var db = await _dbFactory.CreateDbContextAsync();
             var conv = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id);
             if (conv is null) return false;
-            db.Conversations.Remove(conv);
+            conv.SoftDelete(DateTimeOffset.UtcNow, _currentUser.UserId);
             await db.SaveChangesAsync();
             return true;
         }

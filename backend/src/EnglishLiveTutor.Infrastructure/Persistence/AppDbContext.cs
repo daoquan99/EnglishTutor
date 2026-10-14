@@ -1,5 +1,9 @@
 using EnglishLiveTutor.Application.Common.Interfaces;
+using EnglishLiveTutor.Domain.Common.Abstractions;
 using EnglishLiveTutor.Domain.Conversations;
+using EnglishLiveTutor.Domain.Identity;
+using EnglishLiveTutor.Domain.Prompts;
+using EnglishLiveTutor.Domain.TeacherVoices;
 using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Vocabulary;
@@ -44,6 +48,18 @@ public sealed class AppDbContext : DbContext, IAppDbContext
     public DbSet<AudioRecordingEntity> AudioRecordings => Set<AudioRecordingEntity>();
     public DbSet<PronunciationAssessmentEntity> PronunciationAssessments => Set<PronunciationAssessmentEntity>();
     public DbSet<PronunciationCriterionScoreEntity> PronunciationCriterionScores => Set<PronunciationCriterionScoreEntity>();
+
+    // Identity & RBAC
+    public DbSet<UserEntity> Users => Set<UserEntity>();
+    public DbSet<RoleEntity> Roles => Set<RoleEntity>();
+    public DbSet<PermissionEntity> Permissions => Set<PermissionEntity>();
+    public DbSet<UserRoleEntity> UserRoles => Set<UserRoleEntity>();
+    public DbSet<RolePermissionEntity> RolePermissions => Set<RolePermissionEntity>();
+    public DbSet<RefreshTokenEntity> RefreshTokens => Set<RefreshTokenEntity>();
+
+    // Database-backed CEFR prompts and Google teacher voice catalog
+    public DbSet<AiPromptTemplateEntity> AiPromptTemplates => Set<AiPromptTemplateEntity>();
+    public DbSet<TeacherVoiceEntity> TeacherVoices => Set<TeacherVoiceEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -367,6 +383,111 @@ public sealed class AppDbContext : DbContext, IAppDbContext
             entity.Property(e => e.WeightedScore).HasColumnType("decimal(5,2)").IsRequired();
             entity.Property(e => e.Feedback).HasMaxLength(500);
         });
+
+        // 6. Identity and refresh tokens
+        modelBuilder.Entity<UserEntity>(e =>
+        {
+            e.ToTable("Users"); e.HasKey(x => x.Id);
+            e.Property(x => x.Email).HasMaxLength(256).IsRequired();
+            e.Property(x => x.NormalizedEmail).HasMaxLength(256).IsRequired();
+            e.Property(x => x.DisplayName).HasMaxLength(160).IsRequired();
+            e.Property(x => x.PasswordHash).HasMaxLength(1000).IsRequired();
+            e.HasIndex(x => x.NormalizedEmail).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+        modelBuilder.Entity<RoleEntity>(e =>
+        {
+            e.ToTable("Roles"); e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500).IsRequired();
+            e.HasIndex(x => x.Name).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+        modelBuilder.Entity<PermissionEntity>(e =>
+        {
+            e.ToTable("Permissions"); e.HasKey(x => x.Id);
+            e.Property(x => x.Code).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+        modelBuilder.Entity<UserRoleEntity>(e =>
+        {
+            e.ToTable("UserRoles"); e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.UserId, x.RoleId }).IsUnique();
+            e.HasOne<UserEntity>().WithMany().HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<RoleEntity>().WithMany().HasForeignKey(x => x.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<RolePermissionEntity>(e =>
+        {
+            e.ToTable("RolePermissions"); e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.RoleId, x.PermissionId }).IsUnique();
+            e.HasOne<RoleEntity>().WithMany().HasForeignKey(x => x.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PermissionEntity>().WithMany().HasForeignKey(x => x.PermissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<RefreshTokenEntity>(e =>
+        {
+            e.ToTable("RefreshTokens"); e.HasKey(x => x.Id);
+            e.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.ExpiresAt });
+            e.HasOne<UserEntity>().WithMany().HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 7. Editable AI system instructions and Gemini teacher voices
+        modelBuilder.Entity<AiPromptTemplateEntity>(e =>
+        {
+            e.ToTable("AiPromptTemplates"); e.HasKey(x => x.Id);
+            e.Property(x => x.Code).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Category).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Content).HasColumnType("nvarchar(max)").IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+        modelBuilder.Entity<TeacherVoiceEntity>(e =>
+        {
+            e.ToTable("TeacherVoices"); e.HasKey(x => x.Id);
+            e.Property(x => x.Code).HasMaxLength(64).IsRequired();
+            e.Property(x => x.DisplayName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Type).HasMaxLength(32).IsRequired();
+            e.Property(x => x.Gender).HasMaxLength(16).IsRequired();
+            e.Property(x => x.Persona).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(600).IsRequired();
+            e.Property(x => x.LabelVi).HasMaxLength(128);
+            e.Property(x => x.StyleVi).HasMaxLength(256);
+            e.HasIndex(x => x.Code).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        // Logical deletion is a per-aggregate-root rule, not a blanket rule for child entities.
+        modelBuilder.Entity<AiModelConfigEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<AudioRecordingEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<ConversationEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<DailyVocabularyPlanEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<PronunciationAssessmentEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<ScoringRubricEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<UserVocabularyProgressEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<VocabularyEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<VocabularyGenerationAuditEntity>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<VocabularyReviewAttemptEntity>().HasQueryFilter(e => !e.IsDeleted);
+
+        // Apply consistent metadata across all persisted domain entities.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(IAuditable).IsAssignableFrom(entityType.ClrType)) continue;
+            var entity = modelBuilder.Entity(entityType.ClrType);
+            entity.Property<string>(nameof(IAuditable.CreatedBy)).HasMaxLength(128);
+            entity.Property<string>(nameof(IAuditable.UpdatedBy)).HasMaxLength(128);
+            if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
+            {
+                entity.Property<string>(nameof(ISoftDeletable.DeletedBy)).HasMaxLength(128);
+            }
+        }
     }
 }
 

@@ -1,3 +1,5 @@
+using EnglishLiveTutor.Domain.Common.Abstractions;
+using EnglishLiveTutor.Domain.Conversations;
 using EnglishLiveTutor.Domain.Learning;
 using EnglishLiveTutor.Domain.Pronunciation;
 using EnglishLiveTutor.Domain.Vocabulary;
@@ -7,6 +9,34 @@ namespace EnglishLiveTutor.Domain.Tests;
 
 public class DomainLogicTests
 {
+    [Fact]
+    public void VocabularyRoot_InheritsAuditAndSoftDeletion()
+    {
+        var vocabulary = new VocabularyEntity();
+        Assert.IsAssignableFrom<IAuditable>(vocabulary);
+        Assert.IsAssignableFrom<ISoftDeletable>(vocabulary);
+        Assert.IsAssignableFrom<IAuditable>(new VocabularySenseEntity());
+        Assert.IsNotAssignableFrom<ISoftDeletable>(new VocabularySenseEntity());
+        Assert.NotEqual(Guid.Empty, vocabulary.Id);
+    }
+
+    [Fact]
+    public void ConversationSoftDeleteAndRestore_AreIdempotent()
+    {
+        var conversation = new ConversationEntity();
+        var now = DateTimeOffset.UtcNow;
+        conversation.SoftDelete(now, "tester");
+        conversation.SoftDelete(now.AddDays(1), "someone-else");
+        Assert.True(conversation.IsDeleted);
+        Assert.Equal(now, conversation.DeletedAtUtc);
+        Assert.Equal("tester", conversation.DeletedBy);
+        conversation.Restore();
+        conversation.Restore();
+        Assert.False(conversation.IsDeleted);
+        Assert.Null(conversation.DeletedAtUtc);
+        Assert.Null(conversation.DeletedBy);
+    }
+
     [Fact]
     public void NormalizeWord_ShouldLowercaseAndCollapseWhitespace()
     {
